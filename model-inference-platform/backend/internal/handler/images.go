@@ -2,24 +2,27 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/xincxiong/model-inference-platform/backend/internal/engine"
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
 	"github.com/xincxiong/model-inference-platform/backend/internal/model"
+	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
 )
 
 type ImagesHandler struct {
 	store  *store.Store
-	engine engine.Engine
+	router *modelrouter.ModelRouter
 }
 
-func NewImagesHandler(s *store.Store, eng engine.Engine) *ImagesHandler {
-	return &ImagesHandler{store: s, engine: eng}
+func NewImagesHandler(s *store.Store, mr *modelrouter.ModelRouter) *ImagesHandler {
+	return &ImagesHandler{store: s, router: mr}
 }
+
+var imageAllowedTypes = []string{"text-to-image"}
 
 func (h *ImagesHandler) Generate(c *gin.Context) {
 	var req model.ImageGenerationRequest
@@ -34,7 +37,25 @@ func (h *ImagesHandler) Generate(c *gin.Context) {
 		req.Model = "black-forest-labs/FLUX.1-dev"
 	}
 
-	resp, err := h.engine.ImageGeneration(c.Request.Context(), req)
+	resolved, err := h.router.Resolve(req.Model)
+	if err != nil {
+		status := http.StatusNotFound
+		if errors.Is(err, modelrouter.ErrModelNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": gin.H{"message": err.Error(), "type": "not_found_error"}})
+		return
+	}
+
+	if err := h.router.ValidateType(resolved, imageAllowedTypes); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": gin.H{"message": err.Error(), "type": "invalid_request_error"},
+		})
+		return
+	}
+
+	eng := h.router.GetEngine(resolved)
+	resp, err := eng.ImageGeneration(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": err.Error(), "type": "server_error"},
@@ -47,22 +68,18 @@ func (h *ImagesHandler) Generate(c *gin.Context) {
 	if req.N != nil {
 		n = *req.N
 	}
-	go h.recordUsage(auth, req.Model, n)
+	go h.recordUsage(auth, resolved, n)
 
 	c.JSON(http.StatusOK, resp)
 }
 
-func (h *ImagesHandler) recordUsage(auth middleware.AuthInfo, modelName string, n int) {
+func (h *ImagesHandler) recordUsage(auth middleware.AuthInfo, resolved *modelrouter.ResolvedModel, n int) {
 	ctx := context.Background()
-	var outputPrice float64
-	_ = h.store.DB.QueryRow(ctx,
-		`SELECT output_price FROM models WHERE id = $1`, modelName).Scan(&outputPrice)
-
-	cost := outputPrice * float64(n)
+	cost := resolved.OutputPrice * float64(n)
 	_, _ = h.store.DB.Exec(ctx,
 		`INSERT INTO usage_records (id, user_id, api_key_id, model, input_tokens, output_tokens, cost)
 		 VALUES ($1,$2,$3,$4,0,$5,$6)`,
-		uuid.New().String(), auth.UserID, auth.APIKeyID, modelName, n, cost)
+		uuid.New().String(), auth.UserID, auth.APIKeyID, resolved.ID, n, cost)
 	_, _ = h.store.DB.Exec(ctx,
 		`UPDATE billing_accounts SET balance = balance - $1 WHERE user_id = $2`, cost, auth.UserID)
 }

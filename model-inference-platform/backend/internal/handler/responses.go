@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,20 +11,22 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/xincxiong/model-inference-platform/backend/internal/engine"
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
 	"github.com/xincxiong/model-inference-platform/backend/internal/model"
+	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
 )
 
 type ResponsesHandler struct {
 	store  *store.Store
-	engine engine.Engine
+	router *modelrouter.ModelRouter
 }
 
-func NewResponsesHandler(s *store.Store, eng engine.Engine) *ResponsesHandler {
-	return &ResponsesHandler{store: s, engine: eng}
+func NewResponsesHandler(s *store.Store, mr *modelrouter.ModelRouter) *ResponsesHandler {
+	return &ResponsesHandler{store: s, router: mr}
 }
+
+var responsesAllowedTypes = []string{"text-to-text", "vision"}
 
 func (h *ResponsesHandler) Create(c *gin.Context) {
 	var req model.ResponsesCreateRequest
@@ -34,6 +37,25 @@ func (h *ResponsesHandler) Create(c *gin.Context) {
 		return
 	}
 
+	resolved, err := h.router.Resolve(req.Model)
+	if err != nil {
+		status := http.StatusNotFound
+		errType := "not_found_error"
+		if errors.Is(err, modelrouter.ErrModelNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": gin.H{"message": err.Error(), "type": errType}})
+		return
+	}
+
+	if err := h.router.ValidateType(resolved, responsesAllowedTypes); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": gin.H{"message": err.Error(), "type": "invalid_request_error"},
+		})
+		return
+	}
+
+	eng := h.router.GetEngine(resolved)
 	auth := middleware.GetAuthInfo(c)
 	messages := h.buildMessages(c.Request.Context(), req, auth.UserID)
 
@@ -47,9 +69,9 @@ func (h *ResponsesHandler) Create(c *gin.Context) {
 	}
 
 	if req.Stream {
-		h.handleStream(c, chatReq, req, auth)
+		h.handleStream(c, chatReq, req, resolved, eng, auth)
 	} else {
-		h.handleNonStream(c, chatReq, req, auth)
+		h.handleNonStream(c, chatReq, req, resolved, eng, auth)
 	}
 }
 
@@ -101,8 +123,10 @@ func (h *ResponsesHandler) buildMessages(ctx context.Context, req model.Response
 	return messages
 }
 
-func (h *ResponsesHandler) handleStream(c *gin.Context, chatReq model.ChatCompletionRequest, origReq model.ResponsesCreateRequest, auth middleware.AuthInfo) {
-	ch, err := h.engine.ChatCompletion(c.Request.Context(), chatReq)
+func (h *ResponsesHandler) handleStream(c *gin.Context, chatReq model.ChatCompletionRequest, origReq model.ResponsesCreateRequest, resolved *modelrouter.ResolvedModel, eng interface {
+	ChatCompletion(context.Context, model.ChatCompletionRequest) (<-chan model.ChatCompletionChunk, error)
+}, auth middleware.AuthInfo) {
+	ch, err := eng.ChatCompletion(c.Request.Context(), chatReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": err.Error(), "type": "server_error"},
@@ -136,11 +160,13 @@ func (h *ResponsesHandler) handleStream(c *gin.Context, chatReq model.ChatComple
 	}
 
 	outputTokens := len(strings.Fields(fullContent.String()))
-	go h.storeAndRecord(auth, origReq, chatReq.Messages, responseID, fullContent.String(), inputTokens, outputTokens)
+	go h.storeAndRecord(auth, origReq, chatReq.Messages, responseID, fullContent.String(), resolved, inputTokens, outputTokens)
 }
 
-func (h *ResponsesHandler) handleNonStream(c *gin.Context, chatReq model.ChatCompletionRequest, origReq model.ResponsesCreateRequest, auth middleware.AuthInfo) {
-	ch, err := h.engine.ChatCompletion(c.Request.Context(), chatReq)
+func (h *ResponsesHandler) handleNonStream(c *gin.Context, chatReq model.ChatCompletionRequest, origReq model.ResponsesCreateRequest, resolved *modelrouter.ResolvedModel, eng interface {
+	ChatCompletion(context.Context, model.ChatCompletionRequest) (<-chan model.ChatCompletionChunk, error)
+}, auth middleware.AuthInfo) {
+	ch, err := eng.ChatCompletion(c.Request.Context(), chatReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": err.Error(), "type": "server_error"},
@@ -182,11 +208,11 @@ func (h *ResponsesHandler) handleNonStream(c *gin.Context, chatReq model.ChatCom
 		},
 	}
 
-	go h.storeAndRecord(auth, origReq, chatReq.Messages, responseID, fullContent.String(), inputTokens, outputTokens)
+	go h.storeAndRecord(auth, origReq, chatReq.Messages, responseID, fullContent.String(), resolved, inputTokens, outputTokens)
 	c.JSON(http.StatusOK, resp)
 }
 
-func (h *ResponsesHandler) storeAndRecord(auth middleware.AuthInfo, req model.ResponsesCreateRequest, messages []model.ChatMessage, respID, text string, inTok, outTok int) {
+func (h *ResponsesHandler) storeAndRecord(auth middleware.AuthInfo, req model.ResponsesCreateRequest, messages []model.ChatMessage, respID, text string, resolved *modelrouter.ResolvedModel, inTok, outTok int) {
 	ctx := context.Background()
 	shouldStore := req.Store == nil || *req.Store
 
@@ -201,24 +227,21 @@ func (h *ResponsesHandler) storeAndRecord(auth middleware.AuthInfo, req model.Re
 		_, _ = h.store.DB.Exec(ctx,
 			`INSERT INTO responses (id, user_id, model, input, output, output_text, input_tokens, output_tokens)
 			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-			respID, auth.UserID, req.Model, inputJSON, outputJSON, text, inTok, outTok)
+			respID, auth.UserID, resolved.ID, inputJSON, outputJSON, text, inTok, outTok)
 
 		h.store.Redis.Set(ctx, "resp:"+respID, string(outputJSON), 30*time.Minute)
 	}
 
-	var inputPrice, outputPrice float64
-	_ = h.store.DB.QueryRow(ctx, `SELECT input_price, output_price FROM models WHERE id = $1`, req.Model).
-		Scan(&inputPrice, &outputPrice)
-
-	cost := float64(inTok)/1_000_000*inputPrice + float64(outTok)/1_000_000*outputPrice
+	cost := float64(inTok)/1_000_000*resolved.InputPrice + float64(outTok)/1_000_000*resolved.OutputPrice
 	_, _ = h.store.DB.Exec(ctx,
 		`INSERT INTO usage_records (id, user_id, api_key_id, model, input_tokens, output_tokens, cost)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-		uuid.New().String(), auth.UserID, auth.APIKeyID, req.Model, inTok, outTok, cost)
+		uuid.New().String(), auth.UserID, auth.APIKeyID, resolved.ID, inTok, outTok, cost)
 	_, _ = h.store.DB.Exec(ctx,
 		`UPDATE billing_accounts SET balance = balance - $1 WHERE user_id = $2`, cost, auth.UserID)
 }
 
+// Get retrieves a stored response by ID.
 func (h *ResponsesHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 	auth := middleware.GetAuthInfo(c)

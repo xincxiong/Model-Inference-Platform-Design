@@ -2,25 +2,27 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/xincxiong/model-inference-platform/backend/internal/engine"
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
 	"github.com/xincxiong/model-inference-platform/backend/internal/model"
+	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
 )
 
 type CompletionsHandler struct {
 	store  *store.Store
-	engine engine.Engine
+	router *modelrouter.ModelRouter
 }
 
-func NewCompletionsHandler(s *store.Store, eng engine.Engine) *CompletionsHandler {
-	return &CompletionsHandler{store: s, engine: eng}
+func NewCompletionsHandler(s *store.Store, mr *modelrouter.ModelRouter) *CompletionsHandler {
+	return &CompletionsHandler{store: s, router: mr}
 }
+
+var completionsAllowedTypes = []string{"text-to-text"}
 
 func (h *CompletionsHandler) Create(c *gin.Context) {
 	var req model.CompletionRequest
@@ -31,7 +33,25 @@ func (h *CompletionsHandler) Create(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.engine.Completion(c.Request.Context(), req)
+	resolved, err := h.router.Resolve(req.Model)
+	if err != nil {
+		status := http.StatusNotFound
+		if errors.Is(err, modelrouter.ErrModelNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": gin.H{"message": err.Error(), "type": "not_found_error"}})
+		return
+	}
+
+	if err := h.router.ValidateType(resolved, completionsAllowedTypes); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": gin.H{"message": err.Error(), "type": "invalid_request_error"},
+		})
+		return
+	}
+
+	eng := h.router.GetEngine(resolved)
+	resp, err := eng.Completion(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": err.Error(), "type": "server_error"},
@@ -40,27 +60,18 @@ func (h *CompletionsHandler) Create(c *gin.Context) {
 	}
 
 	auth := middleware.GetAuthInfo(c)
-	go h.recordUsage(auth, req.Model, resp.Usage.PromptTokens, resp.Usage.CompletionTokens)
+	go h.recordUsage(auth, resolved, resp.Usage.PromptTokens, resp.Usage.CompletionTokens)
 
 	c.JSON(http.StatusOK, resp)
 }
 
-func (h *CompletionsHandler) recordUsage(auth middleware.AuthInfo, modelName string, inputTokens, outputTokens int) {
+func (h *CompletionsHandler) recordUsage(auth middleware.AuthInfo, resolved *modelrouter.ResolvedModel, inputTokens, outputTokens int) {
 	ctx := context.Background()
-	var inputPrice, outputPrice float64
-	_ = h.store.DB.QueryRow(ctx,
-		`SELECT input_price, output_price FROM models WHERE id = $1`, modelName).
-		Scan(&inputPrice, &outputPrice)
-
-	cost := float64(inputTokens)/1_000_000*inputPrice + float64(outputTokens)/1_000_000*outputPrice
+	cost := float64(inputTokens)/1_000_000*resolved.InputPrice + float64(outputTokens)/1_000_000*resolved.OutputPrice
 	_, _ = h.store.DB.Exec(ctx,
 		`INSERT INTO usage_records (id, user_id, api_key_id, model, input_tokens, output_tokens, cost)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-		uuid.New().String(), auth.UserID, auth.APIKeyID, modelName, inputTokens, outputTokens, cost)
+		uuid.New().String(), auth.UserID, auth.APIKeyID, resolved.ID, inputTokens, outputTokens, cost)
 	_, _ = h.store.DB.Exec(ctx,
 		`UPDATE billing_accounts SET balance = balance - $1 WHERE user_id = $2`, cost, auth.UserID)
-}
-
-func estimatePromptTokens(text string) int {
-	return len(strings.Fields(text)) + 4
 }

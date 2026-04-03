@@ -5,14 +5,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/xincxiong/model-inference-platform/backend/internal/config"
-	"github.com/xincxiong/model-inference-platform/backend/internal/engine"
 	"github.com/xincxiong/model-inference-platform/backend/internal/handler"
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
+	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
 	"go.uber.org/zap"
 )
 
-func Setup(cfg *config.Config, s *store.Store, eng engine.Engine, logger *zap.Logger) *gin.Engine {
+func Setup(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, logger *zap.Logger) *gin.Engine {
 	gin.SetMode(cfg.GinMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
@@ -26,12 +26,12 @@ func Setup(cfg *config.Config, s *store.Store, eng engine.Engine, logger *zap.Lo
 	r.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	chatH := handler.NewChatCompletionsHandler(s, eng)
-	complH := handler.NewCompletionsHandler(s, eng)
-	respH := handler.NewResponsesHandler(s, eng)
-	embedH := handler.NewEmbeddingsHandler(s, eng)
-	rerankH := handler.NewRerankHandler(s, eng)
-	imagesH := handler.NewImagesHandler(s, eng)
+	chatH := handler.NewChatCompletionsHandler(s, mr)
+	complH := handler.NewCompletionsHandler(s, mr)
+	respH := handler.NewResponsesHandler(s, mr)
+	embedH := handler.NewEmbeddingsHandler(s, mr)
+	rerankH := handler.NewRerankHandler(s, mr)
+	imagesH := handler.NewImagesHandler(s, mr)
 	modelsH := handler.NewModelsHandler(s)
 	keysH := handler.NewAPIKeysHandler(s)
 	billingH := handler.NewBillingHandler(s)

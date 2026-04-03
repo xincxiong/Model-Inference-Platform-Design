@@ -6,5 +6,5 @@ alwaysApply: true
 # Git Push 必须用户确认
 
 - 执行 `git commit` 后，**不得**自动执行 `git push`
-- 必须先向用户展示提交摘要，**等待用户明确确认**后才能推送
+- 推送前须向用户展示待推送内容：`git log origin/main..HEAD --oneline`、完整说明与 `git show --stat`（或等价摘要），**等待用户明确确认**后再推送
 - 同样适用于 `git push --force`、`git push --force-with-lease` 等所有推送操作

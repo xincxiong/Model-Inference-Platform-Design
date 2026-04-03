@@ -12,6 +12,7 @@ import (
 
 	"github.com/xincxiong/model-inference-platform/backend/internal/config"
 	"github.com/xincxiong/model-inference-platform/backend/internal/engine"
+	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
 	"github.com/xincxiong/model-inference-platform/backend/internal/router"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
 	"go.uber.org/zap"
@@ -46,11 +47,13 @@ func main() {
 	defer rdb.Close()
 
 	s := &store.Store{DB: db, Redis: rdb}
-	eng := engine.NewMockEngine()
 
 	store.SeedModels(context.Background(), db)
 
-	r := router.Setup(cfg, s, eng, logger)
+	eng := engine.NewMockEngine()
+	mr := modelrouter.New(db, eng, logger)
+
+	r := router.Setup(cfg, s, mr, logger)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.ServerPort),
