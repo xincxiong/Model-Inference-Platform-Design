@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型推理云平台 — 产品架构方案</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --accent-blue: #2563eb;
+  --accent-cyan: #0891b2;
+  --accent-purple: #7c3aed;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-rose: #e11d48;
+  --accent-orange: #ea580c;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --border-accent: #cbd5e1;
+  --gradient-blue: linear-gradient(135deg, #2563eb, #0891b2);
+  --gradient-purple: linear-gradient(135deg, #7c3aed, #db2777);
+  --gradient-emerald: linear-gradient(135deg, #059669, #0891b2);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+.hero {
+  position: relative;
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 40px;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(37,99,235,0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(124,58,237,0.06), transparent),
+    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(8,145,178,0.05), transparent);
+}
+
+.hero-content { position: relative; z-index: 1; max-width: 900px; }
+
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #0f172a 0%, #2563eb 50%, #0891b2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 16px;
+}
+
+.hero .subtitle {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  font-weight: 300;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.hero .meta {
+  margin-top: 24px;
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hero .meta span {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: rgba(255,255,255,0.7);
+}
+
+nav.toc {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(248,250,252,0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  overflow-x: auto;
+}
+
+nav.toc ul {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 0;
+}
+
+nav.toc a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.82rem;
+  padding: 8px 14px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+nav.toc a:hover, nav.toc a.active {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+section {
+  padding: 80px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+section:last-child { border-bottom: none; }
+
+.section-header {
+  margin-bottom: 48px;
+}
+
+.section-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.tag-blue { background: rgba(37,99,235,0.1); color: var(--accent-blue); }
+.tag-purple { background: rgba(124,58,237,0.1); color: var(--accent-purple); }
+.tag-cyan { background: rgba(8,145,178,0.1); color: var(--accent-cyan); }
+.tag-emerald { background: rgba(5,150,105,0.1); color: var(--accent-emerald); }
+.tag-amber { background: rgba(217,119,6,0.1); color: var(--accent-amber); }
+.tag-rose { background: rgba(225,29,72,0.1); color: var(--accent-rose); }
+
+.section-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.section-header p {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  max-width: 700px;
+}
+
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card.highlight-card {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(59, 130, 246, 0.06) 100%);
+}
+
+.card:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+}
+
+.card .card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+}
+
+.card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.card p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.card ul {
+  list-style: none;
+  margin-top: 12px;
+}
+
+.card ul li {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  padding-left: 18px;
+  position: relative;
+}
+
+.card ul li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: var(--accent-blue);
+  font-weight: 700;
+}
+
+.arch-diagram {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  margin-top: 32px;
+  overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.arch-layer {
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.arch-layer-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+.arch-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.arch-box {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid;
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.arch-box:hover { transform: scale(1.03); }
+
+.arch-blue { background: rgba(37,99,235,0.06); border-color: rgba(37,99,235,0.25); color: var(--accent-blue); }
+.arch-cyan { background: rgba(8,145,178,0.06); border-color: rgba(8,145,178,0.25); color: var(--accent-cyan); }
+.arch-purple { background: rgba(124,58,237,0.06); border-color: rgba(124,58,237,0.25); color: var(--accent-purple); }
+.arch-emerald { background: rgba(5,150,105,0.06); border-color: rgba(5,150,105,0.25); color: var(--accent-emerald); }
+.arch-amber { background: rgba(217,119,6,0.06); border-color: rgba(217,119,6,0.25); color: var(--accent-amber); }
+.arch-rose { background: rgba(225,29,72,0.06); border-color: rgba(225,29,72,0.25); color: var(--accent-rose); }
+.arch-orange { background: rgba(234,88,12,0.06); border-color: rgba(234,88,12,0.25); color: var(--accent-orange); }
+
+.arch-connector {
+  text-align: center;
+  padding: 4px 0;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  letter-spacing: 4px;
+}
+
+.tech-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 24px;
+}
+
+.tech-table thead th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-accent);
+  font-weight: 600;
+}
+
+.tech-table tbody td {
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.tech-table tbody tr:hover { background: rgba(37,99,235,0.04); }
+
+.tech-table .tech-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tech-table .tech-desc {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.tech-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(37,99,235,0.08);
+  color: var(--accent-blue);
+  margin-right: 4px;
+  margin-bottom: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.phase-timeline {
+  position: relative;
+  padding-left: 32px;
+  margin-top: 32px;
+}
+
+.phase-timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple), var(--accent-emerald));
+}
+
+.phase-item {
+  position: relative;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.phase-item::before {
+  content: '';
+  position: absolute;
+  left: -27px;
+  top: 28px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-blue);
+  background: #ffffff;
+}
+
+.phase-item h4 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.phase-item .phase-badge {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.phase-item ul {
+  list-style: none;
+  margin-top: 8px;
+}
+
+.phase-item ul li {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  padding: 3px 0 3px 18px;
+  position: relative;
+}
+
+.phase-item ul li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--accent-emerald);
+  font-size: 0.8rem;
+}
+
+.highlight-box {
+  background: linear-gradient(135deg, rgba(37,99,235,0.05), rgba(124,58,237,0.05));
+  border: 1px solid rgba(37,99,235,0.15);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0;
+}
+
+.highlight-box h4 {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+  color: var(--accent-blue);
+}
+
+.highlight-box p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  background: rgba(37,99,235,0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--accent-blue);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  padding: 10px 18px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.tab-btn:hover { color: var(--text-secondary); }
+.tab-btn.active {
+  color: var(--accent-blue);
+  border-bottom-color: var(--accent-blue);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin: 32px 0;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.stat-card .stat-value {
+  font-size: 2rem;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.stat-card .stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.v-blue { color: var(--accent-blue); }
+.v-cyan { color: var(--accent-cyan); }
+.v-purple { color: var(--accent-purple); }
+.v-emerald { color: var(--accent-emerald); }
+.v-amber { color: var(--accent-amber); }
+
+@media (max-width: 768px) {
+  .arch-row { flex-direction: column; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  section { padding: 48px 0; }
+  .hero { padding: 48px 20px; min-height: 40vh; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-content">
+    <h1>Model Inference Cloud Platform</h1>
+    <p class="subtitle">
+      一站式模型推理云平台产品方案 — 涵盖功能设计、系统架构与技术选型的完整蓝图，支持从快速实验到生产级部署的全生命周期
+    </p>
+    <div class="meta">
+      <span>架构设计 v1.0</span>
+      <span>2026-04-03</span>
+      <span>产品架构方案</span>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="toc" id="toc">
+  <ul>
+    <li><a href="#overview">平台概览</a></li>
+    <li><a href="#features">功能设计</a></li>
+    <li><a href="#architecture">系统架构</a></li>
+    <li><a href="#tech-stack">技术选型</a></li>
+    <li><a href="#data-flow">数据流设计</a></li>
+    <li><a href="#security">安全与合规</a></li>
+    <li><a href="#roadmap">实施路线</a></li>
+  </ul>
+</nav>
+
+<main class="container">
+
+<!-- ============================== 1. 平台概览 ============================== -->
+<section id="overview">
+  <div class="section-header">
+    <span class="section-tag tag-blue">PLATFORM OVERVIEW</span>
+    <h2>平台概览</h2>
+    <p>构建一个面向企业和开发者的一站式模型推理云平台，提供从模型探索、推理部署、微调训练到生产运维的全链路能力</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value v-blue">13</div>
+      <div class="stat-label">核心功能模块</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value v-cyan">7</div>
+      <div class="stat-label">模型类型支持</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value v-purple">2</div>
+      <div class="stat-label">部署模式</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value v-emerald">99.9%</div>
+      <div class="stat-label">SLA 可用性目标</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value v-amber">&lt;200ms</div>
+      <div class="stat-label">TTFT 延迟目标</div>
+    </div>
+  </div>
+
+  <div class="highlight-box">
+    <h4>产品定位</h4>
+    <p>打造兼具 <strong>Serverless 共享推理</strong>（按 Token 计费）和 <strong>专属端点</strong>（独占 GPU 资源）两种模式的推理服务平台。同时支持 <strong>Responses API</strong> 和 <strong>Chat Completions API</strong> 双格式，最大化降低迁移成本。</p>
+  </div>
+
+  <div class="grid-2" style="margin-top: 24px;">
+    <div class="card">
+      <div class="card-icon" style="background: rgba(37,99,235,0.1); color: var(--accent-blue);">🔮</div>
+      <h3>Serverless 共享推理</h3>
+      <p>零运维开箱即用，按 Token 量弹性计费，适用于开发测试和中小规模生产负载</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background: rgba(124,58,237,0.1); color: var(--accent-purple);">🏗️</div>
+      <h3>专属端点 (Dedicated)</h3>
+      <p>独立 GPU 实例、可配置副本数与自动伸缩，适用于对延迟/吞吐有严格要求的生产场景</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background: rgba(5,150,105,0.1); color: var(--accent-emerald);">🇨🇳</div>
+      <h3>国产化算力适配</h3>
+      <p>支持华为昇腾 910B/950、海光 K100、寒武纪 590 等国产 GPU，满足信创与国产化合规要求，异构混合调度透明切换</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 2. 功能设计 ============================== -->
+<section id="features">
+  <div class="section-header">
+    <span class="section-tag tag-purple">FEATURE DESIGN</span>
+    <h2>功能设计</h2>
+    <p>划分为 13 大功能模块，覆盖推理服务、模型管理、数据闭环、运维监控、开发者工具、安全合规全链路</p>
+  </div>
+
+  <!-- 功能模块全局总览 -->
+  <div class="feature-overview" style="margin-bottom: 40px; overflow-x: auto;">
+    <table class="overview-table" style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.82rem; border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+      <thead>
+        <tr style="background: linear-gradient(135deg, rgba(79,70,229,0.08), rgba(59,130,246,0.08));">
+          <th style="padding: 14px 16px; text-align: left; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border); width: 15%;">功能模块</th>
+          <th style="padding: 14px 16px; text-align: left; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border); width: 13%;">一级功能</th>
+          <th style="padding: 14px 16px; text-align: left; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border);">功能简介</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background: var(--bg-card);">
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">推理引擎</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">模型推理服务</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">七大模型类型 · Responses API + Chat Completions 双格式 · FlashAttention-4 / KV Cache 压缩 / 投机解码 / PD 分离</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">Playground</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">交互式试玩</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">参数调节 · 模型对比 · Function Calling / 结构化输出测试 · Prompt Preset · 代码导出</td>
+        </tr>
+        <tr style="background: var(--bg-card);">
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">专属端点</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Dedicated Endpoints</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">独占 GPU 实例 · Template 模板管理 · 弹性伸缩 / 缩至零 · 多 GPU 类型 (含国产 GPU)</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">模型微调</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Fine-tuning</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">LoRA / 全参数微调 · 任务全生命周期管理 · 数据集验证 · LoRA 挂载与合并</td>
+        </tr>
+        <tr style="background: var(--bg-card);">
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">数据实验室</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Data Lab</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">推理日志 + 数据集统一工作空间 · Datasets API · SQL 查询 · PII 脱敏与合规</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">批量推理</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Batch API</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">异步批量推理 · 折扣定价 · 不占实时配额 · 任务拆分与优先级调度</td>
+        </tr>
+        <tr style="background: var(--bg-card);">
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">可观测性</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Observability</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">TTFT / TPS / 吞吐 / 错误率 / GPU 利用率多维指标 · Prometheus 导出 · Grafana 仪表盘 · Webhook 告警</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">团队管理</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">权限控制</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">组织 → 项目两级层级 · RBAC 角色权限 · SSO (SAML/OIDC) · MFA · API Key 粒度管控</td>
+        </tr>
+        <tr style="background: var(--bg-card);">
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">计费系统</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Billing</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Token 计量 + GPU·小时双模式 · Promo Code / 试用额度 · 实时余额 · 自动充值 · 成本预警</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">第三方集成</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">生态集成</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">LangChain / LlamaIndex / CrewAI · Cursor / Continue / Cline · LiteLLM · 国产生态 (魔搭/钉钉/飞书)</td>
+        </tr>
+        <tr style="background: var(--bg-card);">
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">迁移指南</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Switch Guide</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">零成本迁移方案 (改 base_url + api_key) · API 兼容性矩阵 · 代码示例 · 逐步迁移文档</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">Cookbook</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">开发者示例库</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">GitHub 开源示例仓库 · API 调用 / Agent / RAG / 微调蒸馏 / 多模态完整示例</td>
+        </tr>
+        <tr style="background: var(--bg-card);">
+          <td style="padding: 12px 16px; font-weight: 500; color: var(--accent);">CLI 工具</td>
+          <td style="padding: 12px 16px; color: var(--text-secondary);">命令行客户端</td>
+          <td style="padding: 12px 16px; color: var(--text-secondary);">Go 单二进制跨平台 · 推理/微调/批量/端点/数据集全流程 · REPL 对话 + CI/CD 脚本化双模式</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(event, 'feat-inference')">推理引擎</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-playground')">Playground</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-endpoint')">专属端点</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-finetune')">模型微调</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-datalab')">数据实验室</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-observe')">可观测性</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-team')">团队管理</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-billing')">计费系统</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-integration')">集成生态</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-cli')">CLI 工具</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-switch')">迁移指南</button>
+  </div>
+
+  <!-- 推理引擎 -->
+  <div class="tab-content active" id="feat-inference">
+    <div class="grid-2">
+      <div class="card">
+        <h3>模型类型支持</h3>
+        <ul>
+          <li><strong>Text-to-Text</strong> — 对话补全、代码生成、翻译、摘要</li>
+          <li><strong>Vision (多模态)</strong> — 图文理解、文档解析</li>
+          <li><strong>Embedding / Rerank</strong> — 向量化、文档重排序</li>
+          <li><strong>Text-to-Image</strong> — Flux / SDXL / Kolors / CogView</li>
+          <li><strong>Text-to-Video</strong> — CogVideoX / Seedance</li>
+          <li><strong>Speech</strong> — 语音合成与识别</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>双 API 格式支持</h3>
+        <p>同时兼容 OpenAI <strong>Responses API</strong> 和 <strong>Chat Completions API</strong>:</p>
+        <ul>
+          <li><code>/v1/responses</code> — <strong>Responses API</strong> (推荐新项目)</li>
+          <li><code>/v1/chat/completions</code> — Chat Completions (持续支持)</li>
+          <li><code>/v1/completions</code> — 文本补全 (FIM)</li>
+          <li><code>/v1/embeddings</code> / <code>/v1/rerank</code></li>
+          <li><code>/v1/images/generations</code> — 图像生成</li>
+          <li><code>/v1/batches</code> / <code>/v1/files</code> / <code>/v1/datasets</code></li>
+        </ul>
+      </div>
+      <div class="card highlight-card">
+        <h3>Responses API 核心特性</h3>
+        <ul>
+          <li><strong>Items 数据模型</strong> — message / function_call / function_call_output 类型化联合体</li>
+          <li><strong>服务端状态管理</strong> — <code>store: true</code> + <code>previous_response_id</code> 链式多轮对话</li>
+          <li><strong>顶层 instructions</strong> — 系统指令与用户输入解耦，语义更清晰</li>
+          <li><strong>内置工具</strong> — web_search / code_interpreter / file_search / image_generation / mcp</li>
+          <li><strong>缓存利用率提升 40-80%</strong> — 相比 Chat Completions 显著降低成本</li>
+          <li><strong>Agentic Loop</strong> — 单次请求内自动调用多工具，原生 Agent 能力</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>注意力与缓存优化</h3>
+        <ul>
+          <li><strong>FlashAttention-4</strong> — Blackwell 原生优化，较 cuDNN 提速 1.3x</li>
+          <li><strong>PagedAttention</strong> — 分页管理显存，提升吞吐</li>
+          <li><strong>KV Cache 压缩</strong> — TurboQuant 3-bit 存储，6x 内存压缩</li>
+          <li><strong>KV Cache CPU 卸载</strong> — 智能 Offloading + FlexKV 后端</li>
+          <li><strong>自动前缀缓存</strong> — System Prompt KV 跨请求零配置复用</li>
+          <li><strong>语义缓存</strong> — 向量嵌入匹配语义相似查询</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>量化与投机解码</h3>
+        <ul>
+          <li><strong>NVFP4</strong> — Blackwell 原生 4-bit，显存降低 3.5x</li>
+          <li><strong>FP8</strong> — Hopper/Blackwell 原生，精度损失 &lt;1%</li>
+          <li><strong>EAGLE-3 / FastEagle</strong> — 特征层非自回归投机</li>
+          <li><strong>N-gram 树投机</strong> — 零参数训练，代码生成吞吐 2x</li>
+          <li><strong>连续批处理</strong> — 动态合批最大化 GPU 利用率</li>
+          <li><strong>Performance Mode</strong> — balanced / interactivity / throughput</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>分布式推理架构</h3>
+        <ul>
+          <li><strong>PD 分离</strong> — Prefill/Decode 部署不同节点，独立伸缩</li>
+          <li><strong>NVIDIA Dynamo</strong> — 数据中心级编排，KV-aware 路由</li>
+          <li><strong>NIXL</strong> — GPU 间直接 KV Cache 传输</li>
+          <li><strong>MoE 专家并行</strong> — 弹性 EP + DeepEP 稀疏通信</li>
+          <li><strong>AF 分离</strong> — Attention/FFN 异构部署（前沿方向）</li>
+          <li>DeepSeek-R1 场景可实现 <strong>30x 吞吐提升</strong></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>模型 Flavor 机制</h3>
+        <p>同一模型提供不同推理配置 (flavor) 以平衡成本与性能:</p>
+        <ul>
+          <li><strong>Base</strong> — 标准配置，大 batch，高吞吐，成本最优</li>
+          <li><strong>Fast</strong> — 小 batch + 投机解码，低延迟优先</li>
+          <li>在模型名后追加 <code>-fast</code> 即可切换 flavor</li>
+          <li>两种 flavor 模型输出完全一致</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top: 20px;">
+      <h4>国产开源模型重点支持</h4>
+      <p>
+        <strong>DeepSeek-V4/R1</strong>（深度求索 · 极致性价比）&nbsp;|&nbsp;
+        <strong>Qwen3.5/4</strong>（阿里 · Dense+MoE 双架构）&nbsp;|&nbsp;
+        <strong>GLM-5</strong>（智谱 · 深度适配 7 种国产芯片）&nbsp;|&nbsp;
+        <strong>Kimi-K2.5</strong>（月之暗面 · 1T 参数 256K 上下文）&nbsp;|&nbsp;
+        <strong>InternVL3</strong>（书生 · 多模态）&nbsp;|&nbsp;
+        <strong>豆包 2.0</strong>（字节 · Pro/Lite/Mini 全系列）&nbsp;|&nbsp;
+        <strong>Baichuan4</strong>（百川 · 中文搜索增强）
+      </p>
+    </div>
+
+    <div class="highlight-box" style="margin-top: 12px;">
+      <h4>批量推理 (Batch API)</h4>
+      <p>针对非实时场景（离线评测、数据标注、大规模生成），提供异步批量推理能力。利用空闲算力执行，享受 <strong>50% 价格折扣</strong>和更高的速率限制。支持 JSONL 文件上传、任务状态查询、结果文件下载。</p>
+    </div>
+  </div>
+
+  <!-- Playground -->
+  <div class="tab-content" id="feat-playground">
+    <div class="grid-2">
+      <div class="card">
+        <h3>交互式模型试玩</h3>
+        <ul>
+          <li>Web UI 直接与模型对话，零代码门槛</li>
+          <li>System Prompt 编辑与 few-shot 示例设置</li>
+          <li>实时调节生成参数 (temperature, top_p, max_tokens 等)</li>
+          <li>支持图片上传进行多模态对话</li>
+          <li>对话历史自动保存与导出</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>模型对比 (Compare)</h3>
+        <ul>
+          <li>双模型并排对话，同时发送 Prompt</li>
+          <li>参数同步 / 独立配置切换</li>
+          <li>延迟与 Token 消耗实时对比</li>
+          <li>帮助快速选择最适合业务的模型</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>代码导出 (View Code)</h3>
+        <ul>
+          <li>一键导出 Python / JavaScript / cURL 代码片段</li>
+          <li>包含完整的模型配置与对话上下文</li>
+          <li>快速从实验过渡到应用集成</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Prompt Preset 管理</h3>
+        <ul>
+          <li>保存 System Prompt + 参数 + Few-shot 示例为预设</li>
+          <li>团队内共享链接复用 Prompt 模板</li>
+          <li>一键导出预设为代码片段</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Function Calling 测试</h3>
+        <ul>
+          <li>在参数面板中定义工具函数 JSON Schema</li>
+          <li>测试模型的函数选择与参数生成能力</li>
+          <li>验证 tool_choice 策略（auto / 指定函数）</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>结构化输出测试</h3>
+        <ul>
+          <li>切换 Response Format（JSON Object / JSON Schema）</li>
+          <li>提供 JSON Schema 验证结构化输出</li>
+          <li>对比不同模型的 JSON 生成准确率</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 专属端点 -->
+  <div class="tab-content" id="feat-endpoint">
+    <div class="grid-2">
+      <div class="card">
+        <h3>端点管理 (Control Plane)</h3>
+        <ul>
+          <li>基于模型模板 (Template) 创建专属部署实例</li>
+          <li>选择 GPU 类型: L40S / H100 / H200 / B200</li>
+          <li>配置 GPU 数量 / 副本数 / 区域</li>
+          <li>自动伸缩 (min_replicas → max_replicas)</li>
+          <li>实时状态监控与生命周期管理</li>
+          <li>支持热更新配置 (PATCH) 与安全删除</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>推理访问 (Data Plane)</h3>
+        <ul>
+          <li>每个端点分配唯一 <code>routing_key</code></li>
+          <li>复用 OpenAI 兼容 <code>/v1</code> 路由</li>
+          <li>区域化 Base URL 降低跨区延迟</li>
+          <li>与共享推理完全相同的 SDK 体验</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>自定义模型部署</h3>
+        <ul>
+          <li>上传自有模型权重文件 (Safetensors/GGUF)</li>
+          <li>LoRA 适配器在线部署 (无需合并权重)</li>
+          <li>微调 checkpoint 一键部署为推理端点</li>
+          <li>支持自定义推理参数与 Tokenizer</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>计费策略</h3>
+        <ul>
+          <li>按 GPU 时长计费 (副本 × GPU × 时间)</li>
+          <li>仅运行中的副本产生费用</li>
+          <li>min_replicas=0 时自动释放资源</li>
+          <li>结合 Spot 实例可进一步降低成本</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模型微调 -->
+  <div class="tab-content" id="feat-finetune">
+    <div class="grid-2">
+      <div class="card">
+        <h3>训练方式</h3>
+        <ul>
+          <li><strong>Full Fine-tuning</strong> — 全参数训练，效果最佳</li>
+          <li><strong>LoRA</strong> — 低秩适配，显存友好，性价比高</li>
+          <li><strong>长上下文微调</strong> — 支持 32K+ context 训练</li>
+          <li>即将支持: 投机解码优化训练、RLHF/DPO 强化学习</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>训练任务管理</h3>
+        <ul>
+          <li>通过 API 创建/查看/取消微调任务</li>
+          <li>训练事件日志实时推送 (loss, lr, step 等)</li>
+          <li>Checkpoint 自动保存与管理</li>
+          <li>训练完成后自动注册为可部署模型</li>
+          <li>支持 Wandb/TensorBoard 集成</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>数据集管理</h3>
+        <ul>
+          <li>支持 JSONL / CSV / Parquet 格式上传</li>
+          <li>对话式 (ChatML) / 指令式 / 通用格式</li>
+          <li>自动格式验证与预处理</li>
+          <li>大文件分片上传 (Multipart Upload)</li>
+          <li>数据集版本管理与在线预览</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>LoRA 适配器管理</h3>
+        <ul>
+          <li>训练产出的 LoRA 权重独立存储</li>
+          <li>支持在线合并脚本 (Merge Script)</li>
+          <li>Serverless LoRA 推理 (无需独占 GPU)</li>
+          <li>多 LoRA 动态切换 (同一 base model)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 数据实验室 -->
+  <div class="tab-content" id="feat-datalab">
+    <div class="grid-2">
+      <div class="card">
+        <h3>推理日志 (Inference Logs)</h3>
+        <ul>
+          <li>自动采集所有 API / Playground 推理记录</li>
+          <li>完整保存 input/output/metadata</li>
+          <li>按模型/时间/项目/API Key 多维过滤</li>
+          <li>支持 SQL 查询构建子数据集</li>
+          <li>企业版支持零数据留存模式</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>数据集工作流</h3>
+        <ul>
+          <li>从推理日志创建训练/评测数据集</li>
+          <li>手动上传数据集并管理版本</li>
+          <li>批量推理输出自动存为数据集</li>
+          <li>导出 CSV / JSONL 格式供离线使用</li>
+          <li>微调训练产出物 (checkpoint) 统一管理</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 可观测性 -->
+  <div class="tab-content" id="feat-observe">
+    <div class="grid-3">
+      <div class="card">
+        <h3>流量指标</h3>
+        <ul>
+          <li>Requests Per Minute (RPM)</li>
+          <li>Input / Output Tokens Per Minute</li>
+          <li>Tokens Per Request 分布</li>
+          <li>按模型/端点/区域分组</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>延迟指标</h3>
+        <ul>
+          <li>端到端延迟 (P50/P90/P99)</li>
+          <li>TTFT (首 Token 延迟)</li>
+          <li>TPS (每秒生成 Token 数)</li>
+          <li>排队时间与推理时间拆分</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>错误与容量</h3>
+        <ul>
+          <li>按 HTTP 状态码分组的错误率</li>
+          <li>429 限流告警与趋势</li>
+          <li>活跃副本数 (Autoscaling 状态)</li>
+          <li>GPU 利用率与显存水位</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>过滤维度</h3>
+        <ul>
+          <li>时间范围 / 模型 / 端点</li>
+          <li>项目 / API Key / 区域</li>
+          <li>错误码 / Prompt 长度</li>
+          <li>延迟区间筛选</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>外部集成</h3>
+        <ul>
+          <li>Prometheus metrics 导出</li>
+          <li>Grafana 仪表盘集成</li>
+          <li>Helicone / Keywords AI 等三方观测平台</li>
+          <li>自定义 Webhook 告警</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>访问控制</h3>
+        <ul>
+          <li>基于项目级权限的数据隔离</li>
+          <li>Org Admin 可查看全组织数据</li>
+          <li>数据随项目删除自动清理</li>
+          <li>指标数据不用于计费</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 团队管理 -->
+  <div class="tab-content" id="feat-team">
+    <div class="grid-2">
+      <div class="card">
+        <h3>组织与项目</h3>
+        <ul>
+          <li>Organization → Project 两级层级结构</li>
+          <li>每个项目独立的资源/账单/权限隔离</li>
+          <li>支持多项目协作与资源共享策略</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>角色与权限 (RBAC)</h3>
+        <ul>
+          <li><strong>Org Admin</strong> — 全局管理权限</li>
+          <li><strong>Billing Manager</strong> — 仅账单管理</li>
+          <li><strong>Project Admin</strong> — 项目级管理</li>
+          <li><strong>Project Member</strong> — 项目级使用</li>
+          <li>支持自定义角色与细粒度权限组</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>SSO 单点登录</h3>
+        <ul>
+          <li>SAML 2.0 / OIDC 协议支持</li>
+          <li>集成 Google / GitHub / Azure AD</li>
+          <li>企业 IdP (Okta, OneLogin) 对接</li>
+          <li>MFA 多因素认证</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>API Key 管理</h3>
+        <ul>
+          <li>项目级 API Key 创建与吊销</li>
+          <li>Key 权限范围配置 (推理/微调/管理)</li>
+          <li>使用量按 Key 维度统计</li>
+          <li>泄露自动检测与轮换</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 计费系统 -->
+  <div class="tab-content" id="feat-billing">
+    <div class="grid-2">
+      <div class="card">
+        <h3>计费模式</h3>
+        <ul>
+          <li><strong>共享推理</strong> — 按 Token (输入/输出分价) 计费</li>
+          <li><strong>专属端点</strong> — 按 GPU·时 计费</li>
+          <li><strong>批量推理</strong> — Token 价格 50% 折扣</li>
+          <li><strong>微调训练</strong> — 按 GPU·时 + 训练 Token 数</li>
+          <li><strong>存储</strong> — 数据集/模型文件按 GB·月计费</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>账户与支付</h3>
+        <ul>
+          <li>信用卡自动扣款 (实时余额扣减)</li>
+          <li>银行转账 / 合同预付 (企业客户)</li>
+          <li>Promo Code 促销积分</li>
+          <li>余额不足自动暂停服务</li>
+          <li>按月出具发票与用量明细</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>用量监控</h3>
+        <ul>
+          <li>按项目/模型/API Key 维度用量面板</li>
+          <li>实时消费额与预算预警</li>
+          <li>历史趋势图表与导出</li>
+          <li>费用预估器 (Cost Estimator)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>速率限制</h3>
+        <ul>
+          <li>基于 RPM / TPM 的动态限流</li>
+          <li>15 分钟滚动窗口自动扩容 (80% 触发)</li>
+          <li>最大 20x 基础配额弹性</li>
+          <li>余量处理: 空闲算力低优先级执行</li>
+          <li>HTTP 429 + Retry-After 标准响应</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 集成生态 -->
+  <div class="tab-content" id="feat-integration">
+    <div class="grid-2">
+      <div class="card">
+        <h3>API 路由与代理</h3>
+        <ul>
+          <li><strong>OpenRouter</strong> — 统一 API 路由接入</li>
+          <li><strong>LiteLLM</strong> — 多模型代理层</li>
+          <li><strong>Portkey</strong> — AI Gateway 与可观测性</li>
+          <li><strong>AIsuite</strong> — 统一多模型 API 抽象</li>
+          <li><strong>Hugging Face</strong> — 模型推理 Client 兼容</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Agent & 应用框架</h3>
+        <ul>
+          <li><strong>LangChain</strong> — LLM 应用开发框架</li>
+          <li><strong>LlamaIndex</strong> — RAG 与数据框架</li>
+          <li><strong>CrewAI</strong> — 多 Agent 协作</li>
+          <li><strong>Google ADK</strong> — Agent 开发套件</li>
+          <li><strong>Pydantic AI / Agno / Strands / Camel AI</strong></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Coding Assistants</h3>
+        <ul>
+          <li><strong>Cursor</strong> — AI 代码编辑器</li>
+          <li><strong>Continue</strong> — VS Code AI 助手</li>
+          <li><strong>Cline</strong> — CLI AI 助手</li>
+          <li><strong>Kilo Code / VS Code / Zed</strong></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Cookbook 开发者示例库</h3>
+        <ul>
+          <li>官方 GitHub 开源示例代码仓库</li>
+          <li>API 调用各语言完整示例</li>
+          <li>Agent 框架集成示例</li>
+          <li>RAG 管道端到端 Pipeline</li>
+          <li>微调与蒸馏实践案例</li>
+          <li>多模态应用场景 Demo</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>国产生态集成</h3>
+        <ul>
+          <li><strong>魔搭 ModelScope</strong> — 国产模型社区与托管</li>
+          <li><strong>玄武 XuanWu</strong> — 国产算力推理框架</li>
+          <li><strong>LMDeploy</strong> — 多国产 GPU 部署工具</li>
+          <li><strong>钉钉/飞书/企微</strong> — 国产 IM 告警与 Bot</li>
+          <li><strong>可观测性</strong> — Helicone / Keywords AI</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLI 工具 -->
+  <div class="tab-content" id="feat-cli">
+    <div class="grid-2">
+      <div class="card highlight-card">
+        <h3>CLI 命令行客户端</h3>
+        <p>官方 Go 单二进制 CLI，终端环境下的全平台操作能力</p>
+        <ul>
+          <li><code>inference chat -m &lt;model&gt;</code> — 交互式对话 (REPL / 流式输出)</li>
+          <li><code>inference responses create</code> — Responses API 调用</li>
+          <li><code>inference models list</code> — 模型列表与详情查询</li>
+          <li><code>inference batches create/status/download</code> — 批量推理全流程</li>
+          <li><code>inference endpoints create/scale/logs</code> — 专属端点管理</li>
+          <li><code>inference finetune create/status</code> — 微调任务管理</li>
+          <li><code>inference datasets upload/query/export</code> — 数据集操作</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>设计原则</h3>
+        <ul>
+          <li><strong>OpenAI CLI 兼容</strong> — 命令结构参考 OpenAI CLI 规范，迁移零成本</li>
+          <li><strong>双模式</strong> — 交互式 TUI (彩色/进度条) + 脚本化 (--json/--quiet)</li>
+          <li><strong>UNIX 管道</strong> — stdin/stdout 管道组合，输出可被 jq/grep 处理</li>
+          <li><strong>多格式输出</strong> — table / json / yaml / csv 四种格式切换</li>
+          <li><strong>自动重试</strong> — 内置指数退避 (429/5xx)，--max-retries 可配</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>安装分发</h3>
+        <ul>
+          <li><strong>Homebrew</strong> — <code>brew install inference-cli</code></li>
+          <li><strong>npm</strong> — <code>npm install -g @inference/cli</code></li>
+          <li><strong>pip</strong> — <code>pip install inference-cli</code></li>
+          <li><strong>Docker</strong> — <code>docker run inference/cli</code></li>
+          <li><strong>二进制</strong> — GitHub Releases (Linux/macOS/Windows, amd64/arm64)</li>
+          <li><strong>Shell 一键</strong> — <code>curl -fsSL .../install.sh | sh</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>高级特性</h3>
+        <ul>
+          <li><strong>交互式 REPL</strong> — Tab 补全模型名、/system 设置指令、/export 导出对话</li>
+          <li><strong>并行批量调用</strong> — <code>--concurrency 10</code> 多并发推理</li>
+          <li><strong>CI/CD 集成</strong> — 环境变量认证，GitHub Actions 无缝集成</li>
+          <li><strong>多 Profile</strong> — dev/staging/prod 多环境配置切换</li>
+          <li><strong>Shell 补全</strong> — Bash/Zsh/Fish/PowerShell 自动补全</li>
+          <li><strong>自动更新</strong> — <code>inference update</code> 自检并更新</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 迁移指南 -->
+  <div class="tab-content" id="feat-switch">
+    <div class="grid-2">
+      <div class="card">
+        <h3>零成本迁移</h3>
+        <ul>
+          <li>完全兼容 OpenAI SDK (Python / JS / cURL)</li>
+          <li>仅需修改 <code>base_url</code> 和 <code>api_key</code></li>
+          <li>指定平台模型名即可使用</li>
+          <li>无其他代码改动，即刻切换</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>API 兼容性</h3>
+        <ul>
+          <li><strong>Responses API</strong> — 完全兼容 Items / previous_response_id / 内置工具</li>
+          <li><strong>Chat Completions</strong> — 完全兼容（含 SSE 流式）</li>
+          <li><strong>Function Calling</strong> — 两种 API 均支持 tools / tool_choice</li>
+          <li><strong>Structured Output</strong> — 完全兼容 response_format</li>
+          <li><strong>Embeddings / Rerank</strong> — 完全兼容</li>
+          <li><strong>Fine-tuning / Batches / Files</strong> — 完全兼容</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Service Tier 优先级</h3>
+        <ul>
+          <li><strong>auto</strong> — 自动选择最佳可用层级</li>
+          <li><strong>default</strong> — 标准优先级，超限返回 429</li>
+          <li><strong>flex</strong> — 低优先级处理，不消耗速率配额</li>
+          <li>Flex Tier 可显著降低非实时场景成本</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Datasets API</h3>
+        <ul>
+          <li>数据集 CRUD（创建/读取/更新/删除）</li>
+          <li>大文件分片上传 (Multipart Upload)</li>
+          <li>SQL 查询模板过滤数据</li>
+          <li>导出 CSV / JSONL 格式</li>
+          <li>数据集版本化管理</li>
+          <li>Chat Completions 日志自动导入</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 3. 系统架构 ============================== -->
+<section id="architecture">
+  <div class="section-header">
+    <span class="section-tag tag-cyan">SYSTEM ARCHITECTURE</span>
+    <h2>系统架构</h2>
+    <p>采用云原生微服务架构，基于 Kubernetes 的 GPU 集群编排，分为接入层、控制面、数据面、存储层四大板块</p>
+  </div>
+
+  <div class="arch-diagram">
+    <div class="arch-layer">
+      <div class="arch-layer-label" style="color: var(--accent-blue);">接入层 (Access Layer)</div>
+      <div class="arch-row">
+        <div class="arch-box arch-blue">Web Console (React)</div>
+        <div class="arch-box arch-blue">Responses + Completions API</div>
+        <div class="arch-box arch-blue">SDK (Python / JS / Go)</div>
+        <div class="arch-box arch-blue">CLI 工具</div>
+      </div>
+    </div>
+    <div class="arch-connector">▼ ▼ ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label" style="color: var(--accent-cyan);">网关与路由层 (Gateway & Routing)</div>
+      <div class="arch-row">
+        <div class="arch-box arch-cyan">API Gateway (Kong/Envoy)</div>
+        <div class="arch-box arch-cyan">认证鉴权 (JWT/API Key)</div>
+        <div class="arch-box arch-cyan">速率限制引擎</div>
+        <div class="arch-box arch-cyan">智能路由 (Model Router)</div>
+      </div>
+    </div>
+    <div class="arch-connector">▼ ▼ ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label" style="color: var(--accent-purple);">控制面 (Control Plane)</div>
+      <div class="arch-row">
+        <div class="arch-box arch-purple">用户/团队服务</div>
+        <div class="arch-box arch-purple">计费服务</div>
+        <div class="arch-box arch-purple">端点管理服务</div>
+        <div class="arch-box arch-purple">模型注册中心</div>
+        <div class="arch-box arch-purple">微调任务调度</div>
+      </div>
+    </div>
+    <div class="arch-connector">▼ ▼ ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label" style="color: var(--accent-emerald);">数据面 (Data Plane) — GPU 集群</div>
+      <div class="arch-row">
+        <div class="arch-box arch-emerald">推理引擎集群 (vLLM / vLLM-Ascend / LMDeploy)</div>
+        <div class="arch-box arch-emerald">专属端点实例池</div>
+        <div class="arch-box arch-emerald">批量推理工作节点</div>
+        <div class="arch-box arch-emerald">微调训练集群</div>
+      </div>
+    </div>
+    <div class="arch-connector">▼ ▼ ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label" style="color: var(--accent-amber);">调度与编排层 (Orchestration)</div>
+      <div class="arch-row">
+        <div class="arch-box arch-amber">Kubernetes + GPU Operator</div>
+        <div class="arch-box arch-amber">HPA / KEDA 自动伸缩</div>
+        <div class="arch-box arch-amber">KubeRay / Volcano 调度器</div>
+        <div class="arch-box arch-amber">模型镜像仓库 (OCI Registry)</div>
+      </div>
+    </div>
+    <div class="arch-connector">▼ ▼ ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label" style="color: var(--accent-rose);">存储与数据层 (Storage & Data)</div>
+      <div class="arch-row">
+        <div class="arch-box arch-rose">PostgreSQL (元数据)</div>
+        <div class="arch-box arch-rose">Redis (缓存/限流)</div>
+        <div class="arch-box arch-rose">S3 (模型/数据集)</div>
+        <div class="arch-box arch-rose">ClickHouse (日志/指标)</div>
+        <div class="arch-box arch-rose">Kafka (事件流)</div>
+      </div>
+    </div>
+    <div class="arch-connector">▼ ▼ ▼</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label" style="color: var(--accent-orange);">可观测性 (Observability)</div>
+      <div class="arch-row">
+        <div class="arch-box arch-orange">Prometheus + VictoriaMetrics</div>
+        <div class="arch-box arch-orange">Grafana 仪表盘</div>
+        <div class="arch-box arch-orange">OpenTelemetry Collector</div>
+        <div class="arch-box arch-orange">Loki (日志聚合)</div>
+        <div class="arch-box arch-orange">PagerDuty (告警)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 4. 技术选型 ============================== -->
+<section id="tech-stack">
+  <div class="section-header">
+    <span class="section-tag tag-emerald">TECHNOLOGY STACK</span>
+    <h2>技术选型</h2>
+    <p>每一层选择经过生产验证的开源/商业方案，兼顾性能、可维护性与社区生态</p>
+  </div>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th style="width: 15%;">层级</th>
+        <th style="width: 20%;">组件</th>
+        <th style="width: 25%;">技术选型</th>
+        <th>选型理由</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td rowspan="7"><span class="tech-name">推理引擎</span></td>
+        <td>LLM 推理</td>
+        <td><span class="tech-tag">vLLM v0.18+</span></td>
+        <td class="tech-desc">Model Runner V2 异步调度 (E2E 吞吐 +30%)；FlashAttention-4、EAGLE/N-gram GPU 投机解码、弹性专家并行、KV Cache CPU 卸载、Performance Mode</td>
+      </tr>
+      <tr>
+        <td>多模态推理</td>
+        <td><span class="tech-tag">vLLM</span> <span class="tech-tag">SGLang</span></td>
+        <td class="tech-desc">vLLM 已支持 VLM，SGLang 在多模态场景有更好的吞吐表现，可作为补充引擎</td>
+      </tr>
+      <tr>
+        <td>分布式编排</td>
+        <td><span class="tech-tag">NVIDIA Dynamo</span></td>
+        <td class="tech-desc">数据中心级分布式推理框架 (Rust 核心)，PD 分离、KV-aware 路由、NIXL GPU 间 KV 直传；兼容 vLLM/SGLang/TRT-LLM</td>
+      </tr>
+      <tr>
+        <td>注意力内核</td>
+        <td><span class="tech-tag">FlashAttention-4</span> <span class="tech-tag">FlexAttention</span></td>
+        <td class="tech-desc">FA4 Blackwell 原生优化 (1.3x cuDNN)；FlexAttention 支持自定义注意力变体 (score_mod/mask_mod)</td>
+      </tr>
+      <tr>
+        <td>MoE 通信</td>
+        <td><span class="tech-tag">DeepEP</span></td>
+        <td class="tech-desc">DeepSeek 开源 MoE 专用通信库，仅对激活专家 All-to-All 通信，支持 FP8</td>
+      </tr>
+      <tr>
+        <td>图像/视频生成</td>
+        <td><span class="tech-tag">ComfyUI</span> <span class="tech-tag">Diffusers</span></td>
+        <td class="tech-desc">Diffusion 模型推理，支持 Flux/SDXL/CogView/CogVideoX，ComfyUI 工作流编排；支持 NVFP4 量化</td>
+      </tr>
+      <tr>
+        <td>国产 GPU 推理</td>
+        <td><span class="tech-tag">vLLM-Ascend</span> <span class="tech-tag">LMDeploy</span></td>
+        <td class="tech-desc">vLLM-Ascend 适配华为昇腾；LMDeploy 支持昇腾/寒武纪/海光等国产 GPU，提供 FP8+INT4 混合量化推理</td>
+      </tr>
+
+      <tr>
+        <td rowspan="6"><span class="tech-name">后端服务</span></td>
+        <td>API 服务</td>
+        <td><span class="tech-tag">Go (Gin/Echo)</span></td>
+        <td class="tech-desc">高并发低延迟，适合网关和控制面服务；静态编译部署简单</td>
+      </tr>
+      <tr>
+        <td>Responses Adapter</td>
+        <td><span class="tech-tag">Go 微服务</span></td>
+        <td class="tech-desc">Responses API 协议适配层：Items ↔ Messages 转换、previous_response_id 上下文加载、内置工具编排</td>
+      </tr>
+      <tr>
+        <td>Response Store</td>
+        <td><span class="tech-tag">PostgreSQL</span> + <span class="tech-tag">Redis</span></td>
+        <td class="tech-desc">Response 对象持久化存储与缓存，支持 previous_response_id 多轮上下文引用</td>
+      </tr>
+      <tr>
+        <td>异步任务</td>
+        <td><span class="tech-tag">Temporal</span></td>
+        <td class="tech-desc">可靠的工作流引擎，管理微调任务、批量推理、数据处理等长时间运行的任务流</td>
+      </tr>
+      <tr>
+        <td>消息队列</td>
+        <td><span class="tech-tag">Apache Kafka</span></td>
+        <td class="tech-desc">推理日志采集、计费事件流、系统间异步通信，支撑高吞吐场景</td>
+      </tr>
+      <tr>
+        <td>API Gateway</td>
+        <td><span class="tech-tag">Kong</span> / <span class="tech-tag">Envoy</span></td>
+        <td class="tech-desc">Kong 提供完善的插件生态 (认证/限流/日志)；Envoy 在 gRPC/HTTP2 场景性能更优</td>
+      </tr>
+
+      <tr>
+        <td rowspan="3"><span class="tech-name">前端 & CLI</span></td>
+        <td>Web Console</td>
+        <td><span class="tech-tag">React 19</span> <span class="tech-tag">Next.js 15</span> <span class="tech-tag">TailwindCSS</span></td>
+        <td class="tech-desc">SSR 首屏渲染 + CSR 交互，TailwindCSS 快速迭代 UI，shadcn/ui 组件库</td>
+      </tr>
+      <tr>
+        <td>Playground</td>
+        <td><span class="tech-tag">Monaco Editor</span> <span class="tech-tag">SSE Client</span></td>
+        <td class="tech-desc">代码编辑器组件 + Server-Sent Events 实现流式对话渲染</td>
+      </tr>
+      <tr>
+        <td>CLI 工具</td>
+        <td><span class="tech-tag">Go</span> <span class="tech-tag">Cobra</span> <span class="tech-tag">Bubble Tea</span></td>
+        <td class="tech-desc">Go 编译单二进制跨平台分发；Cobra 子命令体系；Bubble Tea 交互式 TUI；GoReleaser 多渠道发布</td>
+      </tr>
+
+      <tr>
+        <td rowspan="5"><span class="tech-name">存储</span></td>
+        <td>关系型数据库</td>
+        <td><span class="tech-tag">PostgreSQL 16</span></td>
+        <td class="tech-desc">用户/项目/模型/任务元数据存储，JSONB 支持灵活 schema</td>
+      </tr>
+      <tr>
+        <td>缓存</td>
+        <td><span class="tech-tag">Redis Cluster</span></td>
+        <td class="tech-desc">API Key 验证缓存、速率限制计数器 (滑动窗口)、session 管理</td>
+      </tr>
+      <tr>
+        <td>对象存储</td>
+        <td><span class="tech-tag">S3</span></td>
+        <td class="tech-desc">模型权重文件、数据集、训练 checkpoint、批量推理结果文件存储</td>
+      </tr>
+      <tr>
+        <td>分析数据库</td>
+        <td><span class="tech-tag">ClickHouse</span></td>
+        <td class="tech-desc">推理日志、计费明细、可观测性指标的高速写入与分析查询</td>
+      </tr>
+      <tr>
+        <td>搜索引擎</td>
+        <td><span class="tech-tag">Elasticsearch / Meilisearch</span></td>
+        <td class="tech-desc">模型目录搜索、推理日志全文检索</td>
+      </tr>
+
+      <tr>
+        <td rowspan="5"><span class="tech-name">基础设施</span></td>
+        <td>容器编排</td>
+        <td><span class="tech-tag">Kubernetes</span> <span class="tech-tag">NVIDIA GPU Operator</span></td>
+        <td class="tech-desc">GPU 集群统一编排，NVIDIA GPU Operator 自动管理驱动/CUDA 运行时</td>
+      </tr>
+      <tr>
+        <td>国产 GPU 管理</td>
+        <td><span class="tech-tag">Ascend Device Plugin</span> <span class="tech-tag">HAMi</span></td>
+        <td class="tech-desc">HAMi 提供国产 GPU 统一抽象层，支持昇腾/海光/寒武纪异构混合调度</td>
+      </tr>
+      <tr>
+        <td>GPU 调度</td>
+        <td><span class="tech-tag">Volcano</span> / <span class="tech-tag">Kueue</span></td>
+        <td class="tech-desc">GPU 作业队列管理，支持抢占/公平调度/Gang Scheduling</td>
+      </tr>
+      <tr>
+        <td>自动伸缩</td>
+        <td><span class="tech-tag">KEDA</span> <span class="tech-tag">Custom HPA</span></td>
+        <td class="tech-desc">基于推理请求队列深度 / GPU 利用率 / 自定义指标的弹性伸缩</td>
+      </tr>
+      <tr>
+        <td>IaC</td>
+        <td><span class="tech-tag">Terraform</span> <span class="tech-tag">Pulumi</span></td>
+        <td class="tech-desc">基础设施即代码，多云/多区域资源编排</td>
+      </tr>
+
+      <tr>
+        <td rowspan="4"><span class="tech-name">可观测性</span></td>
+        <td>指标采集</td>
+        <td><span class="tech-tag">Prometheus</span> <span class="tech-tag">VictoriaMetrics</span></td>
+        <td class="tech-desc">Prometheus 生态兼容指标采集，VictoriaMetrics 提供高效长期存储</td>
+      </tr>
+      <tr>
+        <td>可视化</td>
+        <td><span class="tech-tag">Grafana</span></td>
+        <td class="tech-desc">统一仪表盘，同时作为平台内嵌 observability 页面的后端数据源</td>
+      </tr>
+      <tr>
+        <td>分布式追踪</td>
+        <td><span class="tech-tag">OpenTelemetry</span> <span class="tech-tag">Jaeger</span></td>
+        <td class="tech-desc">端到端请求链路追踪，定位延迟瓶颈 (Gateway → Queue → Inference)</td>
+      </tr>
+      <tr>
+        <td>日志</td>
+        <td><span class="tech-tag">Loki</span> + <span class="tech-tag">Promtail</span></td>
+        <td class="tech-desc">结构化日志聚合，与 Grafana 原生集成，支持 LogQL 查询</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================== 5. 数据流设计 ============================== -->
+<section id="data-flow">
+  <div class="section-header">
+    <span class="section-tag tag-amber">DATA FLOW</span>
+    <h2>核心数据流设计</h2>
+    <p>推理请求从接入到返回的完整路径，以及关键子系统的交互方式</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>🔄 实时推理数据流</h3>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-secondary); margin-top: 12px; line-height: 2;">
+        <div>Client Request (/v1/responses 或 /v1/chat/completions)</div>
+        <div style="color: var(--text-muted);">  └─→ API Gateway (TLS 终止)</div>
+        <div style="color: var(--text-muted);">      ├─→ Auth Service (API Key 验证, Redis 缓存)</div>
+        <div style="color: var(--text-muted);">      ├─→ Rate Limiter (滑动窗口, Redis 计数器)</div>
+        <div style="color: var(--text-muted);">      ├─→ Responses Adapter (Items ↔ Messages 转换)</div>
+        <div style="color: var(--text-muted);">      └─→ Model Router</div>
+        <div style="color: var(--text-muted);">          ├─→ Shared Pool (vLLM 集群, 负载均衡)</div>
+        <div style="color: var(--text-muted);">          └─→ Dedicated Endpoint (routing_key 路由)</div>
+        <div style="color: var(--text-muted);">              └─→ vLLM Worker (GPU)</div>
+        <div style="color: var(--text-muted);">                  ├─→ SSE Stream → Client</div>
+        <div style="color: var(--text-muted);">                  └─→ Kafka (异步写入推理日志)</div>
+        <div style="color: var(--text-muted);">                      └─→ ClickHouse (日志存储)</div>
+        <div style="color: var(--text-muted);">                      └─→ Billing Service (Token 计量)</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📦 批量推理数据流</h3>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-secondary); margin-top: 12px; line-height: 2;">
+        <div>Client Upload JSONL</div>
+        <div style="color: var(--text-muted);">  └─→ File Service → S3 (存储输入文件)</div>
+        <div style="color: var(--text-muted);">      └─→ Batch Job Scheduler (Temporal Workflow)</div>
+        <div style="color: var(--text-muted);">          ├─→ 拆分子任务 (按行分片)</div>
+        <div style="color: var(--text-muted);">          ├─→ 提交到推理队列 (低优先级)</div>
+        <div style="color: var(--text-muted);">          ├─→ vLLM Worker Pool (利用空闲 GPU)</div>
+        <div style="color: var(--text-muted);">          ├─→ 聚合结果 → S3 (输出文件)</div>
+        <div style="color: var(--text-muted);">          └─→ 更新任务状态 (PostgreSQL)</div>
+        <div style="color: var(--text-muted);">              └─→ Webhook/Polling 通知客户端</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🎯 微调训练数据流</h3>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-secondary); margin-top: 12px; line-height: 2;">
+        <div>Create Fine-tuning Job (API)</div>
+        <div style="color: var(--text-muted);">  └─→ Training Scheduler (Temporal)</div>
+        <div style="color: var(--text-muted);">      ├─→ 验证数据集格式 (Data Validator)</div>
+        <div style="color: var(--text-muted);">      ├─→ 分配 GPU 资源 (Volcano/Kueue)</div>
+        <div style="color: var(--text-muted);">      ├─→ 拉取 Base Model (S3 / Registry)</div>
+        <div style="color: var(--text-muted);">      ├─→ 执行训练 (PyTorch + DeepSpeed)</div>
+        <div style="color: var(--text-muted);">      │   ├─→ Checkpoint → S3 (定期保存)</div>
+        <div style="color: var(--text-muted);">      │   └─→ Events → Kafka → DB (loss/lr 日志)</div>
+        <div style="color: var(--text-muted);">      └─→ 注册模型 → Model Registry</div>
+        <div style="color: var(--text-muted);">          └─→ 可一键部署为推理端点</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>⚡ 自动伸缩数据流</h3>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-secondary); margin-top: 12px; line-height: 2;">
+        <div>KEDA / Custom HPA Controller</div>
+        <div style="color: var(--text-muted);">  └─→ 采集指标</div>
+        <div style="color: var(--text-muted);">      ├─→ 推理队列深度 (Pending Requests)</div>
+        <div style="color: var(--text-muted);">      ├─→ GPU 利用率 (DCGM Exporter)</div>
+        <div style="color: var(--text-muted);">      └─→ RPM/TPM 使用率 (Prometheus)</div>
+        <div style="color: var(--text-muted);">  └─→ 伸缩决策</div>
+        <div style="color: var(--text-muted);">      ├─→ Scale Up: 新 Pod + GPU 分配</div>
+        <div style="color: var(--text-muted);">      ├─→ Scale Down: 优雅驱逐 + 请求迁移</div>
+        <div style="color: var(--text-muted);">      └─→ Cluster Autoscaler (节点级扩容)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 6. 安全与合规 ============================== -->
+<section id="security">
+  <div class="section-header">
+    <span class="section-tag tag-rose">SECURITY & COMPLIANCE</span>
+    <h2>安全与合规</h2>
+    <p>从传输加密到数据主权，全方位保障平台安全</p>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <h3>传输安全</h3>
+      <ul>
+        <li>全链路 TLS 1.3 加密</li>
+        <li>API Gateway 端 mTLS 支持</li>
+        <li>内部服务间 Service Mesh (Istio)</li>
+        <li>WebSocket/SSE 加密传输</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>认证与授权</h3>
+      <ul>
+        <li>Bearer Token (API Key) 认证</li>
+        <li>OAuth 2.0 / OIDC 登录</li>
+        <li>RBAC 细粒度权限控制</li>
+        <li>API Key 自动轮换与泄露检测</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>数据安全</h3>
+      <ul>
+        <li>静态数据 AES-256 加密 (S3 SSE)</li>
+        <li>零数据留存模式 (ZDR)</li>
+        <li>推理数据不用于模型训练</li>
+        <li>数据删除可审计追踪</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>合规认证</h3>
+      <ul>
+        <li>SOC 2 Type II</li>
+        <li>GDPR 合规 (EU 数据驻留)</li>
+        <li>HIPAA BAA (医疗行业)</li>
+        <li>数据处理协议 (DPA)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>网络安全</h3>
+      <ul>
+        <li>VPC Peering / PrivateLink</li>
+        <li>IP 白名单访问控制</li>
+        <li>DDoS 防护 (CloudFlare/AWS Shield)</li>
+        <li>WAF Web 应用防火墙</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>内容安全</h3>
+      <ul>
+        <li>Safety Guardrails (输入/输出过滤)</li>
+        <li>可插拔内容审核模型</li>
+        <li>AUP 可接受使用政策</li>
+        <li>审计日志全记录</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 7. 实施路线 ============================== -->
+<section id="roadmap">
+  <div class="section-header">
+    <span class="section-tag tag-amber">IMPLEMENTATION ROADMAP</span>
+    <h2>实施路线图</h2>
+    <p>分四个阶段递进实施，从 MVP 核心能力逐步演进至完整企业级平台</p>
+  </div>
+
+  <div class="phase-timeline">
+    <div class="phase-item">
+      <h4>
+        Phase 1: MVP — 核心推理能力
+        <span class="phase-badge" style="background: rgba(37,99,235,0.1); color: var(--accent-blue);">Phase 1</span>
+      </h4>
+      <ul>
+        <li>基于 vLLM v0.18+ 搭建共享推理集群，启用 FlashAttention-4、自动前缀缓存、连续批处理</li>
+        <li>实现双格式 API: Responses API (/v1/responses) + Chat Completions (/v1/chat/completions)</li>
+        <li>API Key 认证与基础速率限制 + Service Tier 机制</li>
+        <li>基础 Web Console: 模型列表、API Key 管理、Playground 对话</li>
+        <li>迁移指南 (Switch Guide) 文档与示例</li>
+        <li>按 Token 计量的基础计费系统 (含 Promo Code)</li>
+        <li>Prometheus + Grafana 基础监控</li>
+      </ul>
+    </div>
+
+    <div class="phase-item">
+      <h4>
+        Phase 2: 增强 — 专属端点与微调
+        <span class="phase-badge" style="background: rgba(124,58,237,0.1); color: var(--accent-purple);">Phase 2</span>
+      </h4>
+      <ul>
+        <li>专属端点 (Dedicated Endpoint) 全生命周期管理</li>
+        <li>GPU 自动伸缩 (KEDA + Cluster Autoscaler)</li>
+        <li>推理优化: 投机解码 (EAGLE-3 / N-gram GPU)、FP8/NVFP4 量化、KV Cache 压缩与 CPU 卸载</li>
+        <li>LoRA / Full Fine-tuning 训练流水线</li>
+        <li>数据集管理与验证系统</li>
+        <li>批量推理 (Batch API) 实现</li>
+        <li>Playground 增强: 模型对比 (Compare)、Function Calling 测试、结构化输出测试</li>
+        <li>Datasets API 完整实现 (CRUD / 分片上传 / SQL 查询 / 导出)</li>
+        <li>多区域部署 (2 个区域)</li>
+      </ul>
+    </div>
+
+    <div class="phase-item">
+      <h4>
+        Phase 3: 生态 — 可观测性与集成
+        <span class="phase-badge" style="background: rgba(5,150,105,0.1); color: var(--accent-emerald);">Phase 3</span>
+      </h4>
+      <ul>
+        <li>Data Lab 推理日志采集与 SQL 查询系统</li>
+        <li>完整的可观测性面板 (延迟/吞吐/错误/伸缩)</li>
+        <li>Prometheus API 导出 + Grafana 集成</li>
+        <li>第三方集成生态: 框架 (LangChain, LlamaIndex, CrewAI 等)、Coding Assistants (Cursor, Continue, Cline)、API Routers</li>
+        <li>Embedding + Rerank (/v1/rerank) 模型支持</li>
+        <li>Text-to-Image 模型支持</li>
+        <li>Prompt Preset 管理与团队共享</li>
+        <li>Cookbook 开发者示例库上线 (GitHub 开源)</li>
+        <li><strong>CLI 命令行工具</strong>: Go 单二进制，覆盖推理/微调/批量/端点/数据集全流程；Homebrew/npm/pip/Docker 多渠道分发；交互式 REPL + CI/CD 脚本化双模式</li>
+        <li>Chat Completions 日志导入 Data Lab</li>
+        <li>PD 分离部署 + NVIDIA Dynamo 编排 + KV-aware 路由</li>
+        <li>MoE 弹性专家并行 + DeepEP 通信优化</li>
+      </ul>
+    </div>
+
+    <div class="phase-item">
+      <h4>
+        Phase 4: 企业 — 安全合规与企业级功能
+        <span class="phase-badge" style="background: rgba(217,119,6,0.1); color: var(--accent-amber);">Phase 4</span>
+      </h4>
+      <ul>
+        <li>SSO (SAML/OIDC) + 组织/项目多级权限体系</li>
+        <li>零数据留存 (ZDR) 模式</li>
+        <li>SOC 2 / GDPR / HIPAA 合规认证</li>
+        <li>VPC Peering / PrivateLink 私有网络接入</li>
+        <li>企业级 SLA 保障 (99.9% uptime)</li>
+        <li>自定义模型上传与部署 (Custom Models API)</li>
+        <li>高级计费: 银行转账/合同预付/费用中心</li>
+        <li>LoRA 适配器合并脚本工具</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="highlight-box" style="margin-top: 32px;">
+    <h4>持续演进方向</h4>
+    <p>
+      Phase 4 之后持续迭代的方向包括: <strong>AF (Attention-FFN) 分离部署</strong>（FFN 可使用国产 GPU）、
+      <strong>语义缓存</strong>（向量嵌入推理结果复用）、<strong>RLHF/DPO 强化学习微调</strong>、
+      <strong>多模态模型 (Audio/Video) 扩展</strong>、<strong>边缘推理节点</strong>、<strong>模型评测 Benchmark 平台</strong>。
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer style="text-align: center; padding: 48px 24px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.85rem;">
+  Model Inference Cloud Platform — Architecture Design Document v1.0 &nbsp;|&nbsp; 2026-04-03
+</footer>
+
+<script>
+function switchTab(e, tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// Sticky nav highlighting
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav.toc a');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector(`nav.toc a[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -80% 0px' });
+
+sections.forEach(s => observer.observe(s));
+
+// Smooth scroll
+document.querySelectorAll('nav.toc a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+</script>
+</body>
+</html>
