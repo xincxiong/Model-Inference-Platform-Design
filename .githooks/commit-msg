@@ -1,0 +1,7 @@
+#!/bin/sh
+# 提交前移除工具自动附加的尾注（须设置: git config core.hooksPath .githooks）
+MSG_FILE="$1"
+[ -n "$MSG_FILE" ] && [ -f "$MSG_FILE" ] || exit 0
+TMP="${MSG_FILE}.strip.$$"
+grep -v '^Made-with: Cursor$' "$MSG_FILE" > "$TMP" && mv "$TMP" "$MSG_FILE"
+exit 0
