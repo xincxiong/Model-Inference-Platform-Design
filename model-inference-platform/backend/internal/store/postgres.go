@@ -56,6 +56,9 @@ func RunMigrations(ctx context.Context, db *pgxpool.Pool) error {
 		input_price NUMERIC(12,6) NOT NULL DEFAULT 0,
 		output_price NUMERIC(12,6) NOT NULL DEFAULT 0,
 		max_context INT NOT NULL DEFAULT 4096,
+		speed NUMERIC(8,1) NOT NULL DEFAULT 0,
+		quality_score NUMERIC(5,1) NOT NULL DEFAULT 0,
+		features TEXT NOT NULL DEFAULT '',
 		status VARCHAR(20) NOT NULL DEFAULT 'active'
 	);
 
@@ -118,26 +121,74 @@ func RunMigrations(ctx context.Context, db *pgxpool.Pool) error {
 	return err
 }
 
+// SeedModels populates the models table with platform-supported models
+// covering all 7 model types defined in the product plan.
 func SeedModels(ctx context.Context, db *pgxpool.Pool) {
 	models := []struct {
-		ID, Name, Type, Provider string
-		InPrice, OutPrice        float64
-		MaxCtx                   int
+		ID, Name, Type, Provider, Features string
+		InPrice, OutPrice, Speed, Quality  float64
+		MaxCtx                             int
 	}{
-		{"deepseek-ai/DeepSeek-V4", "DeepSeek V4", "text-to-text", "DeepSeek", 1.0, 2.0, 131072},
-		{"deepseek-ai/DeepSeek-R1", "DeepSeek R1", "text-to-text", "DeepSeek", 0.55, 2.19, 65536},
-		{"Qwen/Qwen3.5-72B", "Qwen 3.5 72B", "text-to-text", "Alibaba", 0.9, 0.9, 131072},
-		{"THUDM/GLM-5-32B", "GLM-5 32B", "text-to-text", "Zhipu AI", 0.5, 0.5, 32768},
-		{"meta-llama/Llama-4-70B", "Llama 4 70B", "text-to-text", "Meta", 0.8, 0.8, 131072},
-		{"BAAI/bge-large-zh-v1.5", "BGE Large ZH", "embedding", "BAAI", 0.1, 0.0, 8192},
-		{"BAAI/bge-reranker-v2-m3", "BGE Reranker v2", "rerank", "BAAI", 0.1, 0.0, 8192},
-		{"black-forest-labs/FLUX.1-dev", "FLUX.1 Dev", "text-to-image", "Black Forest Labs", 0.0, 0.03, 0},
+		// --- Text-to-Text ---
+		{"deepseek-ai/DeepSeek-V4", "DeepSeek V4", "text-to-text", "DeepSeek",
+			"function_calling,json_mode,streaming", 1.0, 2.0, 80, 90.1, 1000000},
+		{"deepseek-ai/DeepSeek-R1", "DeepSeek R1", "text-to-text", "DeepSeek",
+			"function_calling,json_mode,streaming", 0.55, 2.19, 60, 87.5, 65536},
+		{"Qwen/Qwen3.5-72B", "Qwen 3.5 72B", "text-to-text", "Alibaba",
+			"function_calling,json_mode,streaming", 0.9, 0.9, 65, 86.3, 131072},
+		{"THUDM/GLM-5-32B", "GLM-5 32B", "text-to-text", "Zhipu AI",
+			"function_calling,json_mode,streaming", 0.5, 0.5, 70, 82.0, 32768},
+		{"meta-llama/Llama-4-70B", "Llama 4 70B", "text-to-text", "Meta",
+			"function_calling,json_mode,streaming", 0.8, 0.8, 55, 85.7, 131072},
+		{"moonshot-ai/Kimi-K2.5", "Kimi K2.5", "text-to-text", "Moonshot AI",
+			"function_calling,json_mode,streaming", 1.2, 2.5, 45, 88.0, 262144},
+		{"bytedance/Doubao-2.0-Pro", "豆包 2.0 Pro", "text-to-text", "ByteDance",
+			"function_calling,json_mode,streaming", 0.6, 1.2, 75, 83.5, 131072},
+
+		// --- Vision (多模态) ---
+		{"Qwen/Qwen2.5-VL-72B", "Qwen2.5 VL 72B", "vision", "Alibaba",
+			"vision,streaming", 1.5, 2.0, 40, 84.0, 32768},
+		{"OpenGVLab/InternVL3-78B", "InternVL3 78B", "vision", "Shanghai AI Lab",
+			"vision,streaming", 1.2, 1.8, 35, 82.5, 32768},
+
+		// --- Embedding ---
+		{"BAAI/bge-m3", "BGE-M3", "embedding", "BAAI",
+			"multilingual", 0.1, 0.0, 0, 0, 8192},
+		{"jinaai/jina-embeddings-v3", "Jina Embeddings v3", "embedding", "Jina AI",
+			"multilingual", 0.1, 0.0, 0, 0, 8192},
+
+		// --- Rerank ---
+		{"BAAI/bge-reranker-v2-m3", "BGE Reranker v2", "rerank", "BAAI",
+			"multilingual", 0.1, 0.0, 0, 0, 8192},
+		{"Qwen/Qwen3-Reranker", "Qwen3 Reranker", "rerank", "Alibaba",
+			"multilingual", 0.1, 0.0, 0, 0, 8192},
+
+		// --- Text-to-Image ---
+		{"black-forest-labs/FLUX.1-dev", "FLUX.1 Dev", "text-to-image", "Black Forest Labs",
+			"", 0.0, 0.03, 0, 0, 0},
+		{"stabilityai/SDXL", "Stable Diffusion XL", "text-to-image", "Stability AI",
+			"", 0.0, 0.02, 0, 0, 0},
+
+		// --- Text-to-Video ---
+		{"THUDM/CogVideoX-5B", "CogVideoX 5B", "text-to-video", "Zhipu AI",
+			"", 0.0, 0.1, 0, 0, 0},
+
+		// --- Speech ---
+		{"FunAudioLLM/CosyVoice2-0.5B", "CosyVoice 2", "speech", "Alibaba",
+			"tts,multilingual", 0.015, 0.0, 0, 0, 0},
+		{"FunAudioLLM/SenseVoice-Large", "SenseVoice Large", "speech", "Alibaba",
+			"asr,multilingual", 0.01, 0.0, 0, 0, 0},
 	}
 
 	for _, m := range models {
 		_, _ = db.Exec(ctx,
-			`INSERT INTO models (id, name, model_type, provider, input_price, output_price, max_context)
-			 VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING`,
-			m.ID, m.Name, m.Type, m.Provider, m.InPrice, m.OutPrice, m.MaxCtx)
+			`INSERT INTO models (id, name, model_type, provider, input_price, output_price, max_context, speed, quality_score, features)
+			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			 ON CONFLICT (id) DO UPDATE SET
+			   name=EXCLUDED.name, model_type=EXCLUDED.model_type, provider=EXCLUDED.provider,
+			   input_price=EXCLUDED.input_price, output_price=EXCLUDED.output_price,
+			   max_context=EXCLUDED.max_context, speed=EXCLUDED.speed,
+			   quality_score=EXCLUDED.quality_score, features=EXCLUDED.features`,
+			m.ID, m.Name, m.Type, m.Provider, m.InPrice, m.OutPrice, m.MaxCtx, m.Speed, m.Quality, m.Features)
 	}
 }

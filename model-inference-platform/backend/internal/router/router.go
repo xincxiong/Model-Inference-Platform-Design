@@ -27,7 +27,11 @@ func Setup(cfg *config.Config, s *store.Store, eng engine.Engine, logger *zap.Lo
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	chatH := handler.NewChatCompletionsHandler(s, eng)
+	complH := handler.NewCompletionsHandler(s, eng)
 	respH := handler.NewResponsesHandler(s, eng)
+	embedH := handler.NewEmbeddingsHandler(s, eng)
+	rerankH := handler.NewRerankHandler(s, eng)
+	imagesH := handler.NewImagesHandler(s, eng)
 	modelsH := handler.NewModelsHandler(s)
 	keysH := handler.NewAPIKeysHandler(s)
 	billingH := handler.NewBillingHandler(s)
@@ -37,8 +41,13 @@ func Setup(cfg *config.Config, s *store.Store, eng engine.Engine, logger *zap.Lo
 	v1.Use(middleware.RateLimitMiddleware(s.Redis))
 	{
 		v1.POST("/chat/completions", chatH.Create)
+		v1.POST("/completions", complH.Create)
 		v1.POST("/responses", respH.Create)
 		v1.GET("/responses/:id", respH.Get)
+		v1.GET("/responses/:id/input_items", respH.GetInputItems)
+		v1.POST("/embeddings", embedH.Create)
+		v1.POST("/rerank", rerankH.Create)
+		v1.POST("/images/generations", imagesH.Generate)
 		v1.GET("/models", modelsH.List)
 	}
 

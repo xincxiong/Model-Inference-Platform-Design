@@ -147,7 +147,7 @@ func (h *ChatCompletionsHandler) recordUsage(auth middleware.AuthInfo, modelName
 func estimateTokens(messages []model.ChatMessage) int {
 	total := 0
 	for _, m := range messages {
-		total += len(strings.Fields(m.Content)) + 4
+		total += len(strings.Fields(m.ContentString())) + 4
 	}
 	return total
 }

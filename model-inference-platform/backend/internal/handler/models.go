@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,9 +19,10 @@ func NewModelsHandler(s *store.Store) *ModelsHandler {
 	return &ModelsHandler{store: s}
 }
 
+// List returns models in OpenAI-compatible format.
 func (h *ModelsHandler) List(c *gin.Context) {
 	rows, err := h.store.DB.Query(context.Background(),
-		`SELECT id, name, model_type, provider, input_price, output_price, max_context, status
+		`SELECT id, name, model_type, provider, input_price, output_price, max_context, speed, quality_score, features, status
 		 FROM models WHERE status = 'active' ORDER BY name`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error()}})
@@ -29,13 +31,13 @@ func (h *ModelsHandler) List(c *gin.Context) {
 	defer rows.Close()
 
 	var entries []model.ModelInfoEntry
-	var details []model.ModelInfo
 	for rows.Next() {
 		var m model.ModelInfo
-		if err := rows.Scan(&m.ID, &m.Name, &m.ModelType, &m.Provider, &m.InputPrice, &m.OutputPrice, &m.MaxContext, &m.Status); err != nil {
+		var featuresStr string
+		if err := rows.Scan(&m.ID, &m.Name, &m.ModelType, &m.Provider, &m.InputPrice, &m.OutputPrice,
+			&m.MaxContext, &m.Speed, &m.QualityScore, &featuresStr, &m.Status); err != nil {
 			continue
 		}
-		details = append(details, m)
 		entries = append(entries, model.ModelInfoEntry{
 			ID:      m.ID,
 			Object:  "model",
@@ -47,9 +49,10 @@ func (h *ModelsHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, model.ModelsListResponse{Object: "list", Data: entries})
 }
 
+// ListDetailed returns full model info for the console.
 func (h *ModelsHandler) ListDetailed(c *gin.Context) {
 	rows, err := h.store.DB.Query(context.Background(),
-		`SELECT id, name, model_type, provider, input_price, output_price, max_context, status
+		`SELECT id, name, model_type, provider, input_price, output_price, max_context, speed, quality_score, features, status
 		 FROM models WHERE status = 'active' ORDER BY name`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error()}})
@@ -60,8 +63,13 @@ func (h *ModelsHandler) ListDetailed(c *gin.Context) {
 	var models []model.ModelInfo
 	for rows.Next() {
 		var m model.ModelInfo
-		if err := rows.Scan(&m.ID, &m.Name, &m.ModelType, &m.Provider, &m.InputPrice, &m.OutputPrice, &m.MaxContext, &m.Status); err != nil {
+		var featuresStr string
+		if err := rows.Scan(&m.ID, &m.Name, &m.ModelType, &m.Provider, &m.InputPrice, &m.OutputPrice,
+			&m.MaxContext, &m.Speed, &m.QualityScore, &featuresStr, &m.Status); err != nil {
 			continue
+		}
+		if featuresStr != "" {
+			m.Features = strings.Split(featuresStr, ",")
 		}
 		models = append(models, m)
 	}

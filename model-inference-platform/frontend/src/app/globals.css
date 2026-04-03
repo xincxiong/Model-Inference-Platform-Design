@@ -166,6 +166,9 @@ input[type="range"]:focus {
 .tag-green { background: #e6f4ea; color: #1e8e3e; }
 .tag-amber { background: #fef7e0; color: #e37400; }
 .tag-cyan { background: #e4f7fb; color: #007b83; }
+.tag-purple { background: #f3e8fd; color: #7627bb; }
+.tag-pink { background: #fce8ef; color: #c5221f; }
+.tag-orange { background: #feefe3; color: #e8710a; }
 
 table {
   border-collapse: collapse;

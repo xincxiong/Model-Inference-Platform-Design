@@ -28,7 +28,8 @@ export default function PlaygroundPage() {
   useEffect(() => {
     fetchModels()
       .then((data) => {
-        const m = (data.models || []).filter((x: any) => x.type === 'text-to-text')
+        const chatTypes = ['text-to-text', 'vision']
+        const m = (data.models || []).filter((x: any) => chatTypes.includes(x.type))
         setModels(m)
         if (m.length > 0) setSelectedModel(m[0].id)
       })

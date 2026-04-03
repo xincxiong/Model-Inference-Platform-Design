@@ -246,3 +246,40 @@ func (h *ResponsesHandler) Get(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
+// GetInputItems returns the input items of a stored response.
+func (h *ResponsesHandler) GetInputItems(c *gin.Context) {
+	id := c.Param("id")
+	auth := middleware.GetAuthInfo(c)
+
+	var inputJSON []byte
+	err := h.store.DB.QueryRow(context.Background(),
+		`SELECT input FROM responses WHERE id = $1 AND user_id = $2`, id, auth.UserID).
+		Scan(&inputJSON)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": gin.H{"message": "Response not found", "type": "not_found_error"},
+		})
+		return
+	}
+
+	var items []model.ChatMessage
+	_ = json.Unmarshal(inputJSON, &items)
+
+	responseItems := make([]model.ResponseItem, 0, len(items))
+	for _, msg := range items {
+		responseItems = append(responseItems, model.ResponseItem{
+			Type: "message",
+			Role: msg.Role,
+			Content: []model.ResponseItemContent{
+				{Type: "input_text", Text: msg.ContentString()},
+			},
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"object": "list",
+		"data":   responseItems,
+	})
+}
