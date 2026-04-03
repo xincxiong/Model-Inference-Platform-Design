@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Inference Platform — 一站式模型推理云平台</title>
+<meta name="description" content="开源模型推理云平台，支持 Serverless 推理、专属端点、模型微调、Batch API，兼容 OpenAI API 格式。">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#ffffff;--bg-soft:#f8fafc;--bg-mute:#f1f5f9;
+  --text:#0f172a;--text-2:#334155;--text-3:#64748b;--text-4:#94a3b8;
+  --blue:#2563eb;--blue-light:#dbeafe;--blue-dark:#1d4ed8;
+  --purple:#7c3aed;--purple-light:#ede9fe;
+  --cyan:#0891b2;--cyan-light:#cffafe;
+  --green:#059669;--green-light:#d1fae5;
+  --amber:#d97706;--amber-light:#fef3c7;
+  --rose:#e11d48;--rose-light:#ffe4e6;
+  --border:#e2e8f0;--border-2:#cbd5e1;
+  --radius:12px;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 4px 24px rgba(0,0,0,.06);
+  --shadow-lg:0 12px 48px rgba(0,0,0,.08);
+}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);line-height:1.7;background:var(--bg);-webkit-font-smoothing:antialiased}
+a{color:var(--blue);text-decoration:none}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--blue-light);color:var(--blue);padding:2px 7px;border-radius:5px}
+.container{max-width:1140px;margin:0 auto;padding:0 24px}
+
+/* ========== NAV ========== */
+.nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.85);backdrop-filter:blur(16px) saturate(1.6);border-bottom:1px solid var(--border);transition:box-shadow .3s}
+.nav.scrolled{box-shadow:0 1px 12px rgba(0,0,0,.06)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px;max-width:1140px;margin:0 auto;padding:0 24px}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:.95rem;color:var(--text)}
+.nav-logo .dot{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center}
+.nav-links{display:flex;gap:4px}
+.nav-links a{font-size:.82rem;font-weight:500;color:var(--text-3);padding:6px 14px;border-radius:8px;transition:all .15s}
+.nav-links a:hover{color:var(--text);background:var(--bg-mute)}
+.nav-cta{display:flex;gap:10px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;font-weight:600;padding:8px 20px;border-radius:8px;border:none;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue-dark);box-shadow:0 4px 16px rgba(37,99,235,.25)}
+.btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--border-2);background:var(--bg-soft)}
+.btn-gh{background:#24292f;color:#fff}.btn-gh:hover{background:#1b1f23}
+.btn svg{width:16px;height:16px}
+
+/* ========== HERO ========== */
+.hero{position:relative;padding:100px 0 80px;text-align:center;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(37,99,235,.06),transparent 70%),radial-gradient(ellipse 60% 40% at 80% 100%,rgba(124,58,237,.04),transparent 60%)}
+.hero-inner{position:relative;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;color:var(--blue);background:var(--blue-light);padding:5px 14px;border-radius:100px;margin-bottom:20px;letter-spacing:.02em}
+.hero-badge .pulse{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:clamp(2.2rem,5.5vw,3.8rem);font-weight:800;letter-spacing:-.03em;line-height:1.15;max-width:800px;margin:0 auto 16px}
+.hero h1 .gradient{background:linear-gradient(135deg,var(--blue) 0%,var(--purple) 50%,var(--cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero .subtitle{font-size:1.1rem;color:var(--text-3);max-width:640px;margin:0 auto 32px;font-weight:400;line-height:1.8}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.hero-stats{display:flex;gap:32px;justify-content:center;margin-top:56px;flex-wrap:wrap}
+.hero-stat{text-align:center}
+.hero-stat .val{font-size:2rem;font-weight:800;font-family:'JetBrains Mono',monospace}
+.hero-stat .lab{font-size:.75rem;color:var(--text-4);margin-top:2px;font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.v-blue{color:var(--blue)}.v-purple{color:var(--purple)}.v-cyan{color:var(--cyan)}.v-green{color:var(--green)}.v-amber{color:var(--amber)}
+
+/* ========== SECTIONS ========== */
+section{padding:80px 0}
+section:nth-child(even){background:var(--bg-soft)}
+.sec-header{text-align:center;margin-bottom:56px}
+.sec-tag{display:inline-block;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:5px;margin-bottom:12px}
+.sec-header h2{font-size:2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+.sec-header p{color:var(--text-3);max-width:620px;margin:0 auto;font-size:.95rem}
+
+/* ========== GRIDS / CARDS ========== */
+.grid{display:grid;gap:20px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:all .25s}
+.card:hover{border-color:var(--border-2);transform:translateY(-3px);box-shadow:var(--shadow)}
+.card .icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:14px}
+.card h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+.card p,.card li{font-size:.87rem;color:var(--text-2);line-height:1.7}
+.card ul{list-style:none;margin-top:10px}
+.card li{padding:3px 0 3px 18px;position:relative}
+.card li::before{content:'›';position:absolute;left:0;color:var(--blue);font-weight:700}
+
+/* ========== FEATURES HIGHLIGHT ========== */
+.feat-row{display:flex;gap:32px;align-items:center;margin-bottom:64px}
+.feat-row:nth-child(even){flex-direction:row-reverse}
+.feat-text{flex:1}
+.feat-visual{flex:1;background:var(--bg-soft);border:1px solid var(--border);border-radius:16px;padding:32px;min-height:260px;display:flex;align-items:center;justify-content:center}
+.feat-text .tag{display:inline-block;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:4px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em}
+.feat-text h3{font-size:1.5rem;font-weight:800;margin-bottom:8px;letter-spacing:-.01em}
+.feat-text p{color:var(--text-3);font-size:.92rem;margin-bottom:16px}
+.feat-text ul{list-style:none}
+.feat-text li{font-size:.87rem;color:var(--text-2);padding:4px 0 4px 20px;position:relative}
+.feat-text li::before{content:'✓';position:absolute;left:0;color:var(--green);font-size:.8rem;font-weight:700}
+
+/* ========== ARCH DIAGRAM ========== */
+.arch{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:40px;box-shadow:var(--shadow-sm);overflow-x:auto}
+.arch-layer{margin-bottom:12px}
+.arch-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:6px;padding-left:4px}
+.arch-row{display:flex;gap:8px;flex-wrap:wrap}
+.arch-box{padding:10px 18px;border-radius:8px;font-size:.78rem;font-weight:600;border:1px solid;flex:1;min-width:110px;text-align:center;transition:transform .2s}
+.arch-box:hover{transform:scale(1.04)}
+.ab{background:rgba(37,99,235,.05);border-color:rgba(37,99,235,.2);color:var(--blue)}
+.ac{background:rgba(8,145,178,.05);border-color:rgba(8,145,178,.2);color:var(--cyan)}
+.ap{background:rgba(124,58,237,.05);border-color:rgba(124,58,237,.2);color:var(--purple)}
+.ag{background:rgba(5,150,105,.05);border-color:rgba(5,150,105,.2);color:var(--green)}
+.aa{background:rgba(217,119,6,.05);border-color:rgba(217,119,6,.2);color:var(--amber)}
+.ar{background:rgba(225,29,72,.05);border-color:rgba(225,29,72,.2);color:var(--rose)}
+.arch-arrow{text-align:center;padding:3px 0;color:var(--text-4);font-size:1rem;letter-spacing:4px}
+
+/* ========== TECH TABLE ========== */
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.tech-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s}
+.tech-item:hover{box-shadow:var(--shadow)}
+.tech-item .cat{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-4);margin-bottom:6px}
+.tech-item h4{font-size:.9rem;font-weight:700;margin-bottom:4px}
+.tech-item .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.tech-item .tags span{font-size:.68rem;font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:4px;background:var(--blue-light);color:var(--blue)}
+
+/* ========== ROADMAP ========== */
+.timeline{position:relative;padding-left:32px;margin-top:32px}
+.timeline::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--blue),var(--purple),var(--green),var(--amber))}
+.tl-item{position:relative;margin-bottom:28px;padding:24px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);transition:box-shadow .2s}
+.tl-item:hover{box-shadow:var(--shadow)}
+.tl-item::before{content:'';position:absolute;left:-27px;top:28px;width:12px;height:12px;border-radius:50%;border:2.5px solid var(--blue);background:var(--bg)}
+.tl-item h4{font-size:.95rem;font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.tl-item .badge{font-size:.68rem;padding:2px 10px;border-radius:4px;font-weight:700}
+.tl-item ul{list-style:none;margin-top:8px;columns:2;column-gap:24px}
+.tl-item li{font-size:.82rem;color:var(--text-2);padding:3px 0 3px 18px;position:relative;break-inside:avoid}
+.tl-item li::before{content:'✓';position:absolute;left:0;color:var(--green);font-size:.75rem}
+
+/* ========== CTA ========== */
+.cta-section{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;padding:80px 0;text-align:center}
+.cta-section h2{font-size:2rem;font-weight:800;margin-bottom:8px}
+.cta-section p{color:#94a3b8;max-width:500px;margin:0 auto 28px}
+.cta-section .btn-primary{background:#fff;color:var(--blue);font-size:.9rem;padding:12px 28px;border-radius:10px}
+.cta-section .btn-primary:hover{box-shadow:0 4px 20px rgba(255,255,255,.2)}
+
+/* ========== FOOTER ========== */
+footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;color:var(--text-4);font-size:.8rem}
+
+/* ========== RESPONSIVE ========== */
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hero{padding:64px 0 48px}
+  .hero h1{font-size:2rem}
+  .hero-stats{gap:20px}
+  .feat-row,.feat-row:nth-child(even){flex-direction:column}
+  .arch-row{flex-direction:column}
+  .tl-item ul{columns:1}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  section{padding:48px 0}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <div class="dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+      Inference Platform
+    </div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#tech">Tech Stack</a>
+      <a href="#roadmap">Roadmap</a>
+    </div>
+    <div class="nav-cta">
+      <a href="https://github.com/xincxiong/Model-Inference-Platform-Design" target="_blank" class="btn btn-gh">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="hero-badge"><span class="pulse"></span>Open Source · Production Ready</div>
+    <h1>
+      <span class="gradient">Model Inference</span><br>Cloud Platform
+    </h1>
+    <p class="subtitle">
+      一站式模型推理云平台 — 从快速实验到生产部署的全链路能力。兼容 OpenAI API，支持 Serverless 推理、专属端点、模型微调与全栈可观测性。
+    </p>
+    <div class="hero-actions">
+      <a href="https://github.com/xincxiong/Model-Inference-Platform-Design" target="_blank" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+      <a href="#features" class="btn btn-ghost">Explore Features ↓</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="val v-blue">13</div><div class="lab">功能模块</div></div>
+      <div class="hero-stat"><div class="val v-purple">7</div><div class="lab">模型类型</div></div>
+      <div class="hero-stat"><div class="val v-cyan">2</div><div class="lab">部署模式</div></div>
+      <div class="hero-stat"><div class="val v-green">99.9%</div><div class="lab">SLA 目标</div></div>
+      <div class="hero-stat"><div class="val v-amber">&lt;200ms</div><div class="lab">TTFT 延迟</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="sec-header">
+      <span class="sec-tag" style="background:var(--purple-light);color:var(--purple)">Core Features</span>
+      <h2>平台核心能力</h2>
+      <p>13 大功能模块，覆盖推理服务、模型管理、数据闭环、运维监控与开发者工具全链路</p>
+    </div>
+
+    <!-- Feature 1 -->
+    <div class="feat-row">
+      <div class="feat-text">
+        <span class="tag" style="background:var(--blue-light);color:var(--blue)">Inference Engine</span>
+        <h3>推理引擎</h3>
+        <p>基于 vLLM v0.18+ 构建的高性能推理服务，同时支持 Responses API 和 Chat Completions API 双格式，最大化降低迁移成本。</p>
+        <ul>
+          <li>七大模型类型：Text / Vision / Embedding / Rerank / Image / Video / Speech</li>
+          <li>FlashAttention-4、KV Cache 压缩、投机解码等前沿优化</li>
+          <li>PD 分离 + NVIDIA Dynamo 分布式推理架构</li>
+          <li>国产模型重点支持：DeepSeek / Qwen / GLM / Kimi</li>
+        </ul>
+      </div>
+      <div class="feat-visual">
+        <div style="text-align:center">
+          <div style="font-size:3rem;margin-bottom:12px">⚡</div>
+          <div style="font-family:'JetBrains Mono';font-size:.78rem;color:var(--text-3);line-height:2">
+            <div><code>POST /v1/responses</code></div>
+            <div><code>POST /v1/chat/completions</code></div>
+            <div><code>POST /v1/embeddings</code></div>
+            <div><code>POST /v1/images/generations</code></div>
+            <div style="margin-top:8px;color:var(--text-4)">OpenAI Compatible API</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 2 -->
+    <div class="feat-row">
+      <div class="feat-text">
+        <span class="tag" style="background:var(--purple-light);color:var(--purple)">Dedicated Endpoints</span>
+        <h3>专属端点</h3>
+        <p>为生产环境提供独占 GPU 实例的专属推理服务，完全资源隔离，支持弹性伸缩。</p>
+        <ul>
+          <li>独占 GPU 实例：L40S / H100 / H200 / B200 + 国产 GPU</li>
+          <li>自动伸缩 min→max replicas，支持缩至零</li>
+          <li>Template 模板管理，一键创建端点</li>
+          <li>与 Serverless 推理相同的 SDK 体验</li>
+        </ul>
+      </div>
+      <div class="feat-visual">
+        <div style="text-align:center">
+          <div style="font-size:3rem;margin-bottom:12px">🏗️</div>
+          <div style="font-family:'JetBrains Mono';font-size:.78rem;color:var(--text-3);line-height:2">
+            <div>Serverless → <strong>共享推理</strong> → 按 Token 计费</div>
+            <div>Dedicated → <strong>专属端点</strong> → 按 GPU·时计费</div>
+            <div style="margin-top:8px;color:var(--text-4)">Flexible Deployment Modes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3 -->
+    <div class="feat-row">
+      <div class="feat-text">
+        <span class="tag" style="background:var(--green-light);color:var(--green)">Fine-tuning & Data Lab</span>
+        <h3>模型微调 & 数据实验室</h3>
+        <p>完整的模型微调流水线和统一数据工作空间，形成推理→数据→微调的闭环。</p>
+        <ul>
+          <li>LoRA / 全参数微调，Checkpoint 自动管理</li>
+          <li>推理日志自动采集，SQL 查询构建数据集</li>
+          <li>Datasets API (CRUD / 分片上传 / 版本管理)</li>
+          <li>Batch API 离线批量推理，50% 价格折扣</li>
+        </ul>
+      </div>
+      <div class="feat-visual">
+        <div style="text-align:center">
+          <div style="font-size:3rem;margin-bottom:12px">🔄</div>
+          <div style="font-size:.82rem;color:var(--text-3);line-height:2">
+            <div>Inference → <strong>Log</strong> → Data Lab</div>
+            <div>Data Lab → <strong>Dataset</strong> → Fine-tune</div>
+            <div>Fine-tune → <strong>Model</strong> → Deploy</div>
+            <div style="margin-top:8px;color:var(--text-4)">Closed-Loop Workflow</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module cards -->
+    <div style="margin-top:40px">
+      <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:20px;text-align:center;color:var(--text-3)">全部功能模块</h3>
+      <div class="grid g4">
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--blue-light);margin:0 auto 8px">⚡</div><h3 style="font-size:.82rem">推理引擎</h3><p style="font-size:.72rem">七大模型类型 + 双 API 格式</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--purple-light);margin:0 auto 8px">🎮</div><h3 style="font-size:.82rem">Playground</h3><p style="font-size:.72rem">交互式试玩 + 代码导出</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--cyan-light);margin:0 auto 8px">🏗️</div><h3 style="font-size:.82rem">专属端点</h3><p style="font-size:.72rem">独占 GPU + 弹性伸缩</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--green-light);margin:0 auto 8px">🎯</div><h3 style="font-size:.82rem">模型微调</h3><p style="font-size:.72rem">LoRA + Full Fine-tuning</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--amber-light);margin:0 auto 8px">🧪</div><h3 style="font-size:.82rem">数据实验室</h3><p style="font-size:.72rem">日志采集 + SQL 查询</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--rose-light);margin:0 auto 8px">📦</div><h3 style="font-size:.82rem">批量推理</h3><p style="font-size:.72rem">Batch API + 50% 折扣</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--blue-light);margin:0 auto 8px">📊</div><h3 style="font-size:.82rem">可观测性</h3><p style="font-size:.72rem">多维指标 + Grafana</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--purple-light);margin:0 auto 8px">👥</div><h3 style="font-size:.82rem">团队管理</h3><p style="font-size:.72rem">RBAC + SSO + MFA</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--cyan-light);margin:0 auto 8px">💰</div><h3 style="font-size:.82rem">计费系统</h3><p style="font-size:.72rem">支付宝/微信 + Promo Code</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--green-light);margin:0 auto 8px">🔌</div><h3 style="font-size:.82rem">第三方集成</h3><p style="font-size:.72rem">LangChain / Cursor / 飞书</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--amber-light);margin:0 auto 8px">🔄</div><h3 style="font-size:.82rem">迁移指南</h3><p style="font-size:.72rem">零成本从 OpenAI 迁移</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--rose-light);margin:0 auto 8px">📖</div><h3 style="font-size:.82rem">Cookbook</h3><p style="font-size:.72rem">开发者示例库</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--blue-light);margin:0 auto 8px">⌨️</div><h3 style="font-size:.82rem">CLI 工具</h3><p style="font-size:.72rem">Go 单二进制 + REPL</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="container">
+    <div class="sec-header">
+      <span class="sec-tag" style="background:var(--cyan-light);color:var(--cyan)">System Architecture</span>
+      <h2>系统架构</h2>
+      <p>云原生微服务架构，7 层分层设计，基于 Kubernetes 的 GPU 集群统一编排</p>
+    </div>
+
+    <div class="arch">
+      <div class="arch-layer">
+        <div class="arch-label" style="color:var(--blue)">接入层 Access Layer</div>
+        <div class="arch-row">
+          <div class="arch-box ab">Web Console</div>
+          <div class="arch-box ab">Responses + Completions API</div>
+          <div class="arch-box ab">SDK (Python / JS / Go)</div>
+          <div class="arch-box ab">CLI 工具</div>
+        </div>
+      </div>
+      <div class="arch-arrow">▼ ▼ ▼</div>
+      <div class="arch-layer">
+        <div class="arch-label" style="color:var(--cyan)">网关路由 Gateway & Routing</div>
+        <div class="arch-row">
+          <div class="arch-box ac">API Gateway (Kong/Envoy)</div>
+          <div class="arch-box ac">认证鉴权 (JWT/API Key)</div>
+          <div class="arch-box ac">速率限制引擎</div>
+          <div class="arch-box ac">智能路由 (Model Router)</div>
+        </div>
+      </div>
+      <div class="arch-arrow">▼ ▼ ▼</div>
+      <div class="arch-layer">
+        <div class="arch-label" style="color:var(--purple)">控制面 Control Plane</div>
+        <div class="arch-row">
+          <div class="arch-box ap">用户/团队服务</div>
+          <div class="arch-box ap">计费服务</div>
+          <div class="arch-box ap">端点管理服务</div>
+          <div class="arch-box ap">模型注册中心</div>
+          <div class="arch-box ap">微调任务调度</div>
+        </div>
+      </div>
+      <div class="arch-arrow">▼ ▼ ▼</div>
+      <div class="arch-layer">
+        <div class="arch-label" style="color:var(--green)">数据面 Data Plane — GPU Cluster</div>
+        <div class="arch-row">
+          <div class="arch-box ag">推理引擎集群 (vLLM)</div>
+          <div class="arch-box ag">专属端点实例池</div>
+          <div class="arch-box ag">批量推理工作节点</div>
+          <div class="arch-box ag">微调训练集群</div>
+        </div>
+      </div>
+      <div class="arch-arrow">▼ ▼ ▼</div>
+      <div class="arch-layer">
+        <div class="arch-label" style="color:var(--amber)">存储数据 Storage & Data</div>
+        <div class="arch-row">
+          <div class="arch-box aa">PostgreSQL</div>
+          <div class="arch-box aa">Redis Cluster</div>
+          <div class="arch-box aa">S3 对象存储</div>
+          <div class="arch-box aa">ClickHouse</div>
+          <div class="arch-box aa">Kafka</div>
+        </div>
+      </div>
+      <div class="arch-arrow">▼ ▼ ▼</div>
+      <div class="arch-layer">
+        <div class="arch-label" style="color:var(--rose)">可观测性 Observability</div>
+        <div class="arch-row">
+          <div class="arch-box ar">Prometheus</div>
+          <div class="arch-box ar">Grafana</div>
+          <div class="arch-box ar">OpenTelemetry</div>
+          <div class="arch-box ar">Loki</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section id="tech">
+  <div class="container">
+    <div class="sec-header">
+      <span class="sec-tag" style="background:var(--green-light);color:var(--green)">Technology Stack</span>
+      <h2>技术选型</h2>
+      <p>每一层选择经过生产验证的方案，兼顾性能、可维护性与社区生态</p>
+    </div>
+
+    <div class="tech-grid">
+      <div class="tech-item">
+        <div class="cat">推理引擎</div>
+        <h4>LLM Inference</h4>
+        <div class="tags"><span>vLLM v0.18+</span><span>SGLang</span><span>NVIDIA Dynamo</span></div>
+      </div>
+      <div class="tech-item">
+        <div class="cat">推理引擎</div>
+        <h4>注意力 & 量化</h4>
+        <div class="tags"><span>FlashAttention-4</span><span>NVFP4</span><span>FP8</span><span>EAGLE-3</span></div>
+      </div>
+      <div class="tech-item">
+        <div class="cat">推理引擎</div>
+        <h4>国产 GPU</h4>
+        <div class="tags"><span>vLLM-Ascend</span><span>LMDeploy</span><span>HAMi</span></div>
+      </div>
+      <div class="tech-item">
+        <div class="cat">后端服务</div>
+        <h4>API & Gateway</h4>
+        <div class="tags"><span>Go (Gin)</span><span>Kong</span><span>Envoy</span><span>Temporal</span></div>
+      </div>
+      <div class="tech-item">
+        <div class="cat">后端服务</div>
+        <h4>消息 & 流</h4>
+        <div class="tags"><span>Apache Kafka</span><span>Redis Stream</span></div>
+      </div>
+      <div class="tech-item">
+        <div class="cat">前端 & CLI</div>
+        <h4>Web Console</h4>
+        <div class="tags"><span>React 19</span><span>Next.js 15</span><span>TailwindCSS</span></div>
+      </div>
+      <div class="tech-item">
+        <div class="cat">前端 & CLI</div>
+        <h4>CLI 工具</h4>
+        <div class="tags"><span>Go</span><span>Cobra</span><span>Bubble Tea</span><span>GoReleaser</span></div>
+      </div>
+      <div class="tech-item">
+        <div class="cat">存储</div>
+        <h4>数据库 & 缓存</h4>
+        <div class="tags"><span>PostgreSQL 16</span><span>Redis 7</span><span>ClickHouse</span><span>S3</span></div>
+      </div>
+      <div class="tech-item">
+        <div class="cat">基础设施</div>
+        <h4>编排 & 调度</h4>
+        <div class="tags"><span>Kubernetes</span><span>GPU Operator</span><span>KEDA</span><span>Volcano</span></div>
+      </div>
+      <div class="tech-item">
+        <div class="cat">可观测性</div>
+        <h4>监控 & 追踪</h4>
+        <div class="tags"><span>Prometheus</span><span>Grafana</span><span>OpenTelemetry</span><span>Loki</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <div class="container">
+    <div class="sec-header">
+      <span class="sec-tag" style="background:var(--amber-light);color:var(--amber)">Roadmap</span>
+      <h2>实施路线图</h2>
+      <p>四阶段递进实施，从 MVP 核心能力逐步演进至完整企业级平台</p>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <h4>Phase 1: MVP — 核心推理能力 <span class="badge" style="background:var(--blue-light);color:var(--blue)">Phase 1</span></h4>
+        <ul>
+          <li>vLLM v0.18+ 共享推理集群</li>
+          <li>双格式 API (Responses + Completions)</li>
+          <li>API Key 认证 + 速率限制</li>
+          <li>Web Console (Playground / 模型管理)</li>
+          <li>基础计费 (Token 计量 + Promo Code)</li>
+          <li>Prometheus + Grafana 监控</li>
+        </ul>
+      </div>
+      <div class="tl-item">
+        <h4>Phase 2: 增强 — 专属端点与微调 <span class="badge" style="background:var(--purple-light);color:var(--purple)">Phase 2</span></h4>
+        <ul>
+          <li>Dedicated Endpoints 全生命周期</li>
+          <li>GPU 自动伸缩 (KEDA)</li>
+          <li>投机解码 / FP8 / KV Cache 压缩</li>
+          <li>LoRA + Full Fine-tuning</li>
+          <li>Batch API 批量推理</li>
+          <li>Datasets API</li>
+        </ul>
+      </div>
+      <div class="tl-item">
+        <h4>Phase 3: 生态 — 可观测性与集成 <span class="badge" style="background:var(--green-light);color:var(--green)">Phase 3</span></h4>
+        <ul>
+          <li>Data Lab 推理日志 + SQL 查询</li>
+          <li>完整可观测性面板</li>
+          <li>第三方集成 (LangChain / Cursor)</li>
+          <li>Embedding + Rerank + Image 模型</li>
+          <li>CLI 命令行工具</li>
+          <li>PD 分离 + Dynamo 分布式推理</li>
+        </ul>
+      </div>
+      <div class="tl-item">
+        <h4>Phase 4: 企业 — 安全合规 <span class="badge" style="background:var(--amber-light);color:var(--amber)">Phase 4</span></h4>
+        <ul>
+          <li>SSO (SAML/OIDC) + RBAC 权限</li>
+          <li>零数据留存 (ZDR) 模式</li>
+          <li>SOC 2 / GDPR / HIPAA 合规</li>
+          <li>VPC Peering / PrivateLink</li>
+          <li>Custom Models API</li>
+          <li>企业费用中心 + 发票管理</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2>Ready to Get Started?</h2>
+    <p>查看完整产品方案文档，了解系统架构设计与技术选型细节</p>
+    <a href="https://github.com/xincxiong/Model-Inference-Platform-Design" target="_blank" class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+      View on GitHub
+    </a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    Model Inference Cloud Platform &nbsp;·&nbsp; Architecture Design v1.0 &nbsp;·&nbsp; 2026
+  </div>
+</footer>
+
+<script>
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('scrolled',window.scrollY>20)
+});
+const secs=document.querySelectorAll('section[id]');
+const links=document.querySelectorAll('.nav-links a');
+const obs=new IntersectionObserver(es=>{
+  es.forEach(e=>{if(e.isIntersecting){
+    links.forEach(l=>l.style.color='');
+    const a=document.querySelector(`.nav-links a[href="#${e.target.id}"]`);
+    if(a)a.style.color='var(--blue)';
+  }});
+},{rootMargin:'-20% 0px -80% 0px'});
+secs.forEach(s=>obs.observe(s));
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});
+  });
+});
+</script>
+</body>
+</html>
