@@ -67,20 +67,20 @@ type PromoCode struct {
 // =============================================
 
 type ChatCompletionRequest struct {
-	Model            string        `json:"model" binding:"required"`
-	Messages         []ChatMessage `json:"messages" binding:"required"`
-	Stream           bool          `json:"stream"`
-	Temperature      *float64      `json:"temperature,omitempty"`
-	MaxTokens        *int          `json:"max_tokens,omitempty"`
-	TopP             *float64      `json:"top_p,omitempty"`
-	FrequencyPenalty *float64      `json:"frequency_penalty,omitempty"`
-	PresencePenalty  *float64      `json:"presence_penalty,omitempty"`
-	ServiceTier      string        `json:"service_tier,omitempty"`
+	Model            string          `json:"model" binding:"required"`
+	Messages         []ChatMessage   `json:"messages" binding:"required"`
+	Stream           bool            `json:"stream"`
+	Temperature      *float64        `json:"temperature,omitempty"`
+	MaxTokens        *int            `json:"max_tokens,omitempty"`
+	TopP             *float64        `json:"top_p,omitempty"`
+	FrequencyPenalty *float64        `json:"frequency_penalty,omitempty"`
+	PresencePenalty  *float64        `json:"presence_penalty,omitempty"`
+	ServiceTier      string          `json:"service_tier,omitempty"`
 	ResponseFormat   *ResponseFormat `json:"response_format,omitempty"`
-	Tools            []ToolDef     `json:"tools,omitempty"`
-	ToolChoice       interface{}   `json:"tool_choice,omitempty"`
-	Stop             interface{}   `json:"stop,omitempty"`
-	N                *int          `json:"n,omitempty"`
+	Tools            []ToolDef       `json:"tools,omitempty"`
+	ToolChoice       interface{}     `json:"tool_choice,omitempty"`
+	Stop             interface{}     `json:"stop,omitempty"`
+	N                *int            `json:"n,omitempty"`
 }
 
 type ChatMessage struct {
@@ -106,8 +106,8 @@ type ResponseFormat struct {
 }
 
 type ToolDef struct {
-	Type     string       `json:"type"`
-	Function FunctionDef  `json:"function"`
+	Type     string      `json:"type"`
+	Function FunctionDef `json:"function"`
 }
 
 type FunctionDef struct {
@@ -117,9 +117,9 @@ type FunctionDef struct {
 }
 
 type ToolCall struct {
-	ID       string           `json:"id"`
-	Type     string           `json:"type"`
-	Function FunctionCall     `json:"function"`
+	ID       string       `json:"id"`
+	Type     string       `json:"type"`
+	Function FunctionCall `json:"function"`
 }
 
 type FunctionCall struct {
@@ -173,13 +173,13 @@ type Usage struct {
 // =============================================
 
 type CompletionRequest struct {
-	Model       string   `json:"model" binding:"required"`
-	Prompt      string   `json:"prompt" binding:"required"`
-	Suffix      string   `json:"suffix,omitempty"`
-	MaxTokens   *int     `json:"max_tokens,omitempty"`
-	Temperature *float64 `json:"temperature,omitempty"`
-	TopP        *float64 `json:"top_p,omitempty"`
-	Stream      bool     `json:"stream"`
+	Model       string      `json:"model" binding:"required"`
+	Prompt      string      `json:"prompt" binding:"required"`
+	Suffix      string      `json:"suffix,omitempty"`
+	MaxTokens   *int        `json:"max_tokens,omitempty"`
+	Temperature *float64    `json:"temperature,omitempty"`
+	TopP        *float64    `json:"top_p,omitempty"`
+	Stream      bool        `json:"stream"`
 	Stop        interface{} `json:"stop,omitempty"`
 }
 
@@ -222,19 +222,19 @@ type TextFormat struct {
 }
 
 type ResponseObject struct {
-	ID         string          `json:"id"`
-	Object     string          `json:"object"`
-	Model      string          `json:"model"`
-	CreatedAt  int64           `json:"created_at"`
-	Status     string          `json:"status"`
-	Output     []ResponseItem  `json:"output"`
-	OutputText string          `json:"output_text"`
-	Usage      ResponseUsage   `json:"usage"`
+	ID         string         `json:"id"`
+	Object     string         `json:"object"`
+	Model      string         `json:"model"`
+	CreatedAt  int64          `json:"created_at"`
+	Status     string         `json:"status"`
+	Output     []ResponseItem `json:"output"`
+	OutputText string         `json:"output_text"`
+	Usage      ResponseUsage  `json:"usage"`
 }
 
 type ResponseItem struct {
-	Type    string               `json:"type"`
-	Role    string               `json:"role,omitempty"`
+	Type    string                `json:"type"`
+	Role    string                `json:"role,omitempty"`
 	Content []ResponseItemContent `json:"content,omitempty"`
 }
 
@@ -289,10 +289,10 @@ type RerankRequest struct {
 }
 
 type RerankResponse struct {
-	Object  string       `json:"object"`
+	Object  string         `json:"object"`
 	Results []RerankResult `json:"results"`
-	Model   string       `json:"model"`
-	Usage   RerankUsage  `json:"usage"`
+	Model   string         `json:"model"`
+	Usage   RerankUsage    `json:"usage"`
 }
 
 type RerankResult struct {

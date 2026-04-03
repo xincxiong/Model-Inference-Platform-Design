@@ -65,7 +65,9 @@ func (h *ChatCompletionsHandler) Create(c *gin.Context) {
 	}
 }
 
-func (h *ChatCompletionsHandler) handleStream(c *gin.Context, req model.ChatCompletionRequest, resolved *modelrouter.ResolvedModel, eng interface{ ChatCompletion(context.Context, model.ChatCompletionRequest) (<-chan model.ChatCompletionChunk, error) }, auth middleware.AuthInfo) {
+func (h *ChatCompletionsHandler) handleStream(c *gin.Context, req model.ChatCompletionRequest, resolved *modelrouter.ResolvedModel, eng interface {
+	ChatCompletion(context.Context, model.ChatCompletionRequest) (<-chan model.ChatCompletionChunk, error)
+}, auth middleware.AuthInfo) {
 	ch, err := eng.ChatCompletion(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -103,7 +105,9 @@ func (h *ChatCompletionsHandler) handleStream(c *gin.Context, req model.ChatComp
 	go h.recordUsage(auth, resolved, inputTokens, outputTokens)
 }
 
-func (h *ChatCompletionsHandler) handleNonStream(c *gin.Context, req model.ChatCompletionRequest, resolved *modelrouter.ResolvedModel, eng interface{ ChatCompletion(context.Context, model.ChatCompletionRequest) (<-chan model.ChatCompletionChunk, error) }, auth middleware.AuthInfo) {
+func (h *ChatCompletionsHandler) handleNonStream(c *gin.Context, req model.ChatCompletionRequest, resolved *modelrouter.ResolvedModel, eng interface {
+	ChatCompletion(context.Context, model.ChatCompletionRequest) (<-chan model.ChatCompletionChunk, error)
+}, auth middleware.AuthInfo) {
 	ch, err := eng.ChatCompletion(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

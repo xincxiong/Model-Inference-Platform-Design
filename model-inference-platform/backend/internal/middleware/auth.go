@@ -20,8 +20,8 @@ type AuthInfo struct {
 }
 
 const (
-	authInfoKey    = "auth_info"
-	redisCacheTTL  = 60 * time.Second
+	authInfoKey   = "auth_info"
+	redisCacheTTL = 60 * time.Second
 )
 
 func AuthMiddleware(db *pgxpool.Pool, rdb *redis.Client) gin.HandlerFunc {

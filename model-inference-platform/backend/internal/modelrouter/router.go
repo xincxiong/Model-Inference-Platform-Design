@@ -14,22 +14,22 @@ import (
 )
 
 var (
-	ErrModelNotFound    = errors.New("model not found or inactive")
+	ErrModelNotFound     = errors.New("model not found or inactive")
 	ErrModelTypeMismatch = errors.New("model type does not match this endpoint")
 )
 
 // ResolvedModel contains all routing information after resolving a model identifier.
 type ResolvedModel struct {
-	ID          string  // canonical model ID in DB (without flavor suffix)
-	OriginalID  string  // what the user passed (may include -fast)
+	ID          string // canonical model ID in DB (without flavor suffix)
+	OriginalID  string // what the user passed (may include -fast)
 	Name        string
-	ModelType   string  // text-to-text, vision, embedding, rerank, text-to-image, text-to-video, speech
+	ModelType   string // text-to-text, vision, embedding, rerank, text-to-image, text-to-video, speech
 	Provider    string
-	Flavor      string  // "base" or "fast"
+	Flavor      string // "base" or "fast"
 	InputPrice  float64
 	OutputPrice float64
 	MaxContext  int
-	BackendKey  string  // which engine backend to route to ("shared", "dedicated:<endpoint_id>", etc.)
+	BackendKey  string // which engine backend to route to ("shared", "dedicated:<endpoint_id>", etc.)
 }
 
 type modelCacheEntry struct {
