@@ -47,7 +47,7 @@
 | 国产 GPU | vLLM-Ascend · LMDeploy · HAMi · 昇腾/海光/寒武纪 |
 | 后端 | Go (Gin) · Kong/Envoy · Temporal · Kafka |
 | 前端 | React 19 · Next.js 15 · TailwindCSS · Monaco Editor |
-| 存储 | PostgreSQL 16 · Redis 7 · ClickHouse · S3 |
+| 存储 | PostgreSQL 16 · Redis 7 · ClickHouse · S3 · Lance/LanceDB |
 | 基础设施 | Kubernetes · GPU Operator · KEDA · Volcano |
 | 可观测性 | Prometheus · Grafana · OpenTelemetry · Loki |
 
