@@ -235,15 +235,16 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 <!-- HERO -->
 <section class="hero">
   <div class="container hero-inner">
-    <div class="hero-badge"><span class="pulse"></span>Vendor-Neutral · Full-Stack · Production Ready</div>
+    <div class="hero-badge"><span class="pulse"></span>Vendor-Neutral · AI-Native Data · Production Ready</div>
     <h1>
       <span class="gradient">Model Inference</span><br>Cloud Platform
     </h1>
     <p class="subtitle">
-      厂商中立的一站式模型推理云平台 — 独立第三方 + 全链路闭环 + 国产化适配。<br>兼容 OpenAI API，从快速实验到生产部署的全链路能力。
+      厂商中立的一站式模型推理云平台 — 全链路闭环 + AI 原生数据底座 + 国产化适配。<br>Lance/LanceDB 驱动的智能数据层，兼容 OpenAI API，从实验到生产的完整能力。
     </p>
     <div class="value-props">
-      <div class="vp"><span class="check">✓</span> 推理→数据→微调→部署闭环</div>
+      <div class="vp"><span class="check">✓</span> 推理→Data Lab→微调→部署闭环</div>
+      <div class="vp"><span class="check">✓</span> Lance/LanceDB AI 原生数据底座</div>
       <div class="vp"><span class="check">✓</span> 华为昇腾/海光/寒武纪 国产 GPU</div>
       <div class="vp"><span class="check">✓</span> 不绑定模型·不绑定云</div>
       <div class="vp"><span class="check">✓</span> Responses API 先发优势</div>
@@ -279,8 +280,8 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <div class="adv-card a-blue">
         <div class="num">01 · Full-Stack Loop</div>
         <h3>全链路闭环</h3>
-        <p>推理 → 数据采集 → SQL 筛选 → 微调训练 → 模型部署，一站到底。</p>
-        <div class="detail">独有 <strong>Data Lab</strong> 将推理日志直接转化为训练数据。竞品用户需在多个工具间手动搬运数据，本平台实现"推理日志直接变训练数据"，模型迭代周期缩短 60%+。</div>
+        <p>推理 → Data Lab 数据采集 → SQL + 向量混合查询 → 微调训练 → 模型部署，一站到底。</p>
+        <div class="detail">独有 <strong>Data Lab</strong>（基于 Lance 格式存储）将推理日志直接转化为训练数据，<strong>Git-style 分支</strong>实现数据集版本管理与零拷贝克隆。竞品需跨工具手动搬运数据，本平台模型迭代周期缩短 60%+。</div>
       </div>
       <!-- 2 -->
       <div class="adv-card a-green">
@@ -307,8 +308,8 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <div class="adv-card a-amber">
         <div class="num">05 · Optimization Depth</div>
         <h3>推理优化技术纵深</h3>
-        <p>不只是"套壳 vLLM"— 从注意力层、解码层到分布式架构的全栈深度优化。</p>
-        <div class="detail"><strong>FlashAttention-4 + 3-bit KV 压缩 + EAGLE-3 投机 + PD 分离 + NVIDIA Dynamo + DeepEP MoE 通信</strong>。PD 分离在 DeepSeek-R1 等长推理模型上实现最高 30x 吞吐提升。</div>
+        <p>从注意力层、解码层、分布式架构到智能缓存的全栈深度优化。</p>
+        <div class="detail"><strong>FlashAttention-4 + 3-bit KV 压缩 + EAGLE-3 投机 + PD 分离 + NVIDIA Dynamo + DeepEP MoE 通信</strong>。LanceDB 驱动的<strong>语义缓存</strong>实现 &lt;1ms 向量匹配，语义相近请求直接复用推理结果。PD 分离在长推理模型上实现最高 30x 吞吐提升。</div>
       </div>
       <!-- 6 -->
       <div class="adv-card a-rose">
@@ -318,11 +319,11 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
         <div class="detail"><strong>RBAC + SSO (SAML/OIDC) + MFA + ZDR 零数据留存 + VPC Peering</strong>。支付宝/微信支付/银行转账本地化支付，GitHub Secret Scanning 集成自动检测 Key 泄露。</div>
       </div>
       <!-- 7 -->
-      <div class="adv-card a-blue">
-        <div class="num">07 · Developer Experience</div>
-        <h3>极致开发者体验</h3>
-        <p>CLI + Cookbook + 迁移指南 + Playground，从零到生产的全方位工具链。</p>
-        <div class="detail"><strong>Go 单二进制 CLI</strong>（交互式 REPL + 脚本化 CI/CD），OpenAI 迁移仅需改 <code>base_url</code>。Playground 支持模型对比、Function Calling 和结构化输出测试。</div>
+      <div class="adv-card a-cyan">
+        <div class="num">07 · AI-Native Data</div>
+        <h3>AI 原生数据底座</h3>
+        <p>基于 Lance/LanceDB 构建的 AI 原生存储层，而非传统数据库的 AI 补丁。</p>
+        <div class="detail"><strong>Lance v4.0</strong> 列式格式随机访问比 Parquet 快 100x，原生向量列 + 多模态混合存储。<strong>LanceDB</strong> 提供向量搜索 + 全文搜索 + SQL 的统一混合查询，驱动语义缓存、Embedding 存储、file_search 和数据集版本管理。</div>
       </div>
     </div>
 

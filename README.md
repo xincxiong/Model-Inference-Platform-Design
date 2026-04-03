@@ -1,6 +1,6 @@
 # Model Inference Cloud Platform
 
-> 厂商中立的一站式模型推理云平台 — 独立第三方 + 全链路闭环 + 国产化适配。
+> 厂商中立的一站式模型推理云平台 — 全链路闭环 + AI 原生数据底座 + 国产化适配。
 
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Demo-blue?logo=github)](https://xincxiong.github.io/Model-Inference-Platform-Design/)
 
@@ -8,13 +8,13 @@
 
 | 优势 | 说明 |
 |------|------|
-| **全链路闭环** | 推理 → 数据采集 → SQL 筛选 → 微调训练 → 模型部署，独有 Data Lab 数据实验室 |
-| **国产化算力适配** | 华为昇腾 910B/950 · 海光 K100 · 寒武纪 590，HAMi 异构中间件统一抽象 |
-| **厂商中立** | 不绑定模型（DeepSeek/Qwen/GLM/Kimi/Llama）、不绑定云，集成 30+ 第三方框架 |
+| **全链路闭环** | 推理 → Data Lab 数据采集 → SQL + 向量混合查询 → 微调训练 → 模型部署，消除跨工具数据搬运 |
+| **AI 原生数据底座** | Lance v4.0 列式格式（100x 快于 Parquet）+ LanceDB 向量数据库（<1ms 语义缓存 + 混合搜索），Git-style 数据集版本管理 |
+| **国产化算力适配** | 华为昇腾 910B/950 · 海光 K100 · 寒武纪 590，HAMi 异构中间件统一抽象，API 透明切换 |
+| **厂商中立** | 不绑定模型（DeepSeek/Qwen/GLM/Kimi/Llama 7+ 厂商）、不绑定云，集成 30+ 第三方框架 |
 | **Responses API** | 下一代推理接口，服务端状态管理 + 链式引用，多轮对话 Token 消耗降低 40-80% |
-| **推理优化深度** | FlashAttention-4 · 3-bit KV 压缩 · EAGLE-3 投机 · PD 分离 · Dynamo 编排 |
+| **推理优化深度** | FlashAttention-4 · 3-bit KV 压缩 · EAGLE-3 投机 · PD 分离 · Dynamo 编排 · LanceDB 语义缓存 |
 | **企业级安全** | RBAC + SSO + ZDR 零数据留存 + SOC 2 / GDPR / HIPAA，支付宝/微信支付 |
-| **开发者体验** | Go CLI（REPL + CI/CD）· Cookbook 示例库 · OpenAI 零成本迁移 |
 
 ## 文档
 
