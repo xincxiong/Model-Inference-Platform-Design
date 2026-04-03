@@ -604,7 +604,7 @@ code {
     <div class="card">
       <div class="card-icon" style="background: rgba(124,58,237,0.1); color: var(--accent-purple);">🏗️</div>
       <h3>专属端点 (Dedicated)</h3>
-      <p>独立 GPU 实例、可配置副本数与自动伸缩，适用于对延迟/吞吐有严格要求的生产场景</p>
+      <p>独占 GPU 实例 + 三维指标复合伸缩 + Warm Pool 冷启动优化 + 跨 AZ 高可用，面向生产级推理</p>
     </div>
     <div class="card">
       <div class="card-icon" style="background: rgba(5,150,105,0.1); color: var(--accent-emerald);">🇨🇳</div>
@@ -646,7 +646,7 @@ code {
         <tr style="background: var(--bg-card);">
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">专属端点</td>
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Dedicated Endpoints</td>
-          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">独占 GPU 实例 · Template 模板管理 · 弹性伸缩 / 缩至零 · 多 GPU 类型 (含国产 GPU)</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">独占 GPU 实例 · 复合伸缩策略 (队列+延迟+GPU) · Warm Pool 冷启动优化 (<5s) · 零停机蓝绿部署 · 跨 AZ 高可用 · 资源配额管理</td>
         </tr>
         <tr>
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">模型微调</td>
@@ -882,11 +882,40 @@ code {
         <h3>端点管理 (Control Plane)</h3>
         <ul>
           <li>基于模型模板 (Template) 创建专属部署实例</li>
-          <li>选择 GPU 类型: L40S / H100 / H200 / B200</li>
+          <li>选择 GPU 类型: L40S / H100 / H200 / B200 + 国产 GPU</li>
           <li>配置 GPU 数量 / 副本数 / 区域</li>
-          <li>自动伸缩 (min_replicas → max_replicas)</li>
           <li>实时状态监控与生命周期管理</li>
-          <li>支持热更新配置 (PATCH) 与安全删除</li>
+          <li>零停机配置变更 (蓝绿部署 + 滚动更新)</li>
+          <li>资源配额管理 (组织 GPU 上限 / 端点数量限制)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>智能弹性伸缩</h3>
+        <ul>
+          <li><strong>复合伸缩策略</strong>：队列深度 + P99 延迟 + GPU 利用率三维指标</li>
+          <li>扩容步长 ceil(current×0.5)，缩容保守步长 1（防抖动）</li>
+          <li>扩容冷却期 60s / 缩容冷却期 300s / 缩至零延迟 600s</li>
+          <li>每 15 秒评估一次，60 秒滑动窗口采样</li>
+          <li>支持 Scale-to-Zero，无流量自动停止计费</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>冷启动优化</h3>
+        <ul>
+          <li><strong>NVMe 模型预缓存</strong>：权重文件预缓存到节点本地 SSD，减少 60-80% 冷启动时间</li>
+          <li><strong>Warm Pool 预热副本</strong>：已加载模型的待命副本，冷启动 < 5s</li>
+          <li><strong>预测性扩容</strong>：基于历史流量模式提前扩容</li>
+          <li><strong>分层模型加载</strong>：先加载前几层开始推理，后续层后台流式加载</li>
+          <li><strong>Checkpoint 快照</strong>：GPU 内存状态序列化快照，快速恢复</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>高可用与容错</h3>
+        <ul>
+          <li><strong>跨 AZ 分散部署</strong>：副本 Anti-Affinity，单 AZ 故障不影响服务</li>
+          <li><strong>资源溢出</strong>：同区域其他 AZ → 备用区域 → 排队通知</li>
+          <li><strong>GPU 降级调度</strong>：目标 GPU 不可用时自动降级并通知</li>
+          <li><strong>故障自愈</strong>：OOM / GPU 错误 / 健康检查失败自动重启替换</li>
         </ul>
       </div>
       <div class="card">
@@ -899,21 +928,13 @@ code {
         </ul>
       </div>
       <div class="card">
-        <h3>自定义模型部署</h3>
-        <ul>
-          <li>上传自有模型权重文件 (Safetensors/GGUF)</li>
-          <li>LoRA 适配器在线部署 (无需合并权重)</li>
-          <li>微调 checkpoint 一键部署为推理端点</li>
-          <li>支持自定义推理参数与 Tokenizer</li>
-        </ul>
-      </div>
-      <div class="card">
         <h3>计费策略</h3>
         <ul>
           <li>按 GPU 时长计费 (副本 × GPU × 时间)</li>
           <li>仅运行中的副本产生费用</li>
           <li>min_replicas=0 时自动释放资源</li>
-          <li>结合 Spot 实例可进一步降低成本</li>
+          <li>Warm Pool 预热副本按 50% 费率计费</li>
+          <li>伸缩事件全链路通知 (Console / Webhook / 邮件)</li>
         </ul>
       </div>
     </div>
@@ -1536,7 +1557,7 @@ code {
       <tr>
         <td>自动伸缩</td>
         <td><span class="tech-tag">KEDA</span> <span class="tech-tag">Custom HPA</span></td>
-        <td class="tech-desc">基于推理请求队列深度 / GPU 利用率 / 自定义指标的弹性伸缩</td>
+        <td class="tech-desc">复合伸缩策略 (队列深度 + P99 延迟 + GPU 利用率)，扩容冷却 60s / 缩容冷却 300s，Warm Pool 冷启动优化</td>
       </tr>
       <tr>
         <td>IaC</td>
@@ -1739,8 +1760,8 @@ code {
         <span class="phase-badge" style="background: rgba(124,58,237,0.1); color: var(--accent-purple);">Phase 2</span>
       </h4>
       <ul>
-        <li>专属端点 (Dedicated Endpoint) 全生命周期管理</li>
-        <li>GPU 自动伸缩 (KEDA + Cluster Autoscaler)</li>
+        <li>专属端点全生命周期 + 复合伸缩策略 + Warm Pool 冷启动优化</li>
+        <li>GPU 智能伸缩 (KEDA) + 跨 AZ 高可用 + 资源配额管理</li>
         <li>推理优化: 投机解码 (EAGLE-3 / N-gram GPU)、FP8/NVFP4 量化、KV Cache 压缩与 CPU 卸载</li>
         <li>LoRA / Full Fine-tuning 训练流水线</li>
         <li>数据集管理与验证系统</li>

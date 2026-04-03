@@ -468,12 +468,13 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <div class="feat-text">
         <span class="tag" style="background:var(--purple-light);color:var(--purple)">Dedicated Endpoints</span>
         <h3>专属端点</h3>
-        <p>为生产环境提供独占 GPU 实例的专属推理服务，完全资源隔离，支持弹性伸缩。</p>
+        <p>为生产环境提供独占 GPU 实例的专属推理服务，完全资源隔离，智能弹性伸缩。</p>
         <ul>
           <li>独占 GPU 实例：L40S / H100 / H200 / B200 + 国产 GPU</li>
-          <li>自动伸缩 min→max replicas，支持缩至零</li>
-          <li>Template 模板管理，一键创建端点</li>
-          <li>与 Serverless 推理相同的 SDK 体验</li>
+          <li>复合伸缩策略：队列深度 + P99 延迟 + GPU 利用率三维指标驱动</li>
+          <li>冷启动优化：NVMe 模型预缓存 + Warm Pool 预热副本（<5s 恢复）</li>
+          <li>零停机配置变更：GPU 类型/数量蓝绿部署，渐进流量切换</li>
+          <li>跨 AZ 高可用 + 资源溢出自动调度 + 故障自愈</li>
         </ul>
       </div>
       <div class="feat-visual">
@@ -518,7 +519,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <div class="grid g4">
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--blue-light);margin:0 auto 8px">⚡</div><h3 style="font-size:.82rem">推理引擎</h3><p style="font-size:.72rem">七大模型类型 + 双 API 格式</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--purple-light);margin:0 auto 8px">🎮</div><h3 style="font-size:.82rem">Playground</h3><p style="font-size:.72rem">交互式试玩 + 代码导出</p></div>
-        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--cyan-light);margin:0 auto 8px">🏗️</div><h3 style="font-size:.82rem">专属端点</h3><p style="font-size:.72rem">独占 GPU + 弹性伸缩</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--cyan-light);margin:0 auto 8px">🏗️</div><h3 style="font-size:.82rem">专属端点</h3><p style="font-size:.72rem">独占 GPU + 智能弹性伸缩 + 冷启动优化</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--green-light);margin:0 auto 8px">🎯</div><h3 style="font-size:.82rem">模型微调</h3><p style="font-size:.72rem">LoRA + Full Fine-tuning</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--amber-light);margin:0 auto 8px">🧪</div><h3 style="font-size:.82rem">数据实验室</h3><p style="font-size:.72rem">日志采集 + SQL 查询</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--rose-light);margin:0 auto 8px">📦</div><h3 style="font-size:.82rem">批量推理</h3><p style="font-size:.72rem">Batch API + 50% 折扣</p></div>
@@ -656,8 +657,8 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <div class="tl-item">
         <h4>Phase 2: 增强 — 专属端点与微调 <span class="badge" style="background:var(--purple-light);color:var(--purple)">Phase 2</span></h4>
         <ul>
-          <li>Dedicated Endpoints 全生命周期</li>
-          <li>GPU 自动伸缩 (KEDA)</li>
+          <li>Dedicated Endpoints 全生命周期 + 复合伸缩策略</li>
+          <li>GPU 智能伸缩 (KEDA) + 冷启动优化 + Warm Pool</li>
           <li>投机解码 / FP8 / KV Cache 压缩</li>
           <li>LoRA + Full Fine-tuning</li>
           <li>Batch API 批量推理</li>
