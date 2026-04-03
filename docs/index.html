@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Model Inference Platform — 一站式模型推理云平台</title>
-<meta name="description" content="开源模型推理云平台，支持 Serverless 推理、专属端点、模型微调、Batch API，兼容 OpenAI API 格式。">
+<meta name="description" content="厂商中立的一站式模型推理云平台。全链路闭环能力，国产 GPU 异构适配，兼容 OpenAI API，支持 Serverless 推理、专属端点、模型微调与数据实验室。">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -30,7 +30,7 @@ a{color:var(--blue);text-decoration:none}
 code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--blue-light);color:var(--blue);padding:2px 7px;border-radius:5px}
 .container{max-width:1140px;margin:0 auto;padding:0 24px}
 
-/* ========== NAV ========== */
+/* NAV */
 .nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.85);backdrop-filter:blur(16px) saturate(1.6);border-bottom:1px solid var(--border);transition:box-shadow .3s}
 .nav.scrolled{box-shadow:0 1px 12px rgba(0,0,0,.06)}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px;max-width:1140px;margin:0 auto;padding:0 24px}
@@ -46,7 +46,7 @@ code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--blu
 .btn-gh{background:#24292f;color:#fff}.btn-gh:hover{background:#1b1f23}
 .btn svg{width:16px;height:16px}
 
-/* ========== HERO ========== */
+/* HERO */
 .hero{position:relative;padding:100px 0 80px;text-align:center;overflow:hidden}
 .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(37,99,235,.06),transparent 70%),radial-gradient(ellipse 60% 40% at 80% 100%,rgba(124,58,237,.04),transparent 60%)}
 .hero-inner{position:relative;z-index:1}
@@ -55,7 +55,10 @@ code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--blu
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .hero h1{font-size:clamp(2.2rem,5.5vw,3.8rem);font-weight:800;letter-spacing:-.03em;line-height:1.15;max-width:800px;margin:0 auto 16px}
 .hero h1 .gradient{background:linear-gradient(135deg,var(--blue) 0%,var(--purple) 50%,var(--cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero .subtitle{font-size:1.1rem;color:var(--text-3);max-width:640px;margin:0 auto 32px;font-weight:400;line-height:1.8}
+.hero .subtitle{font-size:1.1rem;color:var(--text-3);max-width:680px;margin:0 auto 20px;font-weight:400;line-height:1.8}
+.hero .value-props{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:32px}
+.hero .vp{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-2);font-weight:500}
+.hero .vp .check{color:var(--green);font-weight:700}
 .hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .hero-stats{display:flex;gap:32px;justify-content:center;margin-top:56px;flex-wrap:wrap}
 .hero-stat{text-align:center}
@@ -63,15 +66,15 @@ code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--blu
 .hero-stat .lab{font-size:.75rem;color:var(--text-4);margin-top:2px;font-weight:500;text-transform:uppercase;letter-spacing:.06em}
 .v-blue{color:var(--blue)}.v-purple{color:var(--purple)}.v-cyan{color:var(--cyan)}.v-green{color:var(--green)}.v-amber{color:var(--amber)}
 
-/* ========== SECTIONS ========== */
+/* SECTIONS */
 section{padding:80px 0}
 section:nth-child(even){background:var(--bg-soft)}
 .sec-header{text-align:center;margin-bottom:56px}
 .sec-tag{display:inline-block;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:5px;margin-bottom:12px}
 .sec-header h2{font-size:2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
-.sec-header p{color:var(--text-3);max-width:620px;margin:0 auto;font-size:.95rem}
+.sec-header p{color:var(--text-3);max-width:640px;margin:0 auto;font-size:.95rem}
 
-/* ========== GRIDS / CARDS ========== */
+/* GRIDS / CARDS */
 .grid{display:grid;gap:20px}
 .g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
 .g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
@@ -85,7 +88,54 @@ section:nth-child(even){background:var(--bg-soft)}
 .card li{padding:3px 0 3px 18px;position:relative}
 .card li::before{content:'›';position:absolute;left:0;color:var(--blue);font-weight:700}
 
-/* ========== FEATURES HIGHLIGHT ========== */
+/* ADVANTAGES */
+.adv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.adv-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:28px 28px 24px;position:relative;overflow:hidden;transition:all .25s}
+.adv-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.adv-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.adv-card .num{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.adv-card h3{font-size:1.05rem;font-weight:700;margin-bottom:8px}
+.adv-card p{font-size:.85rem;color:var(--text-2);line-height:1.7;margin-bottom:12px}
+.adv-card .detail{font-size:.78rem;color:var(--text-3);line-height:1.7;padding-top:12px;border-top:1px solid var(--border)}
+.adv-card .detail strong{color:var(--text)}
+.a-blue::before{background:var(--blue)} .a-blue .num{color:var(--blue)}
+.a-purple::before{background:var(--purple)} .a-purple .num{color:var(--purple)}
+.a-cyan::before{background:var(--cyan)} .a-cyan .num{color:var(--cyan)}
+.a-green::before{background:var(--green)} .a-green .num{color:var(--green)}
+.a-amber::before{background:var(--amber)} .a-amber .num{color:var(--amber)}
+.a-rose::before{background:var(--rose)} .a-rose .num{color:var(--rose)}
+
+/* COMPARISON TABLE */
+.cmp-wrap{overflow-x:auto;margin-top:40px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)}
+.cmp-table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:700px}
+.cmp-table th{padding:12px 14px;text-align:left;font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;background:var(--bg-soft);border-bottom:2px solid var(--border);color:var(--text-3);position:sticky;top:0}
+.cmp-table td{padding:10px 14px;border-bottom:1px solid var(--bg-mute);vertical-align:middle}
+.cmp-table tr:last-child td{border-bottom:none}
+.cmp-table tr.hl{background:rgba(37,99,235,.03)}
+.cmp-table tr.hl td:first-child{font-weight:700;color:var(--blue)}
+.cmp-table .y{color:var(--green);font-weight:700}.cmp-table .n{color:var(--text-4)}
+.cmp-table .tag-sm{display:inline-block;font-size:.65rem;padding:1px 6px;border-radius:3px;font-weight:600}
+.tag-us{background:var(--blue-light);color:var(--blue)}
+.tag-overseas{background:var(--purple-light);color:var(--purple)}
+.tag-domestic{background:var(--amber-light);color:var(--amber)}
+
+/* POSITIONING CHART */
+.pos-chart{display:flex;justify-content:center;margin-top:40px}
+.pos-box{width:100%;max-width:560px;aspect-ratio:1.2;border:2px solid var(--border);border-radius:16px;position:relative;background:var(--bg)}
+.pos-axis-x,.pos-axis-y{position:absolute;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-4)}
+.pos-axis-x{bottom:12px;left:50%;transform:translateX(-50%)}
+.pos-axis-y{top:50%;left:12px;transform:rotate(-90deg) translateX(-50%);transform-origin:top left;white-space:nowrap}
+.pos-axis-xl{left:8%;bottom:12px;position:absolute;font-size:.62rem;color:var(--text-4)}
+.pos-axis-xr{right:8%;bottom:12px;position:absolute;font-size:.62rem;color:var(--text-4)}
+.pos-axis-yt{top:8%;left:12px;position:absolute;font-size:.62rem;color:var(--text-4);writing-mode:vertical-rl}
+.pos-axis-yb{bottom:8%;left:12px;position:absolute;font-size:.62rem;color:var(--text-4);writing-mode:vertical-rl}
+.pos-dot{position:absolute;padding:5px 10px;border-radius:6px;font-size:.7rem;font-weight:600;border:1.5px solid;white-space:nowrap;transition:transform .2s}
+.pos-dot:hover{transform:scale(1.08);z-index:2}
+.pos-line-h,.pos-line-v{position:absolute;background:var(--border)}
+.pos-line-h{height:1px;width:90%;left:5%;top:50%}
+.pos-line-v{width:1px;height:90%;top:5%;left:50%}
+
+/* FEATURES HIGHLIGHT */
 .feat-row{display:flex;gap:32px;align-items:center;margin-bottom:64px}
 .feat-row:nth-child(even){flex-direction:row-reverse}
 .feat-text{flex:1}
@@ -97,7 +147,7 @@ section:nth-child(even){background:var(--bg-soft)}
 .feat-text li{font-size:.87rem;color:var(--text-2);padding:4px 0 4px 20px;position:relative}
 .feat-text li::before{content:'✓';position:absolute;left:0;color:var(--green);font-size:.8rem;font-weight:700}
 
-/* ========== ARCH DIAGRAM ========== */
+/* ARCH DIAGRAM */
 .arch{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:40px;box-shadow:var(--shadow-sm);overflow-x:auto}
 .arch-layer{margin-bottom:12px}
 .arch-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:6px;padding-left:4px}
@@ -112,7 +162,7 @@ section:nth-child(even){background:var(--bg-soft)}
 .ar{background:rgba(225,29,72,.05);border-color:rgba(225,29,72,.2);color:var(--rose)}
 .arch-arrow{text-align:center;padding:3px 0;color:var(--text-4);font-size:1rem;letter-spacing:4px}
 
-/* ========== TECH TABLE ========== */
+/* TECH TABLE */
 .tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
 .tech-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s}
 .tech-item:hover{box-shadow:var(--shadow)}
@@ -121,7 +171,7 @@ section:nth-child(even){background:var(--bg-soft)}
 .tech-item .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .tech-item .tags span{font-size:.68rem;font-family:'JetBrains Mono',monospace;padding:2px 8px;border-radius:4px;background:var(--blue-light);color:var(--blue)}
 
-/* ========== ROADMAP ========== */
+/* ROADMAP */
 .timeline{position:relative;padding-left:32px;margin-top:32px}
 .timeline::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--blue),var(--purple),var(--green),var(--amber))}
 .tl-item{position:relative;margin-bottom:28px;padding:24px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);transition:box-shadow .2s}
@@ -133,27 +183,27 @@ section:nth-child(even){background:var(--bg-soft)}
 .tl-item li{font-size:.82rem;color:var(--text-2);padding:3px 0 3px 18px;position:relative;break-inside:avoid}
 .tl-item li::before{content:'✓';position:absolute;left:0;color:var(--green);font-size:.75rem}
 
-/* ========== CTA ========== */
+/* CTA */
 .cta-section{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;padding:80px 0;text-align:center}
 .cta-section h2{font-size:2rem;font-weight:800;margin-bottom:8px}
 .cta-section p{color:#94a3b8;max-width:500px;margin:0 auto 28px}
 .cta-section .btn-primary{background:#fff;color:var(--blue);font-size:.9rem;padding:12px 28px;border-radius:10px}
 .cta-section .btn-primary:hover{box-shadow:0 4px 20px rgba(255,255,255,.2)}
 
-/* ========== FOOTER ========== */
 footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;color:var(--text-4);font-size:.8rem}
 
-/* ========== RESPONSIVE ========== */
 @media(max-width:768px){
   .nav-links{display:none}
   .hero{padding:64px 0 48px}
   .hero h1{font-size:2rem}
   .hero-stats{gap:20px}
+  .hero .value-props{flex-direction:column;align-items:center;gap:8px}
   .feat-row,.feat-row:nth-child(even){flex-direction:column}
   .arch-row{flex-direction:column}
   .tl-item ul{columns:1}
-  .g2,.g3,.g4{grid-template-columns:1fr}
+  .g2,.g3,.g4,.adv-grid{grid-template-columns:1fr}
   section{padding:48px 0}
+  .pos-box{aspect-ratio:auto;min-height:360px}
 }
 </style>
 </head>
@@ -167,6 +217,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       Inference Platform
     </div>
     <div class="nav-links">
+      <a href="#advantages">Advantages</a>
       <a href="#features">Features</a>
       <a href="#architecture">Architecture</a>
       <a href="#tech">Tech Stack</a>
@@ -184,27 +235,196 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 <!-- HERO -->
 <section class="hero">
   <div class="container hero-inner">
-    <div class="hero-badge"><span class="pulse"></span>Open Source · Production Ready</div>
+    <div class="hero-badge"><span class="pulse"></span>Vendor-Neutral · Full-Stack · Production Ready</div>
     <h1>
       <span class="gradient">Model Inference</span><br>Cloud Platform
     </h1>
     <p class="subtitle">
-      一站式模型推理云平台 — 从快速实验到生产部署的全链路能力。兼容 OpenAI API，支持 Serverless 推理、专属端点、模型微调与全栈可观测性。
+      厂商中立的一站式模型推理云平台 — 独立第三方 + 全链路闭环 + 国产化适配。<br>兼容 OpenAI API，从快速实验到生产部署的全链路能力。
     </p>
+    <div class="value-props">
+      <div class="vp"><span class="check">✓</span> 推理→数据→微调→部署闭环</div>
+      <div class="vp"><span class="check">✓</span> 华为昇腾/海光/寒武纪 国产 GPU</div>
+      <div class="vp"><span class="check">✓</span> 不绑定模型·不绑定云</div>
+      <div class="vp"><span class="check">✓</span> Responses API 先发优势</div>
+    </div>
     <div class="hero-actions">
       <a href="https://github.com/xincxiong/Model-Inference-Platform-Design" target="_blank" class="btn btn-primary">
         <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
         View on GitHub
       </a>
-      <a href="#features" class="btn btn-ghost">Explore Features ↓</a>
+      <a href="#advantages" class="btn btn-ghost">Core Advantages ↓</a>
     </div>
     <div class="hero-stats">
       <div class="hero-stat"><div class="val v-blue">13</div><div class="lab">功能模块</div></div>
       <div class="hero-stat"><div class="val v-purple">7</div><div class="lab">模型类型</div></div>
-      <div class="hero-stat"><div class="val v-cyan">2</div><div class="lab">部署模式</div></div>
+      <div class="hero-stat"><div class="val v-cyan">5+</div><div class="lab">GPU 架构</div></div>
       <div class="hero-stat"><div class="val v-green">99.9%</div><div class="lab">SLA 目标</div></div>
       <div class="hero-stat"><div class="val v-amber">&lt;200ms</div><div class="lab">TTFT 延迟</div></div>
     </div>
+  </div>
+</section>
+
+<!-- COMPETITIVE ADVANTAGES -->
+<section id="advantages">
+  <div class="container">
+    <div class="sec-header">
+      <span class="sec-tag" style="background:var(--rose-light);color:var(--rose)">Competitive Edge</span>
+      <h2>七大差异化竞争力</h2>
+      <p>在厂商中立的前提下，提供国产云厂商级别的功能完整度，填补"独立第三方 + 全链路 + 国产化"的市场空白</p>
+    </div>
+
+    <div class="adv-grid">
+      <!-- 1 -->
+      <div class="adv-card a-blue">
+        <div class="num">01 · Full-Stack Loop</div>
+        <h3>全链路闭环</h3>
+        <p>推理 → 数据采集 → SQL 筛选 → 微调训练 → 模型部署，一站到底。</p>
+        <div class="detail">独有 <strong>Data Lab</strong> 将推理日志直接转化为训练数据。竞品用户需在多个工具间手动搬运数据，本平台实现"推理日志直接变训练数据"，模型迭代周期缩短 60%+。</div>
+      </div>
+      <!-- 2 -->
+      <div class="adv-card a-green">
+        <div class="num">02 · Domestic GPU</div>
+        <h3>国产化算力深度适配</h3>
+        <p>唯一覆盖华为昇腾 · 海光 K100 · 寒武纪三大国产 GPU 家族的独立平台。</p>
+        <div class="detail">通过 <strong>HAMi 异构中间件</strong>实现统一资源抽象，智能路由自动选择 NVIDIA 或国产 GPU 集群。API 层透明切换，满足信创与国产化合规刚性需求。</div>
+      </div>
+      <!-- 3 -->
+      <div class="adv-card a-purple">
+        <div class="num">03 · Vendor-Neutral</div>
+        <h3>厂商中立 · 开放生态</h3>
+        <p>不绑定模型厂商、不绑定云厂商，集成 30+ 第三方框架和工具。</p>
+        <div class="detail">同时支持 <strong>DeepSeek / Qwen / GLM / Kimi / Llama / Mistral</strong> 等 7+ 厂商模型。区别于火山引擎（绑字节）、百炼（绑阿里）、千帆（绑百度）的深度锁定策略。</div>
+      </div>
+      <!-- 4 -->
+      <div class="adv-card a-cyan">
+        <div class="num">04 · Responses API</div>
+        <h3>下一代 API 先发优势</h3>
+        <p>双格式并行：Responses API（推荐）+ Chat Completions（兼容），引领交互范式演进。</p>
+        <div class="detail">服务端状态管理 + <strong>previous_response_id</strong> 链式引用，多轮对话 Token 消耗降低 40-80%。需完整 Response Store 后端基础设施，技术壁垒显著。</div>
+      </div>
+      <!-- 5 -->
+      <div class="adv-card a-amber">
+        <div class="num">05 · Optimization Depth</div>
+        <h3>推理优化技术纵深</h3>
+        <p>不只是"套壳 vLLM"— 从注意力层、解码层到分布式架构的全栈深度优化。</p>
+        <div class="detail"><strong>FlashAttention-4 + 3-bit KV 压缩 + EAGLE-3 投机 + PD 分离 + NVIDIA Dynamo + DeepEP MoE 通信</strong>。PD 分离在 DeepSeek-R1 等长推理模型上实现最高 30x 吞吐提升。</div>
+      </div>
+      <!-- 6 -->
+      <div class="adv-card a-rose">
+        <div class="num">06 · Enterprise Security</div>
+        <h3>企业级安全合规</h3>
+        <p>同时满足国际合规（SOC 2 / GDPR）和国内信创双重要求的唯一独立平台。</p>
+        <div class="detail"><strong>RBAC + SSO (SAML/OIDC) + MFA + ZDR 零数据留存 + VPC Peering</strong>。支付宝/微信支付/银行转账本地化支付，GitHub Secret Scanning 集成自动检测 Key 泄露。</div>
+      </div>
+      <!-- 7 -->
+      <div class="adv-card a-blue">
+        <div class="num">07 · Developer Experience</div>
+        <h3>极致开发者体验</h3>
+        <p>CLI + Cookbook + 迁移指南 + Playground，从零到生产的全方位工具链。</p>
+        <div class="detail"><strong>Go 单二进制 CLI</strong>（交互式 REPL + 脚本化 CI/CD），OpenAI 迁移仅需改 <code>base_url</code>。Playground 支持模型对比、Function Calling 和结构化输出测试。</div>
+      </div>
+    </div>
+
+    <!-- Competitor Comparison Table -->
+    <div style="margin-top:64px">
+      <h3 style="font-size:1.2rem;font-weight:800;text-align:center;margin-bottom:8px">竞品功能矩阵对比</h3>
+      <p style="text-align:center;color:var(--text-3);font-size:.85rem;margin-bottom:24px">基于 2026 Q2 公开信息，覆盖海外与国产主流推理平台</p>
+      <div class="cmp-wrap">
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th style="min-width:140px">平台</th>
+              <th>类型</th>
+              <th>推理</th>
+              <th>微调</th>
+              <th>Data Lab</th>
+              <th>批量推理</th>
+              <th>专属端点</th>
+              <th>CLI</th>
+              <th>国产 GPU</th>
+              <th>厂商中立</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="hl">
+              <td>★ 本平台</td>
+              <td><span class="tag-sm tag-us">独立</span></td>
+              <td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td>
+            </tr>
+            <tr>
+              <td>Together AI</td>
+              <td><span class="tag-sm tag-overseas">海外</span></td>
+              <td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">部分</td><td class="n">—</td><td class="y">✓</td>
+            </tr>
+            <tr>
+              <td>Fireworks AI</td>
+              <td><span class="tag-sm tag-overseas">海外</span></td>
+              <td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td>
+            </tr>
+            <tr>
+              <td>Replicate</td>
+              <td><span class="tag-sm tag-overseas">海外</span></td>
+              <td class="y">✓</td><td class="n">有限</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td>
+            </tr>
+            <tr>
+              <td>硅基流动</td>
+              <td><span class="tag-sm tag-domestic">国产</span></td>
+              <td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="n">有限</td><td class="y">✓</td>
+            </tr>
+            <tr>
+              <td>火山引擎方舟</td>
+              <td><span class="tag-sm tag-domestic">国产</span></td>
+              <td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">绑定字节</td>
+            </tr>
+            <tr>
+              <td>阿里云百炼</td>
+              <td><span class="tag-sm tag-domestic">国产</span></td>
+              <td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">绑定阿里</td>
+            </tr>
+            <tr>
+              <td>百度千帆</td>
+              <td><span class="tag-sm tag-domestic">国产</span></td>
+              <td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">绑定百度</td>
+            </tr>
+            <tr>
+              <td>智谱 BigModel</td>
+              <td><span class="tag-sm tag-domestic">国产</span></td>
+              <td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">限 GLM</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Positioning Chart -->
+    <div style="margin-top:64px">
+      <h3 style="font-size:1.2rem;font-weight:800;text-align:center;margin-bottom:24px">市场定位象限</h3>
+      <div class="pos-chart">
+        <div class="pos-box">
+          <div class="pos-line-h"></div>
+          <div class="pos-line-v"></div>
+          <div class="pos-axis-xl">← 厂商绑定</div>
+          <div class="pos-axis-xr">厂商中立 →</div>
+          <div class="pos-axis-yt">功能完整 ↑</div>
+          <div class="pos-axis-yb">功能单一 ↓</div>
+          <!-- Our platform -->
+          <div class="pos-dot" style="top:12%;right:14%;background:var(--blue-light);border-color:var(--blue);color:var(--blue);font-weight:800;box-shadow:0 2px 12px rgba(37,99,235,.2)">★ 本平台</div>
+          <!-- Domestic cloud -->
+          <div class="pos-dot" style="top:18%;left:18%;background:var(--amber-light);border-color:var(--amber);color:var(--amber)">火山引擎</div>
+          <div class="pos-dot" style="top:22%;left:12%;background:var(--amber-light);border-color:var(--amber);color:var(--amber)">阿里云百炼</div>
+          <div class="pos-dot" style="top:38%;left:16%;background:var(--amber-light);border-color:var(--amber);color:var(--amber)">百度千帆</div>
+          <div class="pos-dot" style="top:44%;left:22%;background:var(--amber-light);border-color:var(--amber);color:var(--amber)">腾讯混元</div>
+          <div class="pos-dot" style="top:42%;left:30%;background:var(--amber-light);border-color:var(--amber);color:var(--amber)">智谱</div>
+          <!-- Overseas -->
+          <div class="pos-dot" style="top:28%;right:18%;background:var(--purple-light);border-color:var(--purple);color:var(--purple)">Together AI</div>
+          <div class="pos-dot" style="top:40%;right:22%;background:var(--purple-light);border-color:var(--purple);color:var(--purple)">Fireworks</div>
+          <div class="pos-dot" style="top:55%;right:16%;background:var(--purple-light);border-color:var(--purple);color:var(--purple)">Replicate</div>
+          <div class="pos-dot" style="top:36%;right:28%;background:var(--green-light);border-color:var(--green);color:var(--green)">硅基流动</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -217,7 +437,6 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <p>13 大功能模块，覆盖推理服务、模型管理、数据闭环、运维监控与开发者工具全链路</p>
     </div>
 
-    <!-- Feature 1 -->
     <div class="feat-row">
       <div class="feat-text">
         <span class="tag" style="background:var(--blue-light);color:var(--blue)">Inference Engine</span>
@@ -244,7 +463,6 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       </div>
     </div>
 
-    <!-- Feature 2 -->
     <div class="feat-row">
       <div class="feat-text">
         <span class="tag" style="background:var(--purple-light);color:var(--purple)">Dedicated Endpoints</span>
@@ -269,7 +487,6 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       </div>
     </div>
 
-    <!-- Feature 3 -->
     <div class="feat-row">
       <div class="feat-text">
         <span class="tag" style="background:var(--green-light);color:var(--green)">Fine-tuning & Data Lab</span>
@@ -295,7 +512,6 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       </div>
     </div>
 
-    <!-- Module cards -->
     <div style="margin-top:40px">
       <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:20px;text-align:center;color:var(--text-3)">全部功能模块</h3>
       <div class="grid g4">
@@ -325,7 +541,6 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <h2>系统架构</h2>
       <p>云原生微服务架构，7 层分层设计，基于 Kubernetes 的 GPU 集群统一编排</p>
     </div>
-
     <div class="arch">
       <div class="arch-layer">
         <div class="arch-label" style="color:var(--blue)">接入层 Access Layer</div>
@@ -400,58 +615,17 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <h2>技术选型</h2>
       <p>每一层选择经过生产验证的方案，兼顾性能、可维护性与社区生态</p>
     </div>
-
     <div class="tech-grid">
-      <div class="tech-item">
-        <div class="cat">推理引擎</div>
-        <h4>LLM Inference</h4>
-        <div class="tags"><span>vLLM v0.18+</span><span>SGLang</span><span>NVIDIA Dynamo</span></div>
-      </div>
-      <div class="tech-item">
-        <div class="cat">推理引擎</div>
-        <h4>注意力 & 量化</h4>
-        <div class="tags"><span>FlashAttention-4</span><span>NVFP4</span><span>FP8</span><span>EAGLE-3</span></div>
-      </div>
-      <div class="tech-item">
-        <div class="cat">推理引擎</div>
-        <h4>国产 GPU</h4>
-        <div class="tags"><span>vLLM-Ascend</span><span>LMDeploy</span><span>HAMi</span></div>
-      </div>
-      <div class="tech-item">
-        <div class="cat">后端服务</div>
-        <h4>API & Gateway</h4>
-        <div class="tags"><span>Go (Gin)</span><span>Kong</span><span>Envoy</span><span>Temporal</span></div>
-      </div>
-      <div class="tech-item">
-        <div class="cat">后端服务</div>
-        <h4>消息 & 流</h4>
-        <div class="tags"><span>Apache Kafka</span><span>Redis Stream</span></div>
-      </div>
-      <div class="tech-item">
-        <div class="cat">前端 & CLI</div>
-        <h4>Web Console</h4>
-        <div class="tags"><span>React 19</span><span>Next.js 15</span><span>TailwindCSS</span></div>
-      </div>
-      <div class="tech-item">
-        <div class="cat">前端 & CLI</div>
-        <h4>CLI 工具</h4>
-        <div class="tags"><span>Go</span><span>Cobra</span><span>Bubble Tea</span><span>GoReleaser</span></div>
-      </div>
-      <div class="tech-item">
-        <div class="cat">存储</div>
-        <h4>数据库 & 缓存</h4>
-        <div class="tags"><span>PostgreSQL 16</span><span>Redis 7</span><span>ClickHouse</span><span>S3</span></div>
-      </div>
-      <div class="tech-item">
-        <div class="cat">基础设施</div>
-        <h4>编排 & 调度</h4>
-        <div class="tags"><span>Kubernetes</span><span>GPU Operator</span><span>KEDA</span><span>Volcano</span></div>
-      </div>
-      <div class="tech-item">
-        <div class="cat">可观测性</div>
-        <h4>监控 & 追踪</h4>
-        <div class="tags"><span>Prometheus</span><span>Grafana</span><span>OpenTelemetry</span><span>Loki</span></div>
-      </div>
+      <div class="tech-item"><div class="cat">推理引擎</div><h4>LLM Inference</h4><div class="tags"><span>vLLM v0.18+</span><span>SGLang</span><span>NVIDIA Dynamo</span></div></div>
+      <div class="tech-item"><div class="cat">推理引擎</div><h4>注意力 & 量化</h4><div class="tags"><span>FlashAttention-4</span><span>NVFP4</span><span>FP8</span><span>EAGLE-3</span></div></div>
+      <div class="tech-item"><div class="cat">推理引擎</div><h4>国产 GPU</h4><div class="tags"><span>vLLM-Ascend</span><span>LMDeploy</span><span>HAMi</span></div></div>
+      <div class="tech-item"><div class="cat">后端服务</div><h4>API & Gateway</h4><div class="tags"><span>Go (Gin)</span><span>Kong</span><span>Envoy</span><span>Temporal</span></div></div>
+      <div class="tech-item"><div class="cat">后端服务</div><h4>消息 & 流</h4><div class="tags"><span>Apache Kafka</span><span>Redis Stream</span></div></div>
+      <div class="tech-item"><div class="cat">前端 & CLI</div><h4>Web Console</h4><div class="tags"><span>React 19</span><span>Next.js 15</span><span>TailwindCSS</span></div></div>
+      <div class="tech-item"><div class="cat">前端 & CLI</div><h4>CLI 工具</h4><div class="tags"><span>Go</span><span>Cobra</span><span>Bubble Tea</span><span>GoReleaser</span></div></div>
+      <div class="tech-item"><div class="cat">存储</div><h4>数据库 & 缓存</h4><div class="tags"><span>PostgreSQL 16</span><span>Redis 7</span><span>ClickHouse</span><span>S3</span></div></div>
+      <div class="tech-item"><div class="cat">基础设施</div><h4>编排 & 调度</h4><div class="tags"><span>Kubernetes</span><span>GPU Operator</span><span>KEDA</span><span>Volcano</span></div></div>
+      <div class="tech-item"><div class="cat">可观测性</div><h4>监控 & 追踪</h4><div class="tags"><span>Prometheus</span><span>Grafana</span><span>OpenTelemetry</span><span>Loki</span></div></div>
     </div>
   </div>
 </section>
@@ -464,7 +638,6 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <h2>实施路线图</h2>
       <p>四阶段递进实施，从 MVP 核心能力逐步演进至完整企业级平台</p>
     </div>
-
     <div class="timeline">
       <div class="tl-item">
         <h4>Phase 1: MVP — 核心推理能力 <span class="badge" style="background:var(--blue-light);color:var(--blue)">Phase 1</span></h4>
@@ -528,7 +701,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 
 <footer>
   <div class="container">
-    Model Inference Cloud Platform &nbsp;·&nbsp; Architecture Design v1.0 &nbsp;·&nbsp; 2026
+    Model Inference Cloud Platform &nbsp;·&nbsp; Architecture Design v1.1 &nbsp;·&nbsp; 2026
   </div>
 </footer>
 
