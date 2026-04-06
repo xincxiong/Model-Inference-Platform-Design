@@ -63,6 +63,42 @@ export async function redeemPromo(code: string) {
   });
 }
 
+export async function fetchDedicatedTemplates() {
+  return apiFetch('/v0/dedicated_endpoints/templates');
+}
+
+export async function listDedicatedEndpoints() {
+  return apiFetch('/v0/dedicated_endpoints');
+}
+
+export async function createDedicatedEndpoint(body: Record<string, unknown>) {
+  return apiFetch('/v0/dedicated_endpoints', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function patchDedicatedEndpoint(id: string, body: Record<string, unknown>) {
+  return apiFetch(`/v0/dedicated_endpoints/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+}
+
+export async function deleteDedicatedEndpoint(id: string) {
+  return apiFetch(`/v0/dedicated_endpoints/${id}`, { method: 'DELETE' });
+}
+
+export async function listFineTuningJobs() {
+  return apiFetch('/v1/fine_tuning/jobs');
+}
+
+export async function createFineTuningJob(body: Record<string, unknown>) {
+  return apiFetch('/v1/fine_tuning/jobs', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function getFineTuningJob(id: string) {
+  return apiFetch(`/v1/fine_tuning/jobs/${id}`);
+}
+
+export async function cancelFineTuningJob(id: string) {
+  return apiFetch(`/v1/fine_tuning/jobs/${id}/cancel`, { method: 'POST' });
+}
+
 export function streamChat(
   model: string,
   messages: { role: string; content: string }[],

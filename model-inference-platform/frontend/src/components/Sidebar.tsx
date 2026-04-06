@@ -16,6 +16,12 @@ const navItems = [
   { href: '/usage', label: '用量统计', icon: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
   )},
+  { href: '/endpoints', label: '专属端点', icon: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+  )},
+  { href: '/finetuning', label: '模型微调', icon: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v18"/><path d="M5 9h14"/><path d="M7 15h10"/><path d="M9 21h6"/></svg>
+  )},
 ]
 
 export function Sidebar() {
@@ -58,7 +64,7 @@ export function Sidebar() {
       </nav>
 
       <div className="px-6 py-4 border-t border-[var(--border-light)]">
-        <p className="text-[11px] text-[var(--text-muted)]">MVP v0.1.0</p>
+        <p className="text-[11px] text-[var(--text-muted)]">Phase 2 · v0.2.0</p>
       </div>
     </aside>
   )

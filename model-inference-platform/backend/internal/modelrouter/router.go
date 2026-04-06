@@ -4,19 +4,41 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/xincxiong/model-inference-platform/backend/internal/engine"
 	"go.uber.org/zap"
 )
 
 var (
-	ErrModelNotFound     = errors.New("model not found or inactive")
-	ErrModelTypeMismatch = errors.New("model type does not match this endpoint")
+	ErrModelNotFound          = errors.New("model not found or inactive")
+	ErrModelTypeMismatch      = errors.New("model type does not match this endpoint")
+	ErrDedicatedNotFound      = errors.New("dedicated endpoint not found")
+	ErrDedicatedForbidden     = errors.New("dedicated endpoint access denied")
+	ErrDedicatedUnavailable   = errors.New("dedicated endpoint is not available")
+	ErrDedicatedModelMismatch = errors.New("dedicated endpoint model mismatch")
 )
+
+// HTTPStatusForResolveError maps Resolve / dedicated validation errors to HTTP status and OpenAI-style error.type.
+func HTTPStatusForResolveError(err error) (status int, errType string) {
+	switch {
+	case errors.Is(err, ErrModelNotFound),
+		errors.Is(err, ErrDedicatedNotFound),
+		errors.Is(err, ErrDedicatedModelMismatch):
+		return http.StatusNotFound, "not_found_error"
+	case errors.Is(err, ErrDedicatedForbidden):
+		return http.StatusForbidden, "permission_error"
+	case errors.Is(err, ErrDedicatedUnavailable):
+		return http.StatusServiceUnavailable, "service_unavailable_error"
+	default:
+		return http.StatusInternalServerError, "internal_error"
+	}
+}
 
 // ResolvedModel contains all routing information after resolving a model identifier.
 type ResolvedModel struct {
@@ -46,7 +68,7 @@ type modelCacheEntry struct {
 //
 // Request flow:
 //
-//	Handler → ModelRouter.Resolve(modelID) → ResolvedModel
+//	Handler → ModelRouter.Resolve(modelID, userID) → ResolvedModel
 //	       → ModelRouter.ValidateType(resolved, allowedTypes)
 //	       → ModelRouter.GetEngine(resolved) → engine.Engine
 //	       → engine.ChatCompletion / Embedding / etc.
@@ -86,8 +108,8 @@ func (r *ModelRouter) RegisterEngine(key string, eng engine.Engine) {
 // Parsing rules:
 //   - "deepseek-ai/DeepSeek-V4"       → base flavor, ID = "deepseek-ai/DeepSeek-V4"
 //   - "deepseek-ai/DeepSeek-V4-fast"  → fast flavor, ID = "deepseek-ai/DeepSeek-V4"
-//   - "ep_xxx:deepseek-ai/DeepSeek-V4" → dedicated endpoint routing (Phase 2)
-func (r *ModelRouter) Resolve(modelID string) (*ResolvedModel, error) {
+//   - "ep_xxx:deepseek-ai/DeepSeek-V4" → dedicated endpoint routing_key (Phase 2)
+func (r *ModelRouter) Resolve(modelID, userID string) (*ResolvedModel, error) {
 	if modelID == "" {
 		return nil, fmt.Errorf("%w: empty model identifier", ErrModelNotFound)
 	}
@@ -96,12 +118,15 @@ func (r *ModelRouter) Resolve(modelID string) (*ResolvedModel, error) {
 
 	// Phase 2: dedicated endpoint routing_key detection
 	backendKey := "shared"
+	var dedicatedPrefix string
 	if strings.HasPrefix(modelID, "ep_") {
 		parts := strings.SplitN(modelID, ":", 2)
-		if len(parts) == 2 {
-			backendKey = "dedicated:" + parts[0]
-			modelID = parts[1]
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return nil, fmt.Errorf("%w: invalid dedicated routing_key, expected ep_<id>:<model_id>", ErrModelNotFound)
 		}
+		dedicatedPrefix = parts[0]
+		backendKey = "dedicated:" + parts[0]
+		modelID = parts[1]
 	}
 
 	// Flavor parsing: strip -fast suffix
@@ -121,6 +146,15 @@ func (r *ModelRouter) Resolve(modelID string) (*ResolvedModel, error) {
 		entry = r.loadFromDB(modelID)
 		if entry == nil {
 			return nil, fmt.Errorf("%w: %s", ErrModelNotFound, original)
+		}
+	}
+
+	if dedicatedPrefix != "" {
+		if userID == "" {
+			return nil, ErrDedicatedForbidden
+		}
+		if err := r.validateDedicatedEndpoint(context.Background(), dedicatedPrefix, entry.ID, userID); err != nil {
+			return nil, err
 		}
 	}
 
@@ -190,6 +224,29 @@ func (r *ModelRouter) RefreshCache() {
 	r.mu.Unlock()
 
 	r.logger.Info("model cache refreshed", zap.Int("count", len(newCache)))
+}
+
+func (r *ModelRouter) validateDedicatedEndpoint(ctx context.Context, routingPrefix, baseModelID, userID string) error {
+	var ownerID, storedModel, status string
+	err := r.db.QueryRow(ctx,
+		`SELECT user_id::text, model_name, status FROM dedicated_endpoints WHERE routing_prefix = $1`,
+		routingPrefix).Scan(&ownerID, &storedModel, &status)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrDedicatedNotFound
+		}
+		return err
+	}
+	if ownerID != userID {
+		return ErrDedicatedForbidden
+	}
+	if storedModel != baseModelID {
+		return fmt.Errorf("%w: expected base model %q", ErrDedicatedModelMismatch, storedModel)
+	}
+	if status != "running" {
+		return ErrDedicatedUnavailable
+	}
+	return nil
 }
 
 func (r *ModelRouter) loadFromDB(modelID string) *modelCacheEntry {

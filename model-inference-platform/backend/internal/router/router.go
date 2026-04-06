@@ -35,6 +35,18 @@ func Setup(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, logg
 	modelsH := handler.NewModelsHandler(s)
 	keysH := handler.NewAPIKeysHandler(s)
 	billingH := handler.NewBillingHandler(s)
+	dedH := handler.NewDedicatedEndpointsHandler(s)
+	ftH := handler.NewFineTuningHandler(s)
+
+	v0 := r.Group("/v0")
+	v0.Use(middleware.AuthMiddleware(s.DB, s.Redis))
+	{
+		v0.GET("/dedicated_endpoints/templates", dedH.ListTemplates)
+		v0.GET("/dedicated_endpoints", dedH.List)
+		v0.POST("/dedicated_endpoints", dedH.Create)
+		v0.PATCH("/dedicated_endpoints/:id", dedH.Patch)
+		v0.DELETE("/dedicated_endpoints/:id", dedH.Delete)
+	}
 
 	v1 := r.Group("/v1")
 	v1.Use(middleware.AuthMiddleware(s.DB, s.Redis))
@@ -49,6 +61,10 @@ func Setup(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, logg
 		v1.POST("/rerank", rerankH.Create)
 		v1.POST("/images/generations", imagesH.Generate)
 		v1.GET("/models", modelsH.List)
+		v1.POST("/fine_tuning/jobs", ftH.Create)
+		v1.GET("/fine_tuning/jobs", ftH.List)
+		v1.GET("/fine_tuning/jobs/:id", ftH.Get)
+		v1.POST("/fine_tuning/jobs/:id/cancel", ftH.Cancel)
 	}
 
 	api := r.Group("/api")

@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -37,13 +36,10 @@ func (h *ResponsesHandler) Create(c *gin.Context) {
 		return
 	}
 
-	resolved, err := h.router.Resolve(req.Model)
+	auth := middleware.GetAuthInfo(c)
+	resolved, err := h.router.Resolve(req.Model, auth.UserID)
 	if err != nil {
-		status := http.StatusNotFound
-		errType := "not_found_error"
-		if errors.Is(err, modelrouter.ErrModelNotFound) {
-			status = http.StatusNotFound
-		}
+		status, errType := modelrouter.HTTPStatusForResolveError(err)
 		c.JSON(status, gin.H{"error": gin.H{"message": err.Error(), "type": errType}})
 		return
 	}
@@ -56,7 +52,6 @@ func (h *ResponsesHandler) Create(c *gin.Context) {
 	}
 
 	eng := h.router.GetEngine(resolved)
-	auth := middleware.GetAuthInfo(c)
 	messages := h.buildMessages(c.Request.Context(), req, auth.UserID)
 
 	chatReq := model.ChatCompletionRequest{

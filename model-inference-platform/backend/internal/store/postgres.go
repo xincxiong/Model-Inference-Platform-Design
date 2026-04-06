@@ -115,6 +115,42 @@ func RunMigrations(ctx context.Context, db *pgxpool.Pool) error {
 	INSERT INTO promo_codes (code, amount)
 	VALUES ('WELCOME50', 50.0)
 	ON CONFLICT (code) DO NOTHING;
+
+	CREATE TABLE IF NOT EXISTS dedicated_endpoints (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		name VARCHAR(255) NOT NULL,
+		description TEXT NOT NULL DEFAULT '',
+		model_name VARCHAR(128) NOT NULL,
+		flavor_name VARCHAR(32) NOT NULL DEFAULT 'base',
+		gpu_type VARCHAR(64) NOT NULL,
+		gpu_count INT NOT NULL DEFAULT 1,
+		region VARCHAR(64) NOT NULL DEFAULT 'cn-east-1',
+		min_replicas INT NOT NULL DEFAULT 0,
+		max_replicas INT NOT NULL DEFAULT 4,
+		scaling_policy JSONB NOT NULL DEFAULT '{}',
+		routing_prefix VARCHAR(48) NOT NULL UNIQUE,
+		status VARCHAR(32) NOT NULL DEFAULT 'running',
+		current_replicas INT NOT NULL DEFAULT 0,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+	CREATE INDEX IF NOT EXISTS idx_dedicated_endpoints_user ON dedicated_endpoints(user_id);
+
+	CREATE TABLE IF NOT EXISTS fine_tuning_jobs (
+		id VARCHAR(64) PRIMARY KEY,
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		base_model VARCHAR(128) NOT NULL,
+		training_file VARCHAR(128) NOT NULL DEFAULT '',
+		method VARCHAR(32) NOT NULL DEFAULT 'lora',
+		hyperparameters JSONB NOT NULL DEFAULT '{}',
+		status VARCHAR(32) NOT NULL DEFAULT 'queued',
+		fine_tuned_model VARCHAR(128),
+		error_message TEXT,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+	CREATE INDEX IF NOT EXISTS idx_fine_tuning_jobs_user ON fine_tuning_jobs(user_id, created_at DESC);
 	`
 
 	_, err := db.Exec(ctx, migration)

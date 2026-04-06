@@ -1,6 +1,6 @@
-# Model Inference Platform — Phase 1 MVP
+# Model Inference Platform — Phase 1–2
 
-模型推理云平台 MVP 实现，包含完整的后端 API 服务、前端控制台和本地开发环境。
+模型推理云平台：Phase 1 MVP + Phase 2 专属端点与微调（管理面 `/v0`、OpenAI 风格微调任务 API）。
 
 ## Quick Start
 
@@ -40,6 +40,20 @@ docker-compose up --build
 | `/v1/rerank` | POST | Document reranking (重排序) |
 | `/v1/images/generations` | POST | Image generation (图像生成) |
 | `/v1/models` | GET | List models (OpenAI 兼容格式) |
+| `/v1/fine_tuning/jobs` | POST | 创建微调任务（MVP：排队 → 运行 → 成功，产出合成 `fine_tuned_model` id） |
+| `/v1/fine_tuning/jobs` | GET | 列出当前用户的微调任务 |
+| `/v1/fine_tuning/jobs/:id` | GET | 查询单个任务 |
+| `/v1/fine_tuning/jobs/:id/cancel` | POST | 取消排队中/运行中的任务 |
+
+**专属推理路由**：创建端点后，将 `routing_key`（形如 `ep_ab12cd34:deepseek-ai/DeepSeek-V4`）作为 `/v1/chat/completions` 等接口的 `model` 字段；平台会校验端点归属与 `running` 状态，并路由到专属引擎键（当前与共享池相同为 Mock 引擎）。
+
+### 控制面 `/v0`（需 Bearer API Key）
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v0/dedicated_endpoints/templates` | GET | 可作为专属端点基座的模型（text-to-text / vision） |
+| `/v0/dedicated_endpoints` | GET / POST | 列表 / 创建专属端点 |
+| `/v0/dedicated_endpoints/:id` | PATCH / DELETE | 更新（名称、副本、状态等）/ 删除 |
 
 ### Console API
 
@@ -90,7 +104,9 @@ cd frontend && npm install && npm run dev
 - Promo Code: `WELCOME50` (充值 $50)
 - 18 个预置模型，覆盖 7 大类型 (Text/Vision/Embedding/Rerank/Image/Video/Speech)
 
-## 功能特性 (Phase 1)
+## 功能特性
+
+**Phase 1**
 
 - ✅ 双格式 API: Chat Completions + Responses API
 - ✅ Responses API 服务端状态管理 (store + previous_response_id)
@@ -101,3 +117,9 @@ cd frontend && npm install && npm run dev
 - ✅ 按 Token 计量 + 余额扣减 + Promo Code
 - ✅ Prometheus + Grafana 监控
 - ✅ OpenAI SDK 兼容迁移指南
+
+**Phase 2**
+
+- ✅ 专属端点：`dedicated_endpoints` 表 + `/v0/dedicated_endpoints*` + `routing_key` 推理校验
+- ✅ 微调任务：`fine_tuning_jobs` 表 + `/v1/fine_tuning/jobs`（异步占位流水线）
+- ✅ 控制台：专属端点页、模型微调页

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 
@@ -34,13 +33,11 @@ func (h *RerankHandler) Create(c *gin.Context) {
 		return
 	}
 
-	resolved, err := h.router.Resolve(req.Model)
+	auth := middleware.GetAuthInfo(c)
+	resolved, err := h.router.Resolve(req.Model, auth.UserID)
 	if err != nil {
-		status := http.StatusNotFound
-		if errors.Is(err, modelrouter.ErrModelNotFound) {
-			status = http.StatusNotFound
-		}
-		c.JSON(status, gin.H{"error": gin.H{"message": err.Error(), "type": "not_found_error"}})
+		status, errType := modelrouter.HTTPStatusForResolveError(err)
+		c.JSON(status, gin.H{"error": gin.H{"message": err.Error(), "type": errType}})
 		return
 	}
 
@@ -60,7 +57,6 @@ func (h *RerankHandler) Create(c *gin.Context) {
 		return
 	}
 
-	auth := middleware.GetAuthInfo(c)
 	go h.recordUsage(auth, resolved, req)
 
 	c.JSON(http.StatusOK, resp)

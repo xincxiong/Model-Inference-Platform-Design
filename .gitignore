@@ -34,3 +34,7 @@ Thumbs.db
 # Debug
 *.log
 npm-debug.log*
+
+# Firecrawl
+.firecrawl/
+modelfactory/.firecrawl/

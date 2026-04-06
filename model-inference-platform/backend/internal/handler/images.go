@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -37,13 +36,11 @@ func (h *ImagesHandler) Generate(c *gin.Context) {
 		req.Model = "black-forest-labs/FLUX.1-dev"
 	}
 
-	resolved, err := h.router.Resolve(req.Model)
+	auth := middleware.GetAuthInfo(c)
+	resolved, err := h.router.Resolve(req.Model, auth.UserID)
 	if err != nil {
-		status := http.StatusNotFound
-		if errors.Is(err, modelrouter.ErrModelNotFound) {
-			status = http.StatusNotFound
-		}
-		c.JSON(status, gin.H{"error": gin.H{"message": err.Error(), "type": "not_found_error"}})
+		status, errType := modelrouter.HTTPStatusForResolveError(err)
+		c.JSON(status, gin.H{"error": gin.H{"message": err.Error(), "type": errType}})
 		return
 	}
 
@@ -63,7 +60,6 @@ func (h *ImagesHandler) Generate(c *gin.Context) {
 		return
 	}
 
-	auth := middleware.GetAuthInfo(c)
 	n := 1
 	if req.N != nil {
 		n = *req.N
