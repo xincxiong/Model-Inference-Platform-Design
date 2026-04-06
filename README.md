@@ -1,6 +1,10 @@
-# Model Inference Cloud Platform
+<p align="center">
+  <img src="model-inference-platform/assets/logo.svg" alt="Model Inference Cloud Platform" width="120" height="120" />
+</p>
 
-> 厂商中立的一站式模型推理云平台 — 全链路闭环 + AI 原生数据底座 + 国产化适配。
+<h1 align="center">Model Inference Cloud Platform</h1>
+
+<p align="center">厂商中立的一站式模型推理云平台 — 全链路闭环 + AI 原生数据底座 + 国产化适配。</p>
 
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Demo-blue?logo=github)](https://xincxiong.github.io/Model-Inference-Platform-Design/)
 

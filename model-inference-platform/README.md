@@ -1,6 +1,14 @@
-# Model Inference Platform — Phase 1–2
+<p align="center">
+  <img src="assets/logo.svg" alt="Model Inference Platform — 多模型汇聚至云端推理端点" width="132" height="132" />
+</p>
+
+<h1 align="center">Model Inference Platform</h1>
+
+<p align="center"><strong>Phase 1–2</strong> · 模型推理云平台</p>
 
 模型推理云平台：Phase 1 MVP + Phase 2 专属端点与微调（管理面 `/v0`、OpenAI 风格微调任务 API）。
+
+**Logo 含义**：深蓝圆角底座象征稳定云底座；上方三节点汇聚到中心端点，表示多模型路由与统一推理出口；顶部箭头暗示请求流入与低延迟响应。青蓝渐变与控制台强调色一致。
 
 ## Quick Start
 
@@ -18,6 +26,7 @@ docker-compose up --build
 ## 项目结构
 
 ```
+├── assets/           品牌资源（如 logo.svg）
 ├── backend/          Go API 服务 (Gin)
 ├── frontend/         Next.js 15 控制台
 ├── monitoring/       Prometheus + Grafana 配置
