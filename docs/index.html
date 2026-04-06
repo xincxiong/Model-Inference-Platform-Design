@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Model Inference Platform — 一站式模型推理云平台</title>
 <meta name="description" content="厂商中立的一站式模型推理云平台。全链路闭环能力，国产 GPU 异构适配，兼容 OpenAI API，支持 Serverless 推理、专属端点、模型微调与数据实验室。">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="apple-touch-icon" href="assets/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -35,7 +36,8 @@ code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--blu
 .nav.scrolled{box-shadow:0 1px 12px rgba(0,0,0,.06)}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px;max-width:1140px;margin:0 auto;padding:0 24px}
 .nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:.95rem;color:var(--text)}
-.nav-logo .dot{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center}
+.nav-logo-mark{width:32px;height:32px;border-radius:10px;object-fit:cover;box-shadow:0 2px 12px rgba(15,23,42,.12);border:1px solid var(--border)}
+.hero-logo{display:block;margin:0 auto 24px;width:112px;height:112px;border-radius:28px;object-fit:cover;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
 .nav-links{display:flex;gap:4px}
 .nav-links a{font-size:.82rem;font-weight:500;color:var(--text-3);padding:6px 14px;border-radius:8px;transition:all .15s}
 .nav-links a:hover{color:var(--text);background:var(--bg-mute)}
@@ -195,6 +197,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 @media(max-width:768px){
   .nav-links{display:none}
   .hero{padding:64px 0 48px}
+  .hero-logo{width:88px;height:88px;border-radius:22px;margin-bottom:18px}
   .hero h1{font-size:2rem}
   .hero-stats{gap:20px}
   .hero .value-props{flex-direction:column;align-items:center;gap:8px}
@@ -213,7 +216,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 <nav class="nav" id="nav">
   <div class="nav-inner">
     <div class="nav-logo">
-      <div class="dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+      <img class="nav-logo-mark" src="assets/logo.png" width="32" height="32" alt="">
       Inference Platform
     </div>
     <div class="nav-links">
@@ -235,6 +238,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 <!-- HERO -->
 <section class="hero">
   <div class="container hero-inner">
+    <img class="hero-logo" src="assets/logo.png" width="112" height="112" alt="Model Inference Platform">
     <div class="hero-badge"><span class="pulse"></span>Vendor-Neutral · AI-Native Data · Production Ready</div>
     <h1>
       <span class="gradient">Model Inference</span><br>Cloud Platform
