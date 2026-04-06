@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="model-inference-platform/assets/logo.svg" alt="Model Inference Cloud Platform" width="120" height="120" />
+  <img src="model-inference-platform/assets/logo.png" alt="Model Inference Cloud Platform" width="120" height="120" />
 </p>
 
 <h1 align="center">Model Inference Cloud Platform</h1>
