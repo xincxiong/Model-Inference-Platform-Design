@@ -37,4 +37,6 @@ npm-debug.log*
 
 # Firecrawl
 .firecrawl/
-modelfactory/.firecrawl/
+
+# 独立项目（本仓库不包含）
+modelfactory/
