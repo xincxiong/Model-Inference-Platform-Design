@@ -537,9 +537,10 @@ code {
       一站式模型推理云平台产品方案 — 涵盖功能设计、系统架构与技术选型的完整蓝图，支持从快速实验到生产级部署的全生命周期
     </p>
     <div class="meta">
-      <span>架构设计 v1.0</span>
-      <span>2026-04-03</span>
+      <span>架构设计 v2.1</span>
+      <span>2026-04-16</span>
       <span>产品架构方案</span>
+      <span>Phase 1 ✅ · Phase 2 ✅ · Phase 3 进行中</span>
     </div>
   </div>
 </header>
@@ -569,7 +570,7 @@ code {
 
   <div class="stats-row">
     <div class="stat-card">
-      <div class="stat-value v-blue">13</div>
+      <div class="stat-value v-blue">15</div>
       <div class="stat-label">核心功能模块</div>
     </div>
     <div class="stat-card">
@@ -619,7 +620,7 @@ code {
   <div class="section-header">
     <span class="section-tag tag-purple">FEATURE DESIGN</span>
     <h2>功能设计</h2>
-    <p>划分为 13 大功能模块，覆盖推理服务、模型管理、数据闭环、运维监控、开发者工具、安全合规全链路</p>
+    <p>划分为 15 大功能模块，覆盖推理服务、模型管理、数据闭环、运维监控、开发者工具、安全合规全链路</p>
   </div>
 
   <!-- 功能模块全局总览 -->
@@ -649,6 +650,11 @@ code {
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">独占 GPU 实例 · 复合伸缩策略 (队列+延迟+GPU) · Warm Pool 冷启动优化 (<5s) · 零停机蓝绿部署 · 跨 AZ 高可用 · 资源配额管理</td>
         </tr>
         <tr>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">模型部署</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Deployments</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">轻量弹性部署模式 · 三步向导（选模型→计费方式→配置确认）· 三种计费方式（Token/置备吐单元/模型单元）· 五种状态流转 · 自动生成唯一 Endpoint URL</td>
+        </tr>
+        <tr style="background: var(--bg-card);">
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">模型微调</td>
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Fine-tuning</td>
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">LoRA / 全参数微调 · 任务全生命周期管理 · 数据集验证 · LoRA 挂载与合并</td>
@@ -674,6 +680,11 @@ code {
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">组织 → 项目两级层级 · RBAC 角色权限 · SSO (SAML/OIDC) · MFA · API Key 粒度管控</td>
         </tr>
         <tr style="background: var(--bg-card);">
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">成员管理</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Members</td>
+          <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">邀请制轻量成员管理 · 四种角色（owner/admin/member/viewer）· 邀请状态（pending→active）· 成员列表/角色修改/移除</td>
+        </tr>
+        <tr>
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--accent);">计费系统</td>
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Billing</td>
           <td style="padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);">Token 计量 + GPU·小时双模式 · 支付宝/微信支付 · Promo Code / 试用额度 · 实时余额 · 成本预警</td>
@@ -707,10 +718,12 @@ code {
     <button class="tab-btn active" onclick="switchTab(event, 'feat-inference')">推理引擎</button>
     <button class="tab-btn" onclick="switchTab(event, 'feat-playground')">Playground</button>
     <button class="tab-btn" onclick="switchTab(event, 'feat-endpoint')">专属端点</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-deployment')">模型部署</button>
     <button class="tab-btn" onclick="switchTab(event, 'feat-finetune')">模型微调</button>
     <button class="tab-btn" onclick="switchTab(event, 'feat-datalab')">数据实验室</button>
     <button class="tab-btn" onclick="switchTab(event, 'feat-observe')">可观测性</button>
     <button class="tab-btn" onclick="switchTab(event, 'feat-team')">团队管理</button>
+    <button class="tab-btn" onclick="switchTab(event, 'feat-members')">成员管理</button>
     <button class="tab-btn" onclick="switchTab(event, 'feat-billing')">计费系统</button>
     <button class="tab-btn" onclick="switchTab(event, 'feat-integration')">集成生态</button>
     <button class="tab-btn" onclick="switchTab(event, 'feat-cli')">CLI 工具</button>
@@ -940,26 +953,94 @@ code {
     </div>
   </div>
 
+  <!-- 模型部署 -->
+  <div class="tab-content" id="feat-deployment">
+    <div class="grid-2">
+      <div class="card">
+        <h3>与专属端点的定位差异</h3>
+        <ul>
+          <li><strong>上手难度低</strong> — 3 步向导引导，无需了解 GPU 类型和 Flavor</li>
+          <li><strong>弹性副本</strong> — 按计费方式弹性扩缩，专属端点独占 GPU 实例</li>
+          <li><strong>灵活计费</strong> — Token / 置备吐单元 / 模型单元 三选一</li>
+          <li><strong>适用场景</strong> — 低门槛上线、中小规模生产、灵活计费切换</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>三步部署向导</h3>
+        <ul>
+          <li><strong>第 1 步 — 选择模型</strong>：从预置模型目录选择（Text-to-Text / Vision），支持按 Provider 过滤</li>
+          <li><strong>第 2 步 — 选择计费方式</strong>：<code>token</code>（按 Token 计费）/ <code>tpu</code>（置备吐单元）/ <code>unit</code>（模型单元独占）</li>
+          <li><strong>第 3 步 — 配置确认</strong>：设置名称、副本数范围（min/max，默认 0/3）、描述</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>部署状态流转</h3>
+        <ul>
+          <li><code>provisioning</code> — 启动中（创建后初始状态）</li>
+          <li><code>running</code> — 运行中，可正常接收请求</li>
+          <li><code>stopped</code> — 已停止，不计费，可手动恢复</li>
+          <li><code>failed</code> — 启动失败</li>
+          <li><code>deleting</code> — 删除中</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>管理接口 & Endpoint URL</h3>
+        <ul>
+          <li><code>POST /v1/deployments</code> — 创建部署</li>
+          <li><code>GET /v1/deployments</code> — 列出所有部署</li>
+          <li><code>GET /v1/deployments/{id}</code> — 查询详情</li>
+          <li><code>PATCH /v1/deployments/{id}</code> — 更新配置</li>
+          <li><code>DELETE /v1/deployments/{id}</code> — 删除部署</li>
+          <li>部署成功后自动生成唯一 Endpoint URL，与标准 <code>/v1/chat/completions</code> 接口完全兼容</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   <!-- 模型微调 -->
   <div class="tab-content" id="feat-finetune">
     <div class="grid-2">
       <div class="card">
-        <h3>训练方式</h3>
+        <h3>监督微调 (SFT) 训练方式</h3>
         <ul>
-          <li><strong>Full Fine-tuning</strong> — 全参数训练，效果最佳</li>
-          <li><strong>LoRA</strong> — 低秩适配，显存友好，性价比高</li>
-          <li><strong>长上下文微调</strong> — 支持 32K+ context 训练</li>
-          <li>即将支持: 投机解码优化训练、RLHF/DPO 强化学习</li>
+          <li><strong>Full Fine-tuning</strong> — 全参数训练，效果最佳，适合大量高质量数据</li>
+          <li><strong>LoRA</strong> — 低秩适配器，仅训练少量参数，显存友好，性价比高</li>
+          <li><strong>QLoRA</strong> — 量化感知 LoRA，4-bit 量化底层权重，适合超大模型显存受限场景</li>
+          <li><strong>长上下文微调</strong> — 支持 32K+ context 训练，优化长文档理解与多轮对话</li>
         </ul>
       </div>
       <div class="card">
         <h3>训练任务管理</h3>
         <ul>
-          <li>通过 API 创建/查看/取消微调任务</li>
+          <li>通过 API 创建/查看/取消微调任务 (<code>/v1/fine_tuning/jobs</code>)</li>
+          <li>任务生命周期: <code>created → validating → queued → running → succeeded / failed / cancelled</code></li>
           <li>训练事件日志实时推送 (loss, lr, step 等)</li>
           <li>Checkpoint 自动保存与管理</li>
           <li>训练完成后自动注册为可部署模型</li>
-          <li>支持 Wandb/TensorBoard 集成</li>
+          <li>支持 Wandb / TensorBoard 集成</li>
+        </ul>
+      </div>
+      <div class="card highlight-card">
+        <h3>强化学习后训练 (RL Post-Training)</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">训练引擎采用 <strong>Megatron-LM</strong>，Rollout 引擎采用 <strong>SGLang</strong>，通过 Data Buffer 异步解耦训练与推理，支持超大模型高效 RL 后训练。</p>
+        <ul>
+          <li><strong>GRPO</strong> — Group Relative Policy Optimization，数学/推理任务，无需 Critic 网络，显存效率高</li>
+          <li><strong>GSPO</strong> — Group Sequence Policy Optimization，长序列生成，组级别序列优化</li>
+          <li><strong>DAPO</strong> — Direct Advantage Policy Optimization，代码生成，优势函数直接优化</li>
+          <li><strong>VAPO</strong> — Value-Aligned Policy Optimization，价值对齐场景，融合 Value Model 信号</li>
+          <li><strong>PPO</strong> — Proximal Policy Optimization，通用 RLHF，含 Critic / Reference 模型</li>
+          <li><strong>DPO</strong> — Direct Preference Optimization，偏好数据对齐，无需在线 Rollout</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Rollout 场景支持</h3>
+        <ul>
+          <li><strong>chat</strong> — 通用对话 RLHF，基于人类偏好打分</li>
+          <li><strong>code</strong> — 代码生成，沙箱执行验证 reward</li>
+          <li><strong>tool_call</strong> — 工具调用 / Function Calling 对齐</li>
+          <li><strong>agent_single</strong> — 单轮 Agent 任务执行</li>
+          <li><strong>agent_multi</strong> — 多轮 Agent 轨迹优化</li>
+          <li><strong>math_reasoning</strong> — 数学/推理，可验证 binary reward</li>
         </ul>
       </div>
       <div class="card">
@@ -982,6 +1063,23 @@ code {
         </ul>
       </div>
     </div>
+
+    <div class="highlight-box" style="margin-top: 20px;">
+      <h4>RL 训练架构 (slime 框架)</h4>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.9;">
+        <div>slime 框架</div>
+        <div style="color: var(--text-muted);">  ├── 训练引擎: Megatron-LM (TP/PP/DP 并行)</div>
+        <div style="color: var(--text-muted);">  ├── Rollout 引擎: SGLang (在线采样, 高吞吐生成)</div>
+        <div style="color: var(--text-muted);">  ├── Data Buffer: 异步解耦, 缓冲训练数据与采样结果</div>
+        <div style="color: var(--text-muted);">  └── RewardConfig:</div>
+        <div style="color: var(--text-muted);">        ├── reward_functions: ["accuracy", "format", "length_penalty", ...]</div>
+        <div style="color: var(--text-muted);">        ├── weights: 各 reward function 权重</div>
+        <div style="color: var(--text-muted);">        ├── reward_model_endpoint: 自定义奖励模型接入点 (可选)</div>
+        <div style="color: var(--text-muted);">        ├── kl_coeff: KL 惩罚系数 (PPO / GRPO)</div>
+        <div style="color: var(--text-muted);">        ├── clip_range: PPO clip 范围</div>
+        <div style="color: var(--text-muted);">        └── advantage_norm: 优势归一化开关</div>
+      </div>
+    </div>
   </div>
 
   <!-- 数据实验室 -->
@@ -994,7 +1092,8 @@ code {
           <li>完整保存 input/output/metadata</li>
           <li>按模型/时间/项目/API Key 多维过滤</li>
           <li>支持 SQL 查询构建子数据集</li>
-          <li>企业版支持零数据留存模式</li>
+          <li>Chat Completions 历史日志一键导入为新数据集</li>
+          <li>企业版支持零数据留存 (ZDR) 模式</li>
         </ul>
       </div>
       <div class="card">
@@ -1003,8 +1102,29 @@ code {
           <li>从推理日志创建训练/评测数据集</li>
           <li>手动上传数据集并管理版本</li>
           <li>批量推理输出自动存为数据集</li>
-          <li>导出 CSV / JSONL 格式供离线使用</li>
+          <li>导出 CSV / JSONL / Lance 格式供离线使用</li>
           <li>微调训练产出物 (checkpoint) 统一管理</li>
+        </ul>
+      </div>
+      <div class="card highlight-card">
+        <h3>AI 原生数据底座 (Lance / LanceDB)</h3>
+        <ul>
+          <li><strong>Lance 列式存储</strong> — 随机访问比 Parquet 快 100x，Data Lab 数据集底层格式</li>
+          <li><strong>Git-style 版本管理</strong> — 零拷贝克隆、不可变标签，保障微调实验输入一致性</li>
+          <li><strong>向量混合查询</strong> — 基于 LanceDB 支持向量搜索 + 全文搜索 + SQL 分析三合一</li>
+          <li><strong>语义缓存</strong> — &lt;1ms 最近邻查询，语义相近 Prompt 复用缓存结果，缓存命中率提升 40-80%</li>
+          <li><strong>多模态存储</strong> — 原生支持文本 / 图像 / 音视频 / 嵌入向量混合存储</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Datasets API</h3>
+        <ul>
+          <li>数据集 CRUD（创建/读取/更新/删除）</li>
+          <li>大文件分片上传 (Multipart Upload)</li>
+          <li><code>GET /v1/datasets/{id}/content</code> — 内容预览（分页）</li>
+          <li><code>GET /v1/datasets/{id}/query</code> — SQL 查询模板过滤</li>
+          <li><code>GET /v1/datasets/{id}/export</code> — 导出 CSV / JSONL</li>
+          <li><code>GET /v1/datasets/operations</code> — 数据集操作任务状态</li>
         </ul>
       </div>
     </div>
@@ -1108,6 +1228,32 @@ code {
           <li>使用量按 Key 维度统计</li>
           <li>泄露自动检测与轮换</li>
         </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 成员管理 -->
+  <div class="tab-content" id="feat-members">
+    <div class="grid-2">
+      <div class="card">
+        <h3>邀请制成员管理</h3>
+        <p>Phase 2 轻量实现，不依赖 SSO/RBAC 完整体系，适合小团队快速上手。</p>
+        <ul>
+          <li><code>POST /api/members</code> — 邀请成员（邮箱 + 角色）</li>
+          <li><code>GET /api/members</code> — 查看成员列表</li>
+          <li><code>PATCH /api/members/{id}</code> — 修改成员角色</li>
+          <li><code>DELETE /api/members/{id}</code> — 移除成员</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>角色与状态</h3>
+        <ul>
+          <li><strong>owner</strong> — 工作区拥有者，全部权限</li>
+          <li><strong>admin</strong> — 管理成员和资源</li>
+          <li><strong>member</strong> — 使用平台资源（推理/微调等），默认角色</li>
+          <li><strong>viewer</strong> — 只读，不可操作资源</li>
+        </ul>
+        <p style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);">邀请发出后为 <code>pending</code>；被邀请用户首次登录后自动转为 <code>active</code>。Phase 4 将升级为完整 RBAC + SSO 体系。</p>
       </div>
     </div>
   </div>
@@ -1734,14 +1880,14 @@ code {
   <div class="section-header">
     <span class="section-tag tag-amber">IMPLEMENTATION ROADMAP</span>
     <h2>实施路线图</h2>
-    <p>分四个阶段递进实施，从 MVP 核心能力逐步演进至完整企业级平台</p>
+    <p>分五个阶段递进实施，从 MVP 核心能力逐步演进至完整企业级平台，Phase 5 聚焦推理引擎深度优化、成本调度智能化与 AI Agent 原生工作流</p>
   </div>
 
   <div class="phase-timeline">
     <div class="phase-item">
       <h4>
         Phase 1: MVP — 核心推理能力
-        <span class="phase-badge" style="background: rgba(37,99,235,0.1); color: var(--accent-blue);">Phase 1</span>
+        <span class="phase-badge" style="background: rgba(37,99,235,0.1); color: var(--accent-blue);">Phase 1 ✅</span>
       </h4>
       <ul>
         <li>基于 vLLM v0.18+ 搭建共享推理集群，启用 FlashAttention-4、自动前缀缓存、连续批处理</li>
@@ -1757,17 +1903,20 @@ code {
     <div class="phase-item">
       <h4>
         Phase 2: 增强 — 专属端点与微调
-        <span class="phase-badge" style="background: rgba(124,58,237,0.1); color: var(--accent-purple);">Phase 2</span>
+        <span class="phase-badge" style="background: rgba(124,58,237,0.1); color: var(--accent-purple);">Phase 2 ✅</span>
       </h4>
       <ul>
         <li>专属端点全生命周期 + 复合伸缩策略 + Warm Pool 冷启动优化</li>
         <li>GPU 智能伸缩 (KEDA) + 跨 AZ 高可用 + 资源配额管理</li>
         <li>推理优化: 投机解码 (EAGLE-3 / N-gram GPU)、FP8/NVFP4 量化、KV Cache 压缩与 CPU 卸载</li>
-        <li>LoRA / Full Fine-tuning 训练流水线</li>
+        <li>LoRA / QLoRA / Full Fine-tuning SFT 训练流水线</li>
+        <li><strong>RL 后训练</strong>: GRPO / GSPO / DAPO / VAPO / PPO / DPO 六种算法；Megatron-LM 训练引擎 + SGLang Rollout 引擎；6 种 Rollout 场景</li>
         <li>数据集管理与验证系统</li>
         <li>批量推理 (Batch API) 实现</li>
         <li>Playground 增强: 模型对比 (Compare)、Function Calling 测试、结构化输出测试</li>
         <li>Datasets API 完整实现 (CRUD / 分片上传 / SQL 查询 / 导出)</li>
+        <li><strong>模型部署 (Deployments)</strong>: 三步向导、三种计费方式 (Token/TPU/Unit)、五种状态流转、自动生成唯一 Endpoint URL</li>
+        <li><strong>成员管理 (Members)</strong>: 邀请制轻量成员管理、四种角色 (owner/admin/member/viewer)</li>
         <li>多区域部署 (2 个区域)</li>
       </ul>
     </div>
@@ -1809,22 +1958,327 @@ code {
         <li>LoRA 适配器合并脚本工具</li>
       </ul>
     </div>
+
+    <div class="phase-item">
+      <h4>
+        Phase 5: 智能跃迁 — 推理极致优化 · 成本调度智能化 · Agent 原生平台
+        <span class="phase-badge" style="background: rgba(236,72,153,0.1); color: #ec4899;">Phase 5</span>
+      </h4>
+
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0 14px; line-height: 1.7;">
+        目标：将平台从"可用的推理服务"升级为"智能的推理基础设施"——推理性价比突破性提升、调度层具备自主决策能力、AI Agent 工作流获得原生一等公民支持。
+      </p>
+
+      <!-- 推理引擎深度优化 -->
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; color: var(--accent-blue); margin-bottom: 8px; text-transform: uppercase;">▎推理引擎深度优化</div>
+        <ul>
+          <li>
+            <strong>异构 PD 分离（Heterogeneous Prefill-Decode）</strong> —
+            Prefill 节点专用高带宽 GPU（H100/H200 NVLink），Decode 节点使用成本更低的 GPU（A100/L40S）；
+            NVIDIA Dynamo 编排层做 KV-aware 路由与负载均衡；
+            相比同构集群推理成本下降 <strong>30-50%</strong>，Decode 吞吐提升 2×+
+          </li>
+          <li>
+            <strong>多级 KV Cache 共享与迁移</strong> —
+            L1: 节点内 RadixAttention 前缀共享（已有）→
+            L2: 跨节点 KV Cache 迁移（CacheBlend，RDMA 传输）→
+            L3: CPU 内存 / NVMe SSD 冷存储卸载；
+            全局命中率目标 <strong>&gt;70%</strong>，TTFT 降低 40%
+          </li>
+          <li>
+            <strong>投机解码 2.0（Speculative Decoding 2.0）</strong> —
+            EAGLE-3 Draft 模型协同采样 + N-gram GPU 内核加速 + SpecInfer 并行 Token 验证三合一；
+            平均加速比目标 <strong>2.5-3×</strong>；自动 Draft 模型选择（按 base model 规格匹配最优 Draft）
+          </li>
+        </ul>
+      </div>
+
+      <!-- 成本优化与调度智能化 -->
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; color: var(--accent-emerald); margin-bottom: 8px; text-transform: uppercase;">▎成本优化与调度智能化</div>
+        <ul>
+          <li>
+            <strong>语义缓存（Semantic Cache）</strong> —
+            基于 LanceDB 向量近邻检索，语义相近 Prompt（cosine &gt; 0.97）直接复用上次结果；
+            动态 TTL（高频 Prompt 延长缓存、低频自动淘汰）；
+            缓存命中率提升 <strong>40-80%</strong>，命中延迟 &lt;1ms；控制台可视化缓存命中热力图
+          </li>
+          <li>
+            <strong>模型瀑布 / 智能路由（Model Cascade）</strong> —
+            按 Query 复杂度自动选择模型档位：简单分类/摘要 → 7B，通用对话 → 32B，复杂推理/代码 → 70B+；
+            路由策略基于在线难度评分器（轻量 BERT 分类器）；
+            同一 Endpoint 对外透明，用户无感知；成本降低 <strong>50-70%</strong>
+          </li>
+          <li>
+            <strong>Spot 实例混合调度</strong> —
+            批量推理、RL 训练、Embedding 计算优先调度 Spot/Preemptible GPU（节省 <strong>50-80%</strong>）；
+            任务中断自动 Checkpoint + 迁移续跑（基于 Temporal Workflow）；
+            实时推理走 On-demand，两种资源池动态互备
+          </li>
+        </ul>
+      </div>
+
+      <!-- AI Agent 与工作流原生支持 -->
+      <div style="margin-bottom: 8px;">
+        <div style="font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; color: var(--accent-purple); margin-bottom: 8px; text-transform: uppercase;">▎AI Agent 与工作流原生平台</div>
+        <ul>
+          <li>
+            <strong>Threads / Runs — Agent 原生 API</strong> —
+            <code>POST /v1/threads</code> 创建多轮会话线程，消息历史持久化（PostgreSQL + 向量索引）；
+            <code>POST /v1/threads/{id}/runs</code> 触发 Agent 执行（支持 instructions、tools、stream）；
+            <code>GET /v1/runs/{id}/steps</code> 逐步骤执行状态轮询；
+            生产 Agent 轨迹自动入库为 RL 训练数据
+          </li>
+          <li>
+            <strong>并行 Function Calling 深度优化</strong> —
+            parallel_tool_calls 一次推理同时触发多工具；工具调用结果流式回传（SSE）；
+            基于 XGrammar FSM 约束解码，Function Calling 格式失败率 &lt;0.1%
+          </li>
+          <li>
+            <strong>结构化输出 2.0（Structured Output）</strong> —
+            Grammar-Based 采样（XGrammar / Outlines）直接约束 logits，无需后处理 retry；
+            支持复杂嵌套 JSON Schema / EBNF Grammar / 正则表达式约束；
+            Strict Mode 与 Fast Mode 双模切换
+          </li>
+        </ul>
+      </div>
+
+      <!-- 交付里程碑 -->
+      <div style="margin-top: 16px; padding: 14px 16px; background: rgba(236,72,153,0.05); border-radius: 8px; border: 1px solid rgba(236,72,153,0.15);">
+        <div style="font-size: 0.78rem; font-weight: 600; color: #ec4899; margin-bottom: 10px; letter-spacing: 0.06em;">PHASE 5 交付里程碑（预计 4 个月）</div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 0.8rem;">
+          <div>
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">M1–M2 &nbsp;推理 + 成本</div>
+            <div style="color: var(--text-secondary); line-height: 1.6;">
+              异构 PD 分离上线<br>
+              多级 KV Cache 共享<br>
+              语义缓存公测<br>
+              Spot 混合调度
+            </div>
+          </div>
+          <div>
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">M3–M4 &nbsp;Agent 平台</div>
+            <div style="color: var(--text-secondary); line-height: 1.6;">
+              Threads / Runs API GA<br>
+              投机解码 2.0 GA<br>
+              并行 Function Calling 优化<br>
+              结构化输出 2.0 上线
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 
-  <div class="highlight-box" style="margin-top: 32px;">
-    <h4>持续演进方向</h4>
-    <p>
-      Phase 4 之后持续迭代的方向包括: <strong>AF (Attention-FFN) 分离部署</strong>（FFN 可使用国产 GPU）、
-      <strong>语义缓存</strong>（向量嵌入推理结果复用）、<strong>RLHF/DPO 强化学习微调</strong>、
-      <strong>多模态模型 (Audio/Video) 扩展</strong>、<strong>边缘推理节点</strong>、<strong>模型评测 Benchmark 平台</strong>。
-    </p>
+  <div style="margin-top: 32px;">
+    <div class="section-header" style="margin-bottom: 24px;">
+      <span class="section-tag tag-purple">CONTINUOUS EVOLUTION</span>
+      <h3 style="font-size: 1.4rem; margin: 8px 0 4px;">持续演进方向</h3>
+    </div>
+
+    <div class="grid-2">
+
+      <!-- 推理引擎深度优化 -->
+      <div class="card">
+        <h3>🔧 推理引擎深度优化</h3>
+        <ul>
+          <li><strong>PD 分离 2.0（异构 PD）</strong> — Prefill 节点使用高带宽 GPU（H100/H200），Decode 节点使用低成本 GPU（A100/L40S），成本下降 30-50%；参考 Mooncake / NVIDIA Dynamo 架构</li>
+          <li><strong>AF 分离部署</strong> — Attention 与 FFN 模块拆分到不同硬件；FFN 层支持国产 GPU（昇腾/天数智芯），降低对 NVIDIA 依赖</li>
+          <li><strong>MoE 弹性专家并行（EP）</strong> — 基于 DeepEP 通信优化，支持 DeepSeek-V4 等超大 MoE 模型动态专家路由，EP 规模弹性伸缩</li>
+          <li><strong>多级 KV Cache 共享</strong> — 跨请求 Prefix Cache 共享（RadixAttention）→ 跨节点 KV Cache 迁移（CacheBlend）→ SSD/CPU 多级卸载，命中率目标 &gt;70%</li>
+          <li><strong>投机解码升级</strong> — EAGLE-3 Draft 模型协同、N-gram 草稿生成、SpecInfer 并行验证，平均加速比目标 2-3×</li>
+          <li><strong>FP4/INT4 量化推理</strong> — NVFP4 (Blackwell)、GPTQ/AWQ 自动量化流水线、精度-速度帕累托前沿自动选择</li>
+        </ul>
+      </div>
+
+      <!-- 多模态与新模态扩展 -->
+      <div class="card">
+        <h3>🎨 多模态与新模态扩展</h3>
+        <ul>
+          <li><strong>视觉语言模型（VLM）</strong> — 图像输入统一 API（<code>image_url</code> / base64），支持 Qwen-VL、LLaVA、InternVL 系列；多图并行处理</li>
+          <li><strong>语音模型（ASR / TTS）</strong> — <code>/v1/audio/transcriptions</code> (Whisper 兼容) + <code>/v1/audio/speech</code> TTS，流式音频输出；参考 Groq Whisper 超低延迟实现</li>
+          <li><strong>视频理解（Video LLM）</strong> — 视频帧抽取 + 视觉 Token 压缩，长视频（&gt;1h）关键帧稀疏采样；参考 Replicate Video API</li>
+          <li><strong>Embedding 模型</strong> — <code>/v1/embeddings</code> 统一接口，支持 BGE / E5 / text-embedding-3 系列；批量 Embedding 吞吐优化</li>
+          <li><strong>Rerank 模型</strong> — <code>/v1/rerank</code> 接口，RAG 检索增强管道原生支持，与 LanceDB 向量搜索深度集成</li>
+          <li><strong>图像生成（Diffusion）</strong> — <code>/v1/images/generations</code>，Stable Diffusion / FLUX 系列，参考 Replicate / Fireworks Image API</li>
+        </ul>
+      </div>
+
+      <!-- AI Agent 与工作流原生支持 -->
+      <div class="card highlight-card">
+        <h3>🤖 AI Agent 与工作流原生支持</h3>
+        <ul>
+          <li><strong>Function Calling / Tool Use 深度优化</strong> — 并行工具调用（parallel_tool_calls）、工具调用结果流式返回、工具调用延迟专项优化；参考 Fireworks FireFunction V2</li>
+          <li><strong>结构化输出（Structured Output）深度优化</strong> — FSM/Grammar-Based 采样（XGrammar）直接约束解码，复杂 JSON Schema 零失败率</li>
+          <li><strong>长上下文推理优化（&gt;128K）</strong> — RoPE 外推（YaRN/LongRoPE）、稀疏注意力（StreamingLLM），支持百万 Token 超长文档</li>
+          <li><strong>Agent 原生 API</strong> — <code>/v1/threads</code> 多轮会话持久化、<code>/v1/runs</code> Agent 执行管理；与 RL 后训练 Rollout 数据闭环</li>
+          <li><strong>Computer Use / Browser Use</strong> — GUI Agent 专用推理通道，截图理解 + 动作预测低延迟链路；参考 Anthropic Computer Use API</li>
+          <li><strong>MCP（Model Context Protocol）服务器托管</strong> — 一键部署 MCP 工具服务器，Agent 调用工具无需自建基础设施</li>
+        </ul>
+      </div>
+
+      <!-- 成本优化与调度智能化 -->
+      <div class="card">
+        <h3>💰 成本优化与调度智能化</h3>
+        <ul>
+          <li><strong>Serverless 推理冷启动 &lt;500ms</strong> — 模型权重分层预加载（常用层常驻 GPU）、容器快照（CRIU）、参考 Modal / Replicate 冷启动架构</li>
+          <li><strong>语义缓存（Semantic Cache）</strong> — 基于 LanceDB 向量相似度，语义等价 Prompt 直接复用结果，缓存命中率提升 40-80%；动态 TTL 管理</li>
+          <li><strong>智能路由与模型瀑布（Model Cascade）</strong> — 简单 Query 自动路由到小模型（7B），复杂 Query 升级大模型（70B），成本降低 60%+；参考 Martian / OpenRouter</li>
+          <li><strong>Spot 实例混合推理</strong> — 训练 / 批量推理任务优先使用 Spot GPU（节省 50-80%）；实时推理走 On-demand，任务中断自动迁移</li>
+          <li><strong>请求合并（Continuous Batching 2.0）</strong> — Chunked Prefill + 动态批大小调优，GPU 利用率目标 85%+</li>
+          <li><strong>碳感知调度</strong> — 根据电网绿电比例调整批量任务执行时间，支持企业 ESG 碳排放报告</li>
+        </ul>
+      </div>
+
+      <!-- 评测与质量保障 -->
+      <div class="card">
+        <h3>📊 模型评测与质量保障</h3>
+        <ul>
+          <li><strong>模型评测 Benchmark 平台</strong> — 内置 MMLU / HumanEval / GSM8K / MATH / HellaSwag 等标准集；支持自定义 Benchmark 数据集；微调前后自动对比报告</li>
+          <li><strong>A/B 测试框架</strong> — 同一端点多模型流量分流（灰度发布），统计显著性自动计算；参考 Vertex AI Model Registry</li>
+          <li><strong>LLM-as-Judge 自动评估</strong> — 用 GPT-4o / Claude 对生产流量进行质量打分，构建持续质量监控仪表盘</li>
+          <li><strong>幻觉检测（Hallucination Detection）</strong> — 基于不确定性估计（Semantic Entropy）+ 事实核查模型，输出置信度分数</li>
+          <li><strong>Prompt 版本管理（Prompt Registry）</strong> — Prompt 模板 Git-style 版本控制，A/B 测试，生产流量回放；参考 LangSmith / Braintrust</li>
+          <li><strong>数据飞轮（Data Flywheel）</strong> — 生产推理日志 → 自动难样本挖掘 → 数据标注 → 微调 → 评测 → 部署全闭环</li>
+        </ul>
+      </div>
+
+      <!-- 模型生态与市场 -->
+      <div class="card">
+        <h3>🏪 模型生态与市场</h3>
+        <ul>
+          <li><strong>模型市场（Model Marketplace）</strong> — 第三方开发者上传私有模型并发布收费 API；平台抽佣模式（参考 Replicate / Hugging Face Inference Endpoints）</li>
+          <li><strong>模型版本对比与推荐</strong> — 同系列模型（7B/13B/70B）性价比雷达图，按场景智能推荐最优规格</li>
+          <li><strong>One-Click 模型导入</strong> — 从 Hugging Face / ModelScope 一键拉取并自动量化部署；支持 GGUF / SafeTensors / AWQ 格式</li>
+          <li><strong>私有模型托管（BYOM）</strong> — Bring Your Own Model，支持上传私有权重并获得隔离推理端点；参考 Together AI Custom Models</li>
+          <li><strong>模型知识产权保护</strong> — 模型权重加密存储（TEE/机密计算），防止权重泄露；面向企业模型提供方的合规托管服务</li>
+        </ul>
+      </div>
+
+      <!-- 企业级与安全演进 -->
+      <div class="card">
+        <h3>🏢 企业级与安全演进</h3>
+        <ul>
+          <li><strong>私有化部署（On-Premise）</strong> — 平台核心组件 Helm Chart 打包，支持企业内网私有化；GPU 算力由客户自备；参考 Together Enterprise</li>
+          <li><strong>VPC 私连（PrivateLink）</strong> — AWS PrivateLink / 腾讯云私有连接，数据不出客户 VPC；满足金融/医疗合规要求</li>
+          <li><strong>机密计算推理（TEE Inference）</strong> — NVIDIA H100 Confidential Computing，模型权重和 Prompt 加密处理，防止云厂商侧数据访问</li>
+          <li><strong>细粒度内容安全</strong> — Guardrails API：输入/输出双向过滤（PII 检测、越狱识别、有害内容分类）；支持自定义安全策略；参考 NVIDIA NeMo Guardrails</li>
+          <li><strong>审计与合规报告</strong> — SOC 2 Type II 自动化证据收集、GDPR 数据主体请求处理、等保 2.0 合规映射</li>
+          <li><strong>多云灾备（Multi-Cloud DR）</strong> — 主备多云自动切换，RTO &lt; 5min；跨云流量路由，参考 Cloudflare AI Gateway</li>
+        </ul>
+      </div>
+
+      <!-- 边缘与异构计算 -->
+      <div class="card">
+        <h3>🌐 边缘推理与异构计算</h3>
+        <ul>
+          <li><strong>边缘推理节点（Edge Inference）</strong> — 在 CDN PoP 部署轻量推理节点（量化小模型 &lt;8B），实现 &lt;50ms 超低延迟；参考 Cloudflare Workers AI</li>
+          <li><strong>国产 GPU 全面兼容</strong> — 昇腾（NPU）/ 天数智芯 / 壁仞科技等适配层；通过 CANN/OpenCL 抽象，vLLM/SGLang 后端扩展</li>
+          <li><strong>CPU 推理优化</strong> — llama.cpp / Intel OpenVINO 集成，低成本 CPU 实例支持推理请求降级处理</li>
+          <li><strong>WebGPU 浏览器端推理</strong> — 基于 WebLLM / MLC-LLM，浏览器内运行 &lt;4B 量化模型；客户端隐私推理场景</li>
+          <li><strong>异构算力统一调度</strong> — GPU / NPU / CPU 混合资源池，任务按硬件特性智能分配；算力碎片化利用</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="highlight-box" style="margin-top: 24px;">
+      <h4>演进优先级矩阵</h4>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 8px;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <th style="padding: 8px 12px; text-align: left; color: var(--text-secondary); font-weight: 500; width: 24%;">演进方向</th>
+              <th style="padding: 8px 12px; text-align: center; color: var(--text-secondary); font-weight: 500;">商业价值</th>
+              <th style="padding: 8px 12px; text-align: center; color: var(--text-secondary); font-weight: 500;">实现难度</th>
+              <th style="padding: 8px 12px; text-align: center; color: var(--text-secondary); font-weight: 500;">建议时序</th>
+              <th style="padding: 8px 12px; text-align: left; color: var(--text-secondary); font-weight: 500;">参考标杆</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));">
+              <td style="padding: 8px 12px;">语义缓存</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-emerald);">★★★★★</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-emerald);">低</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 3</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">GPTCache, Redis Semantic</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));">
+              <td style="padding: 8px 12px;">Embedding / Rerank API</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-emerald);">★★★★★</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-emerald);">低</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 3</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">Together, Fireworks, Jina</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));">
+              <td style="padding: 8px 12px;">模型评测 Benchmark 平台</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-blue);">★★★★☆</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-amber);">中</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 3~4</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">Braintrust, LangSmith</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));">
+              <td style="padding: 8px 12px;">VLM / Audio / Diffusion</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-blue);">★★★★☆</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-amber);">中</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 4</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">Replicate, Fireworks VLM</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));">
+              <td style="padding: 8px 12px;">模型市场（BYOM）</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-blue);">★★★★☆</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-amber);">中</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 4</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">Together Custom, Replicate</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));">
+              <td style="padding: 8px 12px;">模型瀑布/智能路由</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-blue);">★★★★☆</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-amber);">中</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 4</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">Martian, OpenRouter</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));">
+              <td style="padding: 8px 12px;">Agent 原生 API + MCP</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-purple);">★★★★★</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-amber);">中高</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 4~5</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">OpenAI Assistants, Anthropic</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));">
+              <td style="padding: 8px 12px;">AF 分离 + 国产 GPU</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-purple);">★★★★★</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-red, #ef4444);">高</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 5</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">Mooncake, 月之暗面</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));">
+              <td style="padding: 8px 12px;">边缘推理节点</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-blue);">★★★☆☆</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-red, #ef4444);">高</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 5</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">Cloudflare Workers AI</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 12px;">机密计算推理（TEE）</td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-blue);">★★★★☆</span></td>
+              <td style="padding: 8px 12px; text-align: center;"><span style="color: var(--accent-red, #ef4444);">高</span></td>
+              <td style="padding: 8px 12px; text-align: center;">Phase 5</td>
+              <td style="padding: 8px 12px; color: var(--text-secondary);">NVIDIA Confidential AI</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </section>
 
 </main>
 
 <footer style="text-align: center; padding: 48px 24px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.85rem;">
-  Model Inference Cloud Platform — Architecture Design Document v1.0 &nbsp;|&nbsp; 2026-04-03
+  Model Inference Cloud Platform — Architecture Design Document v2.1 &nbsp;|&nbsp; 2026-04-16
 </footer>
 
 <script>
