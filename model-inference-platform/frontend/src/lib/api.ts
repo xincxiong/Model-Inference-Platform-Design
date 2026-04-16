@@ -99,6 +99,140 @@ export async function cancelFineTuningJob(id: string) {
   return apiFetch(`/v1/fine_tuning/jobs/${id}/cancel`, { method: 'POST' });
 }
 
+// ── Files API ──────────────────────────────────────────────────────────────
+
+export async function uploadFile(file: File, purpose = 'batch') {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('purpose', purpose);
+  const res = await fetch(`${API_URL}/v1/files`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getApiKey()}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
+    throw new Error(err.error?.message || res.statusText);
+  }
+  return res.json();
+}
+
+export async function listFiles(purpose?: string) {
+  const q = purpose ? `?purpose=${purpose}` : '';
+  return apiFetch(`/v1/files${q}`);
+}
+
+export async function getFile(id: string) {
+  return apiFetch(`/v1/files/${id}`);
+}
+
+export async function deleteFile(id: string) {
+  return apiFetch(`/v1/files/${id}`, { method: 'DELETE' });
+}
+
+// ── Batch API ──────────────────────────────────────────────────────────────
+
+export async function createBatch(body: { input_file_id: string; endpoint: string; completion_window?: string; metadata?: Record<string, string> }) {
+  return apiFetch('/v1/batches', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function listBatches() {
+  return apiFetch('/v1/batches');
+}
+
+export async function getBatch(id: string) {
+  return apiFetch(`/v1/batches/${id}`);
+}
+
+export async function cancelBatch(id: string) {
+  return apiFetch(`/v1/batches/${id}/cancel`, { method: 'POST' });
+}
+
+// ── Datasets API ───────────────────────────────────────────────────────────
+
+export async function createDataset(body: { name: string; description?: string; file_id?: string; metadata?: Record<string, string> }) {
+  return apiFetch('/v1/datasets', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function listDatasets() {
+  return apiFetch('/v1/datasets');
+}
+
+export async function getDataset(id: string) {
+  return apiFetch(`/v1/datasets/${id}`);
+}
+
+export async function deleteDataset(id: string) {
+  return apiFetch(`/v1/datasets/${id}`, { method: 'DELETE' });
+}
+
+export async function getDatasetContent(id: string, page = 1, limit = 20) {
+  return apiFetch(`/v1/datasets/${id}/content?page=${page}&limit=${limit}`);
+}
+
+export function getDatasetExportUrl(id: string, format: 'jsonl' | 'csv' = 'jsonl') {
+  return `${API_URL}/v1/datasets/${id}/export?format=${format}`;
+}
+
+export async function queryDataset(id: string, filter?: string, limit = 50) {
+  const q = new URLSearchParams({ limit: String(limit) });
+  if (filter) q.set('filter', filter);
+  return apiFetch(`/v1/datasets/${id}/query?${q.toString()}`);
+}
+
+// ── Deployments API ────────────────────────────────────────────────────────
+
+export async function listDeployments() {
+  return apiFetch('/v1/deployments');
+}
+
+export async function getDeployment(id: string) {
+  return apiFetch(`/v1/deployments/${id}`);
+}
+
+export async function createDeployment(body: {
+  name: string;
+  model_name: string;
+  billing_mode: 'token' | 'tpu' | 'unit';
+  min_replicas?: number;
+  max_replicas?: number;
+  description?: string;
+}) {
+  return apiFetch('/v1/deployments', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function patchDeployment(id: string, body: {
+  name?: string;
+  description?: string;
+  min_replicas?: number;
+  max_replicas?: number;
+  status?: string;
+}) {
+  return apiFetch(`/v1/deployments/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+}
+
+export async function deleteDeployment(id: string) {
+  return apiFetch(`/v1/deployments/${id}`, { method: 'DELETE' });
+}
+
+// ── Members API ────────────────────────────────────────────────────────────
+
+export async function listMembers() {
+  return apiFetch('/api/members');
+}
+
+export async function inviteMember(email: string, role: 'owner' | 'admin' | 'member' | 'viewer' = 'member') {
+  return apiFetch('/api/members', { method: 'POST', body: JSON.stringify({ email, role }) });
+}
+
+export async function patchMemberRole(id: string, role: string) {
+  return apiFetch(`/api/members/${id}`, { method: 'PATCH', body: JSON.stringify({ role }) });
+}
+
+export async function removeMember(id: string) {
+  return apiFetch(`/api/members/${id}`, { method: 'DELETE' });
+}
+
 export function streamChat(
   model: string,
   messages: { role: string; content: string }[],

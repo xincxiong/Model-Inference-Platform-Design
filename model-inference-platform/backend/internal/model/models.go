@@ -27,6 +27,7 @@ type ModelInfo struct {
 	Name         string   `json:"name"`
 	ModelType    string   `json:"type"`
 	Provider     string   `json:"provider"`
+	Description  string   `json:"description"`
 	InputPrice   float64  `json:"input_price_per_million"`
 	OutputPrice  float64  `json:"output_price_per_million"`
 	MaxContext   int      `json:"max_context"`

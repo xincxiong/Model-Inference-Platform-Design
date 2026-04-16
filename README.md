@@ -27,15 +27,15 @@
 | [模型推理云平台-产品方案.md](模型推理云平台-产品方案.md) | 完整产品方案文档（Markdown，1500+ 行） |
 | [model-inference-platform-design.html](model-inference-platform-design.html) | 可视化产品架构设计（HTML，浏览器打开） |
 | [docs/index.html](docs/index.html) | GitHub Pages 对外展示页（含竞品对比与定位分析） |
-| [model-inference-platform/](model-inference-platform/) | Phase 1 MVP 代码实现（Go 后端 + Next.js 前端） |
+| [model-inference-platform/](model-inference-platform/) | Phase 1 & Phase 2 代码实现（Go 后端 + Next.js 前端） |
 
 ## 方案概览
 
 **部署模式**：Serverless 共享推理 · 专属端点（Dedicated Endpoints）· 国产 GPU 异构混合部署
 
-**功能模块**（13 个）：
+**功能模块**（15 个）：
 
-> 推理引擎 · Playground · 专属端点 · 模型微调 · 数据实验室 · 批量推理 · 可观测性 · 团队管理 · 计费系统 · 第三方集成 · 迁移指南 · Cookbook · CLI 工具
+> 推理引擎 · Playground · 专属端点 · **模型部署** · 模型微调 · 数据实验室 · 批量推理 · 可观测性 · **成员管理** · 团队管理 · 计费系统 · 第三方集成 · 迁移指南 · Cookbook · CLI 工具
 
 **支持模型类型**（7 类）：
 
@@ -58,11 +58,11 @@
 ## 实施路线图
 
 ```
-Phase 1  MVP — 核心推理能力（vLLM 集群 · 双格式 API · Web Console · 基础计费）
+Phase 1  ✅ MVP — 核心推理能力（vLLM 集群 · 双格式 API · Web Console · 基础计费）
     ↓
-Phase 2  增强 — 专属端点与微调（Dedicated Endpoints · LoRA/Full FT · Batch API · 自动伸缩）
+Phase 2  ✅ 增强 — 专属端点与微调（Dedicated Endpoints · LoRA/QLoRA/Full FT · RL 后训练(GRPO/PPO/DPO等) · Batch API · 数据集管理 · **模型部署(Deployments)** · **成员管理(Members)**）
     ↓
-Phase 3  生态 — 可观测性与集成（Data Lab · CLI · 第三方集成 · PD 分离 · MoE 并行）
+Phase 3  进行中 — 生态 — 可观测性与集成（Data Lab · CLI · 第三方集成 · PD 分离 · MoE 并行）
     ↓
 Phase 4  企业 — 安全合规（SSO/RBAC · ZDR · SOC 2/GDPR · VPC · Custom Models）
 ```

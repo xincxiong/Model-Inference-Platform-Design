@@ -37,6 +37,11 @@ func Setup(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, logg
 	billingH := handler.NewBillingHandler(s)
 	dedH := handler.NewDedicatedEndpointsHandler(s)
 	ftH := handler.NewFineTuningHandler(s)
+	filesH := handler.NewFilesHandler(s)
+	batchH := handler.NewBatchHandler(s)
+	dsH := handler.NewDatasetsHandler(s)
+	deployH := handler.NewDeploymentsHandler(s)
+	membersH := handler.NewMembersHandler(s)
 
 	v0 := r.Group("/v0")
 	v0.Use(middleware.AuthMiddleware(s.DB, s.Redis))
@@ -65,6 +70,36 @@ func Setup(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, logg
 		v1.GET("/fine_tuning/jobs", ftH.List)
 		v1.GET("/fine_tuning/jobs/:id", ftH.Get)
 		v1.POST("/fine_tuning/jobs/:id/cancel", ftH.Cancel)
+
+		// Files API
+		v1.POST("/files", filesH.Upload)
+		v1.GET("/files", filesH.List)
+		v1.GET("/files/:id", filesH.Get)
+		v1.DELETE("/files/:id", filesH.Delete)
+		v1.GET("/files/:id/content", filesH.GetContent)
+
+		// Batch API
+		v1.POST("/batches", batchH.Create)
+		v1.GET("/batches", batchH.List)
+		v1.GET("/batches/:id", batchH.Get)
+		v1.POST("/batches/:id/cancel", batchH.Cancel)
+
+		// Datasets API
+		v1.POST("/datasets", dsH.Create)
+		v1.GET("/datasets", dsH.List)
+		v1.GET("/datasets/:id", dsH.Get)
+		v1.PATCH("/datasets/:id", dsH.Patch)
+		v1.DELETE("/datasets/:id", dsH.Delete)
+		v1.GET("/datasets/:id/content", dsH.GetContent)
+		v1.GET("/datasets/:id/export", dsH.Export)
+		v1.GET("/datasets/:id/query", dsH.Query)
+
+		// Deployments API
+		v1.POST("/deployments", deployH.Create)
+		v1.GET("/deployments", deployH.List)
+		v1.GET("/deployments/:id", deployH.Get)
+		v1.PATCH("/deployments/:id", deployH.Patch)
+		v1.DELETE("/deployments/:id", deployH.Delete)
 	}
 
 	api := r.Group("/api")
@@ -76,6 +111,12 @@ func Setup(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, logg
 		api.DELETE("/api-keys/:id", keysH.Delete)
 		api.GET("/usage", billingH.GetUsage)
 		api.POST("/billing/redeem", billingH.RedeemPromo)
+
+		// Members API
+		api.POST("/members", membersH.Invite)
+		api.GET("/members", membersH.List)
+		api.PATCH("/members/:id", membersH.PatchRole)
+		api.DELETE("/members/:id", membersH.Remove)
 	}
 
 	return r

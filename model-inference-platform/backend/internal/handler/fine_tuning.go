@@ -16,12 +16,29 @@ import (
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
 )
 
+var validMethods = map[string]bool{
+	"lora": true, "qlora": true, "full": true,
+	"grpo": true, "gspo": true, "dapo": true, "vapo": true, "ppo": true, "dpo": true,
+}
+
+var validRolloutScenarios = map[string]bool{
+	model.RolloutChat: true, model.RolloutCode: true,
+	model.RolloutToolCall: true, model.RolloutAgentSingle: true,
+	model.RolloutAgentMulti: true, model.RolloutMathReasoning: true,
+	model.RolloutCustom: true,
+	"": true, // optional
+}
+
 type FineTuningHandler struct {
 	store *store.Store
 }
 
 func NewFineTuningHandler(s *store.Store) *FineTuningHandler {
 	return &FineTuningHandler{store: s}
+}
+
+func isRLMethod(m string) bool {
+	return m == "grpo" || m == "gspo" || m == "dapo" || m == "vapo" || m == "ppo" || m == "dpo"
 }
 
 func (h *FineTuningHandler) Create(c *gin.Context) {
@@ -35,25 +52,71 @@ func (h *FineTuningHandler) Create(c *gin.Context) {
 	if method == "" {
 		method = "lora"
 	}
-	if method != "lora" && method != "full" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": "method must be lora or full", "type": "invalid_request_error"}})
+	if !validMethods[method] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{
+			"message": "method must be one of: lora, qlora, full, grpo, gspo, dapo, vapo, ppo, dpo",
+			"type":    "invalid_request_error",
+		}})
 		return
 	}
 
+	rolloutScenario := req.RolloutScenario
+	if !validRolloutScenarios[rolloutScenario] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{
+			"message": "rollout_scenario must be one of: chat, code, tool_call, agent_single, agent_multi, math_reasoning, custom",
+			"type":    "invalid_request_error",
+		}})
+		return
+	}
+
+	// Validate: RL methods require rollout_scenario
+	if isRLMethod(method) && rolloutScenario == "" {
+		rolloutScenario = model.RolloutChat // default
+	}
+
+	// Serialize JSON fields
 	hp := req.Hyperparameters
 	if hp == nil {
 		hp = map[string]interface{}{}
 	}
+	rolloutCfg := req.RolloutConfig
+	if rolloutCfg == nil {
+		rolloutCfg = map[string]interface{}{}
+	}
+	// Merge slime engine_config and data_buffer_config into rollout_config for storage
+	if req.EngineConfig != nil {
+		b, _ := json.Marshal(req.EngineConfig)
+		var ec map[string]interface{}
+		_ = json.Unmarshal(b, &ec)
+		rolloutCfg["engine_config"] = ec
+	}
+	if req.DataBufferConfig != nil {
+		b, _ := json.Marshal(req.DataBufferConfig)
+		var dbc map[string]interface{}
+		_ = json.Unmarshal(b, &dbc)
+		rolloutCfg["data_buffer_config"] = dbc
+	}
+	rewardCfg := map[string]interface{}{}
+	if req.RewardConfig != nil {
+		b, _ := json.Marshal(req.RewardConfig)
+		_ = json.Unmarshal(b, &rewardCfg)
+	}
+
 	hpBytes, _ := json.Marshal(hp)
+	rolloutBytes, _ := json.Marshal(rolloutCfg)
+	rewardBytes, _ := json.Marshal(rewardCfg)
 
 	auth := middleware.GetAuthInfo(c)
 	jobID := "ftjob-" + strings.ReplaceAll(uuid.New().String(), "-", "")
 
 	ctx := c.Request.Context()
 	_, err := h.store.DB.Exec(ctx,
-		`INSERT INTO fine_tuning_jobs (id, user_id, base_model, training_file, method, hyperparameters, status)
-		 VALUES ($1,$2,$3,$4,$5,$6::jsonb,'queued')`,
-		jobID, auth.UserID, req.Model, req.TrainingFile, method, hpBytes)
+		`INSERT INTO fine_tuning_jobs
+		 (id, user_id, base_model, training_file, method, hyperparameters, rollout_scenario, rollout_config, reward_config, status)
+		 VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8::jsonb,$9::jsonb,'queued')`,
+		jobID, auth.UserID, req.Model, req.TrainingFile, method,
+		hpBytes, rolloutScenario, rolloutBytes, rewardBytes,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error(), "type": "api_error"}})
 		return
@@ -61,9 +124,7 @@ func (h *FineTuningHandler) Create(c *gin.Context) {
 
 	go h.simulateJobFinish(jobID, req.Model)
 
-	row := h.store.DB.QueryRow(ctx,
-		`SELECT id, user_id, base_model, training_file, method, hyperparameters, status, fine_tuned_model, error_message, created_at, updated_at
-		 FROM fine_tuning_jobs WHERE id = $1`, jobID)
+	row := h.store.DB.QueryRow(ctx, selectJobSQL+` WHERE id = $1`, jobID)
 	j, err := h.scanJobRow(row)
 	if err != nil {
 		c.JSON(http.StatusCreated, gin.H{"id": jobID, "object": "fine_tuning.job", "status": "queued"})
@@ -72,7 +133,7 @@ func (h *FineTuningHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, jobToAPI(j))
 }
 
-// MVP: transition queued → running → succeeded with a synthetic fine_tuned_model id.
+// simulateJobFinish: queued → running → succeeded (async, ~1.5s, MVP placeholder)
 func (h *FineTuningHandler) simulateJobFinish(jobID, baseModel string) {
 	ctx := context.Background()
 	pool := h.store.DB
@@ -89,15 +150,15 @@ func (h *FineTuningHandler) simulateJobFinish(jobID, baseModel string) {
 	}
 	ftName := baseModel + "-ft-" + suffix
 	_, _ = pool.Exec(ctx,
-		`UPDATE fine_tuning_jobs SET status = 'succeeded', fine_tuned_model = $2, updated_at = $3 WHERE id = $1 AND status = 'running'`,
+		`UPDATE fine_tuning_jobs SET status = 'succeeded', fine_tuned_model = $2, updated_at = $3
+		 WHERE id = $1 AND status = 'running'`,
 		jobID, ftName, time.Now().UTC())
 }
 
 func (h *FineTuningHandler) List(c *gin.Context) {
 	auth := middleware.GetAuthInfo(c)
 	rows, err := h.store.DB.Query(c.Request.Context(),
-		`SELECT id, user_id, base_model, training_file, method, hyperparameters, status, fine_tuned_model, error_message, created_at, updated_at
-		 FROM fine_tuning_jobs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100`, auth.UserID)
+		selectJobSQL+` WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100`, auth.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error()}})
 		return
@@ -119,8 +180,7 @@ func (h *FineTuningHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 	auth := middleware.GetAuthInfo(c)
 	row := h.store.DB.QueryRow(c.Request.Context(),
-		`SELECT id, user_id, base_model, training_file, method, hyperparameters, status, fine_tuned_model, error_message, created_at, updated_at
-		 FROM fine_tuning_jobs WHERE id = $1 AND user_id = $2`, id, auth.UserID)
+		selectJobSQL+` WHERE id = $1 AND user_id = $2`, id, auth.UserID)
 	j, err := h.scanJobRow(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -159,18 +219,38 @@ func (h *FineTuningHandler) Cancel(c *gin.Context) {
 	h.Get(c)
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const selectJobSQL = `
+SELECT id, user_id, base_model, training_file, method, hyperparameters,
+       rollout_scenario, rollout_config, reward_config,
+       status, fine_tuned_model, error_message, created_at, updated_at
+FROM fine_tuning_jobs`
+
 func (h *FineTuningHandler) scanJobRow(rows interface {
 	Scan(dest ...any) error
 }) (model.FineTuningJobRow, error) {
 	var j model.FineTuningJobRow
-	var hpJSON []byte
-	err := rows.Scan(&j.ID, &j.UserID, &j.BaseModel, &j.TrainingFile, &j.Method, &hpJSON, &j.Status, &j.FineTunedModel, &j.ErrorMessage, &j.CreatedAt, &j.UpdatedAt)
+	var hpJSON, rolloutCfgJSON, rewardCfgJSON []byte
+	err := rows.Scan(
+		&j.ID, &j.UserID, &j.BaseModel, &j.TrainingFile, &j.Method,
+		&hpJSON, &j.RolloutScenario, &rolloutCfgJSON, &rewardCfgJSON,
+		&j.Status, &j.FineTunedModel, &j.ErrorMessage, &j.CreatedAt, &j.UpdatedAt,
+	)
 	if err != nil {
 		return j, err
 	}
 	_ = json.Unmarshal(hpJSON, &j.Hyperparameters)
 	if j.Hyperparameters == nil {
 		j.Hyperparameters = map[string]interface{}{}
+	}
+	_ = json.Unmarshal(rolloutCfgJSON, &j.RolloutConfig)
+	if j.RolloutConfig == nil {
+		j.RolloutConfig = map[string]interface{}{}
+	}
+	_ = json.Unmarshal(rewardCfgJSON, &j.RewardConfig)
+	if j.RewardConfig == nil {
+		j.RewardConfig = map[string]interface{}{}
 	}
 	return j, nil
 }
@@ -183,6 +263,9 @@ func jobToAPI(j model.FineTuningJobRow) model.FineTuningJob {
 		TrainingFile:    j.TrainingFile,
 		Method:          j.Method,
 		Hyperparameters: j.Hyperparameters,
+		RolloutScenario: j.RolloutScenario,
+		RolloutConfig:   j.RolloutConfig,
+		RewardConfig:    j.RewardConfig,
 		Status:          j.Status,
 		FineTunedModel:  j.FineTunedModel,
 		CreatedAt:       j.CreatedAt.Unix(),
