@@ -644,7 +644,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
     <div class="sec-header">
       <span class="sec-tag" style="background:var(--amber-light);color:var(--amber)">Roadmap</span>
       <h2>实施路线图</h2>
-      <p>四阶段递进实施，从 MVP 核心能力逐步演进至完整企业级平台</p>
+      <p>五阶段递进实施，从 MVP 核心能力逐步演进至推理引擎深度优化与 AI Agent 原生平台</p>
     </div>
     <div class="timeline">
       <div class="tl-item">
@@ -691,6 +691,21 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
           <li>企业费用中心 + 发票管理</li>
         </ul>
       </div>
+      <div class="tl-item" style="border-left:3px solid var(--rose)">
+        <h4>Phase 5: 深度优化 — 推理引擎 · 成本调度 · AI Agent <span class="badge" style="background:var(--rose-light);color:var(--rose)">Phase 5</span></h4>
+        <p style="font-size:.78rem;color:var(--text-3);margin:4px 0 10px">周期：4 个月 &nbsp;·&nbsp; 里程碑：M1-M2 推理+成本 / M3-M4 Agent 平台</p>
+        <ul>
+          <li>异构 PD 分离（Prefill/Decode 独立扩缩）</li>
+          <li>多级 KV Cache 共享（跨请求复用）</li>
+          <li>投机解码 2.0（EAGLE-3 + 动态 Draft Tree）</li>
+          <li>语义缓存（LanceDB 向量匹配，&lt;1ms）</li>
+          <li>Model Cascade 智能路由（按难度分发）</li>
+          <li>Spot 混合调度（成本降低 40%+）</li>
+          <li>Threads/Runs API（有状态 Agent 会话）</li>
+          <li>并行 Function Calling 优化</li>
+          <li>结构化输出 2.0（XGrammar 约束解码）</li>
+        </ul>
+      </div>
     </div>
   </div>
 </section>
@@ -709,7 +724,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 
 <footer>
   <div class="container">
-    Model Inference Cloud Platform &nbsp;·&nbsp; Architecture Design v1.1 &nbsp;·&nbsp; 2026
+    Model Inference Cloud Platform &nbsp;·&nbsp; Architecture Design v1.2 &nbsp;·&nbsp; 2026
   </div>
 </footer>
 
