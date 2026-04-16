@@ -634,6 +634,15 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
           <div class="arch-box ap">端点管理服务</div>
           <div class="arch-box ap">模型注册中心</div>
           <div class="arch-box ap">微调任务调度</div>
+          <div class="arch-box ap">负载均衡器</div>
+          <div class="arch-box ap">智能路由</div>
+          <div class="arch-box ap">A/B测试框架</div>
+          <div class="arch-box ap">模型评测引擎</div>
+          <div class="arch-box ap">Prompt模板服务</div>
+          <div class="arch-box ap">预算告警服务</div>
+          <div class="arch-box ap">数据质量检查器</div>
+          <div class="arch-box ap">语义缓存服务</div>
+          <div class="arch-box ap">模型版本管理</div>
         </div>
       </div>
       <div class="arch-arrow">▼ ▼ ▼</div>
@@ -700,9 +709,15 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
           <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─→ Rate Limiter (滑动窗口, RPM/TPM)</div>
           <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─→ Responses Adapter (Items ↔ Messages 转换)</div>
           <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─→ Model Router</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─→ Shared Pool (vLLM 集群)</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─→ Dedicated Endpoint (routing_key)</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─→ vLLM Worker (GPU)</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─→ 智能路由</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;├─→ Query 复杂度评分器（BERT 分类器）→ 模型档位选择（7B/32B/70B+）</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;├─→ 语义缓存检查（LanceDB 向量检索，cosine &gt; 0.97 直接返回）</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;└─→ A/B 测试分流（按比例分发到不同模型）</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─→ routing_key 匹配 → 专属端点实例 (Dedicated)</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─→ 模型名匹配 → 共享推理集群 (Shared Pool)</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─→ Load Balancer → vLLM Worker (GPU)</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─→ Prompt Template 服务（变量插值 {{user_name}}）</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─→ 模型版本选择（多版本共存 + 平滑切换）</div>
           <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─→ SSE Stream → Client</div>
           <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─→ Kafka → ClickHouse + Billing</div>
         </div>
@@ -764,8 +779,11 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <div class="tech-item"><div class="cat">推理引擎</div><h4>LLM Inference</h4><div class="tags"><span>vLLM v0.18+</span><span>SGLang</span><span>NVIDIA Dynamo</span></div></div>
       <div class="tech-item"><div class="cat">推理引擎</div><h4>注意力 & 量化</h4><div class="tags"><span>FlashAttention-4</span><span>NVFP4</span><span>FP8</span><span>EAGLE-3</span></div></div>
       <div class="tech-item"><div class="cat">推理引擎</div><h4>国产 GPU</h4><div class="tags"><span>vLLM-Ascend</span><span>LMDeploy</span><span>HAMi</span></div></div>
-      <div class="tech-item"><div class="cat">后端服务</div><h4>API & Gateway</h4><div class="tags"><span>Go (Gin)</span><span>Kong</span><span>Envoy</span><span>Temporal</span></div></div>
-      <div class="tech-item"><div class="cat">后端服务</div><h4>消息 & 流</h4><div class="tags"><span>Apache Kafka</span><span>Redis Stream</span></div></div>
+      <div class="tech-item"><div class="cat">后端服务</div><h4>API & Gateway</h4><div class="tags"><span>Go (Gin)</span><span>Kong</span><span>Envoy</span><span>Temporal</span><span>Nginx</span></div></div>
+      <div class="tech-item"><div class="cat">后端服务</div><h4>消息 & 流</h4><div class="tags"><span>Apache Kafka</span><span>Redis Stream</span><span>PostgreSQL</span><span>Redis</span></div></div>
+      <div class="tech-item"><div class="cat">后端服务</div><h4>智能路由 & 优化</h4><div class="tags"><span>BERT 分类器</span><span>智能路由</span><span>语义缓存</span><span>LanceDB</span></div></div>
+      <div class="tech-item"><div class="cat">后端服务</div><h4>A/B 测试 & 评测</h4><div class="tags"><span>A/B 测试框架</span><span>模型评测引擎</span><span>自定义 Benchmark</span></div></div>
+      <div class="tech-item"><div class="cat">后端服务</div><h4>Prompt & 质量</h4><div class="tags"><span>Prompt 模板服务</span><span>数据质量检查器</span><span>预算告警</span></div></div>
       <div class="tech-item"><div class="cat">前端 & CLI</div><h4>Web Console</h4><div class="tags"><span>React 19</span><span>Next.js 15</span><span>TailwindCSS</span></div></div>
       <div class="tech-item"><div class="cat">前端 & CLI</div><h4>CLI 工具</h4><div class="tags"><span>Go</span><span>Cobra</span><span>Bubble Tea</span><span>GoReleaser</span></div></div>
       <div class="tech-item"><div class="cat">存储</div><h4>数据库 & 缓存</h4><div class="tags"><span>PostgreSQL 16</span><span>Redis 7</span><span>ClickHouse</span><span>S3</span></div></div>
@@ -797,7 +815,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
         </ul>
       </div>
       <div class="tl-item">
-        <h4>Phase 2: 增强 — 专属端点与微调 <span class="badge" style="background:var(--purple-light);color:var(--purple)">Phase 2</span></h4>
+        <h4>Phase 2: 增强 — 专属端点与微调 <span class="badge" style="background:var(--purple-light);color:var(--purple)">Phase 2</span><span style="font-size:0.68rem;color:var(--text-muted);margin-left:8px;">（含模型部署 + 成员管理）</span></h4>
         <ul>
           <li>Dedicated Endpoints 全生命周期 + 复合伸缩策略</li>
           <li>GPU 智能伸缩 (KEDA) + 冷启动优化 + Warm Pool</li>
