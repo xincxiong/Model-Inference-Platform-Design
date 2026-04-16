@@ -1495,6 +1495,15 @@ code {
         <div class="arch-box arch-purple">端点管理服务</div>
         <div class="arch-box arch-purple">模型注册中心</div>
         <div class="arch-box arch-purple">微调任务调度</div>
+        <div class="arch-box arch-purple">负载均衡器</div>
+        <div class="arch-box arch-purple">智能路由</div>
+        <div class="arch-box arch-purple">A/B测试框架</div>
+        <div class="arch-box arch-purple">模型评测引擎</div>
+        <div class="arch-box arch-purple">Prompt模板服务</div>
+        <div class="arch-box arch-purple">预算告警服务</div>
+        <div class="arch-box arch-purple">数据质量检查器</div>
+        <div class="arch-box arch-purple">语义缓存服务</div>
+        <div class="arch-box arch-purple">模型版本管理</div>
       </div>
     </div>
     <div class="arch-connector">▼ ▼ ▼</div>
@@ -1599,7 +1608,7 @@ code {
       </tr>
 
       <tr>
-        <td rowspan="6"><span class="tech-name">后端服务</span></td>
+        <td rowspan="14"><span class="tech-name">后端服务</span></td>
         <td>API 服务</td>
         <td><span class="tech-tag">Go (Gin/Echo)</span></td>
         <td class="tech-desc">高并发低延迟，适合网关和控制面服务；静态编译部署简单</td>
@@ -1628,6 +1637,46 @@ code {
         <td>API Gateway</td>
         <td><span class="tech-tag">Kong</span> / <span class="tech-tag">Envoy</span></td>
         <td class="tech-desc">Kong 提供完善的插件生态 (认证/限流/日志)；Envoy 在 gRPC/HTTP2 场景性能更优</td>
+      </tr>
+      <tr>
+        <td>负载均衡器</td>
+        <td><span class="tech-tag">Nginx</span> / <span class="tech-tag">Envoy</span></td>
+        <td class="tech-desc">一致性哈希 Worker 分配、健康检查、会话保持；vLLM Worker 池化水平扩展核心组件</td>
+      </tr>
+      <tr>
+        <td>智能路由</td>
+        <td><span class="tech-tag">自定义 Go 服务</span> + <span class="tech-tag">BERT 分类器</span></td>
+        <td class="tech-desc">Query 复杂度评分、模型瀑布路由（7B→32B→70B+）、成本优化；用户侧透明，降低推理成本 50-70%</td>
+      </tr>
+      <tr>
+        <td>语义缓存</td>
+        <td><span class="tech-tag">LanceDB</span></td>
+        <td class="tech-desc">&lt;1ms 向量近邻查询，cosine &gt; 0.97 直接返回；动态 TTL 管理、缓存热力图可视化；命中率提升 40-80%</td>
+      </tr>
+      <tr>
+        <td>A/B 测试框架</td>
+        <td><span class="tech-tag">自研 Go 框架</span></td>
+        <td class="tech-desc">流量分流（50:50/自定义比例）、对比分析引擎、统计显著性计算（T 检验/卡方检验）、实时权重切换</td>
+      </tr>
+      <tr>
+        <td>模型评测引擎</td>
+        <td><span class="tech-tag">自研 Python 服务</span></td>
+        <td class="tech-desc">内置评测集（MMLU/HumanEval/GSM8K/MATH/C-Eval）、微调前后自动对比、自定义 Benchmark、评测报告可视化</td>
+      </tr>
+      <tr>
+        <td>Prompt 模板服务</td>
+        <td><span class="tech-tag">Go 模板引擎</span></td>
+        <td class="tech-desc">Jinja2 风格变量插值（`{{user_name}}`）、系统/团队两级模板库、版本管理、一键应用到 Playground</td>
+      </tr>
+      <tr>
+        <td>预算告警服务</td>
+        <td><span class="tech-tag">Go 定时任务</span> + <span class="tech-tag">多渠道通知</span></td>
+        <td class="tech-desc">预算追踪器、多级阈值告警（50%/80%/100%）、邮件/Slack/钉钉/企微/Webhook 通知、告警历史记录</td>
+      </tr>
+      <tr>
+        <td>数据质量检查器</td>
+        <td><span class="tech-tag">Python 数据验证器</span></td>
+        <td class="tech-desc">格式检测（JSONL/CSV/Parquet）、数据不平衡分析、异常样本标注、数据增强推荐、训练前质量报告</td>
       </tr>
 
       <tr>
@@ -1754,9 +1803,15 @@ code {
         <div style="color: var(--text-muted);">      ├─→ Rate Limiter (滑动窗口, Redis 计数器)</div>
         <div style="color: var(--text-muted);">      ├─→ Responses Adapter (Items ↔ Messages 转换)</div>
         <div style="color: var(--text-muted);">      └─→ Model Router</div>
-        <div style="color: var(--text-muted);">          ├─→ Shared Pool (vLLM 集群, 负载均衡)</div>
-        <div style="color: var(--text-muted);">          └─→ Dedicated Endpoint (routing_key 路由)</div>
-        <div style="color: var(--text-muted);">              └─→ vLLM Worker (GPU)</div>
+        <div style="color: var(--text-muted);">          ├─→ 智能路由</div>
+        <div style="color: var(--text-muted);">          │   ├─→ Query 复杂度评分器（BERT 分类器）→ 模型档位选择（7B/32B/70B+）</div>
+        <div style="color: var(--text-muted);">          │   ├─→ 语义缓存检查（LanceDB 向量检索，cosine &gt; 0.97 直接返回）</div>
+        <div style="color: var(--text-muted);">          │   └─→ A/B 测试分流（按比例分发到不同模型）</div>
+        <div style="color: var(--text-muted);">          ├─→ routing_key 匹配 → 专属端点实例 (Dedicated)</div>
+        <div style="color: var(--text-muted);">          └─→ 模型名匹配 → 共享推理集群 (Shared Pool)</div>
+        <div style="color: var(--text-muted);">              └─→ Load Balancer → vLLM Worker (GPU)</div>
+        <div style="color: var(--text-muted);">                  ├─→ Prompt Template 服务（变量插值 `{{user_name}}`）</div>
+        <div style="color: var(--text-muted);">                  ├─→ 模型版本选择（多版本共存 + 平滑切换）</div>
         <div style="color: var(--text-muted);">                  ├─→ SSE Stream → Client</div>
         <div style="color: var(--text-muted);">                  └─→ Kafka (异步写入推理日志)</div>
         <div style="color: var(--text-muted);">                      └─→ ClickHouse (日志存储)</div>
@@ -1890,12 +1945,16 @@ code {
         <span class="phase-badge" style="background: rgba(37,99,235,0.1); color: var(--accent-blue);">Phase 1 ✅</span>
       </h4>
       <ul>
+        <li><strong>共享推理集群扩展基础</strong>: vLLM Worker 池化（多实例注册与健康检查）；Redis 共享路由缓存（替换单机缓存，多实例路由一致性）；Kafka 请求队列（消费者组削峰填谷）；健康检查与熔断（gRPC Health + Circuit Breaker）</li>
+        <li><strong>高可用性增强</strong>: 请求重试机制（指数退避，最多 3 次）；统一错误码标准化（符合 OpenAI 规范）；流式超时控制（防止长连接占用资源）</li>
+        <li><strong>模型版本管理</strong>: 支持同一模型多版本共存（如 gpt-4.0-turbo → gpt-4.1-turbo）；版本间 A/B 测试能力；平滑版本切换</li>
         <li>基于 vLLM v0.18+ 搭建共享推理集群，启用 FlashAttention-4、自动前缀缓存、连续批处理</li>
         <li>实现双格式 API: Responses API (/v1/responses) + Chat Completions (/v1/chat/completions)</li>
         <li>API Key 认证与基础速率限制 + Service Tier 机制</li>
         <li>基础 Web Console: 模型列表、API Key 管理、Playground 对话</li>
         <li>迁移指南 (Switch Guide) 文档与示例</li>
         <li>按 Token 计量的基础计费系统 (含 Promo Code)</li>
+        <li><strong>使用分析 Dashboard</strong>: 基础用量可视化（Token 数、请求数、成本）；按模型/时间/项目维度统计；帮助用户理解成本分布</li>
         <li>Prometheus + Grafana 基础监控</li>
       </ul>
     </div>
@@ -1903,9 +1962,16 @@ code {
     <div class="phase-item">
       <h4>
         Phase 2: 增强 — 专属端点与微调
-        <span class="phase-badge" style="background: rgba(124,58,237,0.1); color: var(--accent-purple);">Phase 2 ✅</span>
+        <span class="phase-badge" style="background: rgba(124,58,237,0.1); color: var(--accent-purple);">Phase 2 ✅（含模型部署 + 成员管理）</span>
       </h4>
       <ul>
+        <li><strong>共享推理集群智能调度</strong>: 负载均衡器（一致性哈希 / 轮询按模型分配 Worker）；请求队列优先级（Service Tier auto/default/flex 分级队列）；KEDA 弹性伸缩（基于队列深度自动扩容 Worker）；多区域路由（根据用户位置就近分配 Worker）</li>
+        <li><strong>A/B 测试框架</strong>: 同端点多模型流量分流（50:50 或自定义比例）；自动对比响应质量与成本；统计显著性计算；支持实时切换流量权重</li>
+        <li><strong>模型评测 Benchmark</strong>: 内置标准评测集（MMLU / HumanEval / GSM8K / MATH / C-Eval）；微调前后自动对比；支持自定义 Benchmark；评测报告可视化</li>
+        <li><strong>Prompt 模板管理</strong>: 系统/团队两级 Prompt 模板库；模板变量插值（{{user_name}}）；版本管理；一键应用到 Playground</li>
+        <li><strong>成本预算告警</strong>: 超预算自动邮件/Slack 通知；多级阈值警告（50%/80%/100%）；按项目/模型设置独立预算；告警历史记录</li>
+        <li><strong>微调数据质量检查</strong>: 自动检测格式错误/数据不平衡；异常样本标注建议；数据增强推荐；训练前数据质量报告</li>
+        <li><strong>专属端点弹性伸缩</strong>: 支持专属端点自动扩缩容（基于 QPS）；预留 GPU 资源池；伸缩策略配置（最小/最大实例）</li>
         <li>专属端点全生命周期 + 复合伸缩策略 + Warm Pool 冷启动优化</li>
         <li>GPU 智能伸缩 (KEDA) + 跨 AZ 高可用 + 资源配额管理</li>
         <li>推理优化: 投机解码 (EAGLE-3 / N-gram GPU)、FP8/NVFP4 量化、KV Cache 压缩与 CPU 卸载</li>
@@ -1927,6 +1993,15 @@ code {
         <span class="phase-badge" style="background: rgba(5,150,105,0.1); color: var(--accent-emerald);">Phase 3</span>
       </h4>
       <ul>
+        <li><strong>共享推理集群分布式架构</strong>: Redis Cluster（多节点分布式缓存高可用）；多区域数据中心（跨 AZ/Kubernetes Cluster 主备自动切换）；请求追踪（OpenTelemetry 全链路延迟定位）；智能路由（跨域流量调度，单区域过载自动跨域）</li>
+        <li><strong>语义缓存</strong>: LanceDB 向量近邻检索，cosine > 0.97 直接复用结果；动态 TTL 管理；命中率提升 40-80%，命中延迟 <1ms；缓存热力图可视化</li>
+        <li><strong>智能路由</strong>: Query 复杂度评分器（轻量 BERT 分类器）自动选择模型档位（7B/32B/70B+）；用户侧透明；成本降低 50-70%</li>
+        <li><strong>LLM-as-Judge 自动评估</strong>: 用 GPT-4o/Claude 对生产流量质量打分；构建持续质量监控仪表盘；自动检测质量下降告警；支持自定义 Judge 模型</li>
+        <li><strong>数据飞轮</strong>: 生产日志 → 难样本挖掘 → 数据标注 → 微调 → 评测 → 部署全闭环；自动生成微调数据集；质量提升数据可视化</li>
+        <li><strong>模型市场</strong>: 第三方开发者上传私有模型并发布收费 API；模型评分与评论系统；按调用次数/月度订阅计费；参考 Replicate / HuggingFace Inference Endpoints</li>
+        <li><strong>私有模型托管 (BYOM)</strong>: 用户上传自有权重获得隔离推理端点；支持 GGUF / SafeTensors / AWQ；一键从 HuggingFace/ModelScope 导入；与微调数据隔离</li>
+        <li><strong>Webhook 集成</strong>: 任务完成自动回调用户系统；支持重试机制；签名验证保障安全；事件订阅（微调完成/端点状态变更）</li>
+        <li><strong>自定义域名</strong>: 用户绑定自有域名访问端点；SSL 证书自动签发；CNAME 配置指引；支持多域名绑定</li>
         <li>Data Lab 推理日志采集与 SQL 查询系统</li>
         <li>完整的可观测性面板 (延迟/吞吐/错误/伸缩)</li>
         <li>Prometheus API 导出 + Grafana 集成</li>
@@ -1998,18 +2073,6 @@ code {
       <div style="margin-bottom: 16px;">
         <div style="font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; color: var(--accent-emerald); margin-bottom: 8px; text-transform: uppercase;">▎成本优化与调度智能化</div>
         <ul>
-          <li>
-            <strong>语义缓存（Semantic Cache）</strong> —
-            基于 LanceDB 向量近邻检索，语义相近 Prompt（cosine &gt; 0.97）直接复用上次结果；
-            动态 TTL（高频 Prompt 延长缓存、低频自动淘汰）；
-            缓存命中率提升 <strong>40-80%</strong>，命中延迟 &lt;1ms；控制台可视化缓存命中热力图
-          </li>
-          <li>
-            <strong>模型瀑布 / 智能路由（Model Cascade）</strong> —
-            按 Query 复杂度自动选择模型档位：简单分类/摘要 → 7B，通用对话 → 32B，复杂推理/代码 → 70B+；
-            路由策略基于在线难度评分器（轻量 BERT 分类器）；
-            同一 Endpoint 对外透明，用户无感知；成本降低 <strong>50-70%</strong>
-          </li>
           <li>
             <strong>Spot 实例混合调度</strong> —
             批量推理、RL 训练、Embedding 计算优先调度 Spot/Preemptible GPU（节省 <strong>50-80%</strong>）；
