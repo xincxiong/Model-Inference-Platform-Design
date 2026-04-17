@@ -31,7 +31,33 @@ interface Dataset {
 type TrainingMode = 'sft' | 'rl'
 type RLMethod = 'grpo' | 'gspo' | 'dapo' | 'vapo' | 'ppo' | 'dpo'
 
+interface FlowItem {
+  step: string
+  title: string
+  desc: string
+  done: boolean
+}
+
+interface BaseModelOption {
+  id: string
+  label: string
+  family: string
+  desc: string
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+const BASE_MODEL_OPTIONS: BaseModelOption[] = [
+  { id: 'deepseek-ai/DeepSeek-V3', label: 'DeepSeek V3', family: 'DeepSeek', desc: '通用旗舰对话模型，适合通用 SFT 与指令微调。' },
+  { id: 'deepseek-ai/DeepSeek-R1', label: 'DeepSeek R1', family: 'DeepSeek', desc: '强化推理模型，适合数学、代码与复杂推理场景。' },
+  { id: 'deepseek-ai/DeepSeek-Coder-V2-Instruct', label: 'DeepSeek Coder V2', family: 'DeepSeek', desc: '代码专用模型，适合代码生成、补全与修复。' },
+  { id: 'Qwen/Qwen3-72B', label: 'Qwen3 72B', family: 'Qwen', desc: 'Qwen 系列旗舰通用模型，适合高质量指令微调。' },
+  { id: 'Qwen/Qwen3-30B-A3B', label: 'Qwen3 30B-A3B', family: 'Qwen', desc: 'MoE 高效模型，兼顾效果与推理成本。' },
+  { id: 'Qwen/Qwen3-8B', label: 'Qwen3 8B', family: 'Qwen', desc: '轻量化模型，适合低成本实验和快速验证。' },
+  { id: 'Qwen/Qwen2.5-Coder-32B-Instruct', label: 'Qwen2.5 Coder 32B', family: 'Qwen', desc: '代码模型，适合工程类训练与评测。' },
+  { id: 'Qwen/Qwen2.5-VL-7B-Instruct', label: 'Qwen2.5 VL 7B', family: 'Qwen', desc: '轻量多模态模型，适合图文理解训练。' },
+  { id: 'Qwen/Qwen2.5-VL-72B-Instruct', label: 'Qwen2.5 VL 72B', family: 'Qwen', desc: '高性能多模态模型，适合复杂视觉问答场景。' },
+]
 
 const ROLLOUT_SCENARIOS = [
   {
@@ -305,6 +331,27 @@ export default function FinetuningPage() {
     }
   }
 
+  const flowItems: FlowItem[] = mode === 'sft'
+    ? [
+        { step: '1', title: '选择基座模型', desc: '确认要微调的基础模型 ID。', done: baseModel.trim().length > 0 },
+        { step: '2', title: '添加训练数据', desc: '选择数据集或填写训练文件 ID。', done: trainingFile.trim().length > 0 },
+        { step: '3', title: '选择微调方法', desc: '在 LoRA、QLoRA、Full FT 间选择。', done: true },
+        { step: '4', title: '配置超参数', desc: '设置 Epoch、学习率和 Batch Size。', done: epochs.trim().length > 0 && lr.trim().length > 0 },
+        { step: '5', title: '提交任务', desc: '检查配置后提交微调任务。', done: false },
+      ]
+    : [
+        { step: '1', title: '选择基座模型', desc: '确认参考模型与训练目标。', done: rlModel.trim().length > 0 },
+        { step: '2', title: '选择 RL 算法', desc: '选择 GRPO、GSPO、DAPO、VAPO、PPO 或 DPO。', done: true },
+        { step: '3', title: 'Training Engine', desc: '配置 Megatron-LM 并行策略和训练步数。', done: tensorParallel.trim().length > 0 && trainSteps.trim().length > 0 },
+        { step: '4', title: 'Rollout Engine', desc: '选择 SGLang 场景并填写采样参数。', done: rolloutScenario.length > 0 && rolloutSamples.trim().length > 0 },
+        { step: '5', title: 'Reward 配置', desc: '选择奖励函数并设置 KL 等超参数。', done: rewardFns.length > 0 },
+        { step: '6', title: '提交任务', desc: `检查后提交 ${rlMethod.toUpperCase()} 训练任务。`, done: false },
+      ]
+
+  const completedSteps = flowItems.filter(item => item.done).length
+  const currentStepIndex = Math.max(flowItems.findIndex(item => !item.done), 0)
+  const qwenModelOptions = BASE_MODEL_OPTIONS.filter(item => item.family === 'Qwen')
+
   if (loading && jobs.length === 0) {
     return (
       <div className="flex items-center gap-2 text-[var(--text-muted)]">
@@ -332,97 +379,94 @@ export default function FinetuningPage() {
       )}
 
       {/* ─── Config Flow Overview (above tabs) ─────────────────── */}
-      <div className="mb-5 p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-hover)]">
-        <div className="flex items-center gap-2 mb-3">
-          <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider">配置流程</p>
-          {mode === 'rl' && (
-            <span className="text-[10px] font-bold text-[var(--primary)] bg-[color:var(--primary)]/10 px-1.5 py-0.5 rounded font-mono">RL</span>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-0">
-          {(mode === 'sft' ? [
-            {
-              step: '1', title: '选择基座模型', desc: '指定要微调的基础模型 ID',
-              done: baseModel.trim().length > 0,
-            },
-            {
-              step: '2', title: '添加训练数据', desc: '上传或指定训练文件 ID',
-              done: trainingFile.trim().length > 0,
-            },
-            {
-              step: '3', title: '选择微调方法', desc: 'LoRA · QLoRA · Full FT',
-              done: true,
-            },
-            {
-              step: '4', title: '配置超参数', desc: 'Epochs · LR · Batch Size',
-              done: epochs.trim().length > 0 && lr.trim().length > 0,
-            },
-            {
-              step: '5', title: '提交任务', desc: '点击"提交微调任务"',
-              done: false,
-            },
-          ] : [
-            {
-              step: '1', title: '选择基座模型', desc: '指定参考模型 ID',
-              done: rlModel.trim().length > 0,
-            },
-            {
-              step: '2', title: '选择 RL 算法', desc: 'GRPO · GSPO · DAPO · VAPO · PPO · DPO',
-              done: true,
-            },
-            {
-              step: '3', title: 'Training Engine', desc: 'Megatron-LM 并行策略',
-              done: tensorParallel.trim().length > 0 && trainSteps.trim().length > 0,
-            },
-            {
-              step: '4', title: 'Rollout Engine', desc: 'SGLang 场景 + Data Buffer',
-              done: rolloutScenario.length > 0 && rolloutSamples.trim().length > 0,
-            },
-            {
-              step: '5', title: 'Reward 配置', desc: '奖励函数 + KL 超参',
-              done: rewardFns.length > 0,
-            },
-            {
-              step: '6', title: '提交任务', desc: `提交 ${rlMethod.toUpperCase()} 后训练任务`,
-              done: false,
-            },
-          ]).map((item, idx, arr) => (
-            <div key={item.step} className="flex items-center">
-              <div className={`group/step relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                item.done
-                  ? 'bg-[color:var(--primary)]/10 text-[var(--primary)]'
-                  : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'
-              }`}>
-                {/* 步骤编号 / 完成勾 */}
-                <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 ${
-                  item.done
-                    ? 'bg-[var(--primary)] text-white'
-                    : 'bg-[var(--bg)] border border-[var(--border)] text-[var(--text-muted)]'
-                }`}>
-                  {item.done ? (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  ) : item.step}
+      <div className="mb-6 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-white to-[var(--bg-hover)] p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--primary)]/10 text-[var(--primary)]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 7h16"/>
+                <path d="M7 12h10"/>
+                <path d="M10 17h4"/>
+              </svg>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">配置流程</p>
+                <span className="rounded-full bg-[color:var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--primary)]">
+                  {mode === 'sft' ? 'SFT' : 'RL'}
                 </span>
-                {/* 步骤标题 */}
-                <span className="text-[11px] font-medium leading-tight whitespace-nowrap">{item.title}</span>
-                {/* ❓ hover 触发 tooltip */}
-                <span className="text-[10px] opacity-40 group-hover/step:opacity-80 transition-opacity cursor-default leading-none select-none">?</span>
-                {/* Tooltip 气泡 */}
-                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50
-                  opacity-0 group-hover/step:opacity-100 transition-opacity duration-150">
-                  <div className="bg-[var(--text)] text-[var(--bg)] text-[10px] leading-snug rounded-md px-2.5 py-1.5 whitespace-nowrap shadow-lg">
-                    {item.desc}
+              </div>
+              <p className="mt-1 text-sm font-medium text-[var(--text)]">
+                当前进行到第 {currentStepIndex + 1} 步，下一步请完成「{flowItems[currentStepIndex]?.title}」
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-[var(--border)] bg-white/80 px-3 py-2">
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-32 overflow-hidden rounded-full bg-[var(--bg-hover)]">
+                <div
+                  className="h-full rounded-full bg-[var(--primary)] transition-all"
+                  style={{ width: `${(completedSteps / flowItems.length) * 100}%` }}
+                />
+              </div>
+              <div className="text-right">
+                <p className="text-[11px] font-semibold text-[var(--text)]">{completedSteps}/{flowItems.length}</p>
+                <p className="text-[10px] text-[var(--text-muted)]">已完成步骤</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-stretch gap-3">
+          {flowItems.map((item, idx) => {
+            const isCurrent = idx === currentStepIndex
+            const statusLabel = item.done ? '已完成' : isCurrent ? '当前步骤' : '待配置'
+
+            return (
+              <div key={item.step} className="min-w-[190px] flex-1">
+                <div className={`h-full rounded-xl border px-4 py-3 transition-all ${
+                  item.done
+                    ? 'border-[color:var(--primary)]/20 bg-[color:var(--primary)]/8 shadow-sm'
+                    : isCurrent
+                      ? 'border-[color:var(--primary)]/40 bg-white shadow-md ring-1 ring-[color:var(--primary)]/10'
+                      : 'border-[var(--border)] bg-white/75'
+                }`}>
+                  <div className="flex items-start gap-3">
+                    <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                      item.done
+                        ? 'bg-[var(--primary)] text-white'
+                        : isCurrent
+                          ? 'bg-[color:var(--primary)]/12 text-[var(--primary)] border border-[color:var(--primary)]/20'
+                          : 'border border-[var(--border)] bg-[var(--bg)] text-[var(--text-muted)]'
+                    }`}>
+                      {item.done ? (
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      ) : item.step}
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-[var(--text)]">{item.title}</p>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          item.done
+                            ? 'bg-[color:var(--primary)]/10 text-[var(--primary)]'
+                            : isCurrent
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-[var(--bg-hover)] text-[var(--text-muted)]'
+                        }`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-[12px] leading-5 text-[var(--text-muted)]">{item.desc}</p>
+                    </div>
                   </div>
-                  <div className="w-2 h-2 bg-[var(--text)] rotate-45 mx-auto -mt-1"/>
                 </div>
               </div>
-              {idx < arr.length - 1 && (
-                <span className="mx-0.5 text-[var(--border)] shrink-0 text-base leading-none select-none">›</span>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -459,8 +503,53 @@ export default function FinetuningPage() {
             <h3 className="font-medium text-sm text-[var(--text)] mb-4">基座模型</h3>
             <div>
               <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">模型 ID</label>
-              <input value={baseModel} onChange={e => setBaseModel(e.target.value)} placeholder="deepseek-ai/DeepSeek-V3" />
-              <p className="text-[11px] text-[var(--text-muted)] mt-1.5">支持 HuggingFace 格式 ID 或平台内部已注册模型名称</p>
+              <input
+                list="sft-base-model-options"
+                value={baseModel}
+                onChange={e => setBaseModel(e.target.value)}
+                placeholder="例如：deepseek-ai/DeepSeek-V3 或 Qwen/Qwen3-72B"
+              />
+              <datalist id="sft-base-model-options">
+                {BASE_MODEL_OPTIONS.map(option => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
+              </datalist>
+              <p className="text-[11px] text-[var(--text-muted)] mt-1.5">支持 HuggingFace 格式 ID 或平台内部已注册模型名称，也可直接选择下方推荐模型。</p>
+            </div>
+            <div className="mt-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-[11px] font-medium text-[var(--text-secondary)]">推荐可用模型</p>
+                <span className="text-[10px] text-[var(--text-muted)]">已新增 Qwen 系列</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {BASE_MODEL_OPTIONS.map(option => {
+                  const active = baseModel === option.id
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setBaseModel(option.id)}
+                      className={`rounded-lg border px-3 py-2 text-left transition-all ${
+                        active
+                          ? 'border-[color:var(--primary)]/40 bg-[color:var(--primary)]/10 shadow-sm'
+                          : 'border-[var(--border)] bg-white hover:border-[var(--primary)]/25 hover:bg-[var(--bg-hover)]'
+                      }`}
+                      title={option.desc}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                          option.family === 'Qwen'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-sky-100 text-sky-700'
+                        }`}>
+                          {option.family}
+                        </span>
+                        <span className="text-xs font-medium text-[var(--text)]">{option.label}</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -644,7 +733,36 @@ export default function FinetuningPage() {
             <div className="grid gap-4 md:grid-cols-3">
               <div className="md:col-span-2">
                 <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">基座 / 参考模型 ID</label>
-                <input value={rlModel} onChange={e => setRlModel(e.target.value)} placeholder="deepseek-ai/DeepSeek-V3" />
+                <input
+                  list="rl-base-model-options"
+                  value={rlModel}
+                  onChange={e => setRlModel(e.target.value)}
+                  placeholder="例如：deepseek-ai/DeepSeek-R1 或 Qwen/Qwen3-72B"
+                />
+                <datalist id="rl-base-model-options">
+                  {BASE_MODEL_OPTIONS.map(option => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
+                  ))}
+                </datalist>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {qwenModelOptions.map(option => {
+                    const active = rlModel === option.id
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setRlModel(option.id)}
+                        className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors ${
+                          active
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                            : 'border-[var(--border)] bg-white text-[var(--text-muted)] hover:border-emerald-200 hover:text-[var(--text)]'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
               <div>
                 <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">RL 算法</label>

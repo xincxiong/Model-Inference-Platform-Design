@@ -10,11 +10,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/xincxiong/model-inference-platform/backend/internal/circuitbreaker"
 	"github.com/xincxiong/model-inference-platform/backend/internal/config"
 	"github.com/xincxiong/model-inference-platform/backend/internal/engine"
+	"github.com/xincxiong/model-inference-platform/backend/internal/health"
 	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
+	"github.com/xincxiong/model-inference-platform/backend/internal/queue"
 	"github.com/xincxiong/model-inference-platform/backend/internal/router"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
+	"github.com/xincxiong/model-inference-platform/backend/internal/workerpool"
 	"go.uber.org/zap"
 )
 
@@ -50,10 +54,47 @@ func main() {
 
 	store.SeedModels(context.Background(), db)
 
+	// ── Health checker ────────────────────────────────────────────────────
+	hc := health.New(db, rdb)
+
+	// ── Circuit breaker manager ───────────────────────────────────────────
+	cb := circuitbreaker.New(circuitbreaker.DefaultConfig())
+
+	// ── Worker pool ───────────────────────────────────────────────────────
+	wp := workerpool.New(rdb, logger)
+	_ = wp // pool is available for future engine integration
+
+	// ── Kafka queue ───────────────────────────────────────────────────────
+	var kafkaBrokers []string
+	if b := os.Getenv("KAFKA_BROKERS"); b != "" {
+		kafkaBrokers = []string{b}
+	}
+	producer := queue.NewProducer(kafkaBrokers, "inference-events", logger)
+	defer producer.Close()
+
+	consumer := queue.NewConsumer(producer, logger)
+	consumer.Register(queue.EventTypeUsage, func(msg queue.Message) error {
+		ev, err := queue.UnmarshalUsageEvent(msg)
+		if err != nil {
+			return err
+		}
+		logger.Debug("usage event consumed",
+			zap.String("request_id", ev.RequestID),
+			zap.String("model", ev.ModelID),
+			zap.Int("input_tokens", ev.InputTokens),
+			zap.Int("output_tokens", ev.OutputTokens),
+		)
+		return nil
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	consumer.Start(ctx)
+
+	// ── Inference engine ──────────────────────────────────────────────────
 	eng := engine.NewMockEngine()
 	mr := modelrouter.New(db, eng, logger)
 
-	r := router.Setup(cfg, s, mr, logger)
+	r := router.Setup(cfg, s, mr, hc, cb, logger)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.ServerPort),
@@ -74,9 +115,9 @@ func main() {
 	<-quit
 	logger.Info("shutting down server...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
+	shutCtx, shutCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutCancel()
+	if err := srv.Shutdown(shutCtx); err != nil {
 		logger.Fatal("server forced to shutdown", zap.Error(err))
 	}
 	logger.Info("server exited")

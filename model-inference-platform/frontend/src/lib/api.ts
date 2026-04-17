@@ -1,8 +1,13 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+// Empty string = same-origin; Next.js rewrites proxy all /api /v0 /v1 to the backend.
+// This avoids browser-level system proxy (e.g. Clash/Charles) intercepting backend calls.
+const API_URL = '';
+
+// Default dev key seeded in the database migration. Used as fallback when no key is stored.
+const DEV_API_KEY = 'sk-dev-key-00000000';
 
 function getApiKey(): string {
-  if (typeof window === 'undefined') return '';
-  return localStorage.getItem('api_key') || '';
+  if (typeof window === 'undefined') return DEV_API_KEY;
+  return localStorage.getItem('api_key') || DEV_API_KEY;
 }
 
 export function setApiKey(key: string) {

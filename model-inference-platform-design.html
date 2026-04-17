@@ -892,14 +892,61 @@ code {
   <div class="tab-content" id="feat-endpoint">
     <div class="grid-2">
       <div class="card">
-        <h3>端点管理 (Control Plane)</h3>
+        <h3>三步创建向导</h3>
         <ul>
-          <li>基于模型模板 (Template) 创建专属部署实例</li>
-          <li>选择 GPU 类型: L40S / H100 / H200 / B200 + 国产 GPU</li>
-          <li>配置 GPU 数量 / 副本数 / 区域</li>
-          <li>实时状态监控与生命周期管理</li>
-          <li>零停机配置变更 (蓝绿部署 + 滚动更新)</li>
-          <li>资源配额管理 (组织 GPU 上限 / 端点数量限制)</li>
+          <li><strong>Step 1 — 选择模型</strong>：从模型模板目录选择，支持搜索 + 类型筛选（对话/多模态）</li>
+          <li><strong>Step 2 — GPU 配置</strong>：选择 GPU 类型（5 种可选）、数量、区域，实时显示单价和费率</li>
+          <li><strong>Step 3 — 端点配置</strong>：设置名称、描述、副本范围（min/max）+ 费用预估卡片</li>
+        </ul>
+      </div>
+      <div class="card highlight-card">
+        <h3>GPU 类型与定价</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">Step 2 GPU 配置页面实时展示单价，让用户明确费用：</p>
+        <ul>
+          <li><strong>H100-80GB</strong> — ¥5.80/GPU·时（Hopper 架构，速度比 A100 快 3x）</li>
+          <li><strong>A100-80GB</strong> — ¥3.50/GPU·时（旗舰级训练/推理，适合 70B+ 大模型）</li>
+          <li><strong>A100-40GB</strong> — ¥2.20/GPU·时（通用高性能，适合 7B–40B 模型）</li>
+          <li><strong>L40S-48GB</strong> — ¥1.60/GPU·时（推理优化型，性价比极高）</li>
+          <li><strong>RTX4090-24GB</strong> — ¥0.90/GPU·时（消费级旗舰，适合轻量模型）</li>
+        </ul>
+      </div>
+      <div class="card highlight-card">
+        <h3>费用透明展示</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">用户在创建前和运行时均可清晰了解费用：</p>
+        <ul>
+          <li><strong>Step 2 费用提示</strong>：显示「按 GPU·小时计费」+ 当前配置单副本费率</li>
+          <li><strong>Step 3 费用预估卡片</strong>：最低费用（min=0 时显示 ¥0.00）+ 最高费用</li>
+          <li><strong>列表费率列</strong>：运行中端点显示 ¥X.XX/时 + ≈¥X/天，停止显示 —</li>
+          <li><strong>顶部总费率</strong>：汇总所有运行中端点的实时费率</li>
+          <li><strong>详情侧边栏</strong>：计费信息卡片（GPU 单价 + 当前费率 + 预估日费 + 计费公式）</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>详情侧边栏</h3>
+        <ul>
+          <li><strong>计费信息卡片</strong>：橙色渐变卡片，GPU 单价 / 当前费率 / 预估日费三格展示</li>
+          <li><strong>Routing Key</strong>：一键复制，用于 API 调用的 model 字段</li>
+          <li><strong>配置信息</strong>：模型、GPU 类型/数量、区域、副本范围、当前副本</li>
+          <li><strong>API 调用示例</strong>：cURL / Python 代码切换 + 一键复制</li>
+          <li><strong>操作按钮</strong>：启停端点 + 调整副本</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>副本调整弹窗</h3>
+        <ul>
+          <li><strong>当前副本滑块</strong>：拖拽调整，立即生效</li>
+          <li><strong>最小/最大副本</strong>：输入框设置弹性范围</li>
+          <li><strong>费用影响预览</strong>：当前副本费率 + 弹性范围费率 + 预估日费用</li>
+          <li>实时计算：GPU 单价 × GPU 数量 × 副本数</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>列表功能增强</h3>
+        <ul>
+          <li><strong>搜索 + 状态筛选</strong>：按名称/模型/routing_key 搜索；按运行中/已停止/启动中/异常筛选</li>
+          <li><strong>费率列</strong>：运行中显示实时费率（¥X.XX/时 + ≈¥X/天）</li>
+          <li><strong>快捷操作</strong>：Scale / 详情 / 删除</li>
+          <li><strong>行点击展开详情</strong>：右侧滑出详情侧边栏</li>
         </ul>
       </div>
       <div class="card">
@@ -932,22 +979,21 @@ code {
         </ul>
       </div>
       <div class="card">
-        <h3>推理访问 (Data Plane)</h3>
+        <h3>空状态引导</h3>
         <ul>
-          <li>每个端点分配唯一 <code>routing_key</code></li>
-          <li>复用 OpenAI 兼容 <code>/v1</code> 路由</li>
-          <li>区域化 Base URL 降低跨区延迟</li>
-          <li>与共享推理完全相同的 SDK 体验</li>
+          <li><strong>三步流程图</strong>：选择模型 → 配置 GPU → 通过 routing_key 调用</li>
+          <li>每步配有 SVG 插图和详细说明</li>
+          <li>帮助新用户快速了解专属端点的使用流程</li>
         </ul>
       </div>
       <div class="card">
-        <h3>计费策略</h3>
+        <h3>部署区域</h3>
         <ul>
-          <li>按 GPU 时长计费 (副本 × GPU × 时间)</li>
-          <li>仅运行中的副本产生费用</li>
-          <li>min_replicas=0 时自动释放资源</li>
-          <li>Warm Pool 预热副本按 50% 费率计费</li>
-          <li>伸缩事件全链路通知 (Console / Webhook / 邮件)</li>
+          <li>🇨🇳 华东一区（上海）</li>
+          <li>🇨🇳 华南一区（广州）</li>
+          <li>🇨🇳 华北一区（北京）</li>
+          <li>🇭🇰 亚太东南（香港）</li>
+          <li>🇺🇸 美西（圣何塞）</li>
         </ul>
       </div>
     </div>
@@ -970,7 +1016,20 @@ code {
         <ul>
           <li><strong>第 1 步 — 选择模型</strong>：从预置模型目录选择（Text-to-Text / Vision），支持按 Provider 过滤</li>
           <li><strong>第 2 步 — 选择计费方式</strong>：<code>token</code>（按 Token 计费）/ <code>tpu</code>（置备吐单元）/ <code>unit</code>（模型单元独占）</li>
-          <li><strong>第 3 步 — 配置确认</strong>：设置名称、副本数范围（min/max，默认 0/3）、描述</li>
+          <li><strong>第 3 步 — 配置确认</strong>：设置名称、副本数范围（min/max，默认 0/3）、描述 + 费用预估卡片</li>
+        </ul>
+      </div>
+      <div class="card highlight-card">
+        <h3>计费方式透明展示</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">用户在部署前即可了解费用，做到心中有数：</p>
+        <ul>
+          <li><strong>Step 2 计费卡片</strong>：每种模式右侧显示起步价 + 计费单位，展开后显示详细价格表</li>
+          <li><strong>Token 模式</strong>：主流模型输入/输出单价表（DeepSeek-V3 ¥0.27/¥1.10、Qwen、GLM 等）</li>
+          <li><strong>TPU 模式</strong>：4 档 QPS 规格卡片（基础 ¥0.5/时 → 旗舰 ¥28/时），底部实时显示费率</li>
+          <li><strong>GPU 单元模式</strong>：4 种 GPU 型号选择（A10/L40S/A100/H100），底部显示单副本费率</li>
+          <li><strong>Step 3 费用预估</strong>：按选定配置计算小时费/日费/月费/最高最低费用</li>
+          <li><strong>列表费率列</strong>：运行中部署显示实时费率（¥X.XX/时 + ≈¥X/天）</li>
+          <li><strong>详情侧边栏</strong>：计费信息卡片（GPU 单价 / 当前费率 / 预估日费），停止状态显示不计费</li>
         </ul>
       </div>
       <div class="card">
@@ -987,11 +1046,21 @@ code {
         <h3>管理接口 & Endpoint URL</h3>
         <ul>
           <li><code>POST /v1/deployments</code> — 创建部署</li>
-          <li><code>GET /v1/deployments</code> — 列出所有部署</li>
+          <li><code>GET /v1/deployments</code> — 列出所有部署（含搜索 + 状态筛选）</li>
           <li><code>GET /v1/deployments/{id}</code> — 查询详情</li>
-          <li><code>PATCH /v1/deployments/{id}</code> — 更新配置</li>
+          <li><code>PATCH /v1/deployments/{id}</code> — 更新配置（名称/描述/副本数/状态）</li>
           <li><code>DELETE /v1/deployments/{id}</code> — 删除部署</li>
           <li>部署成功后自动生成唯一 Endpoint URL，与标准 <code>/v1/chat/completions</code> 接口完全兼容</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>交互增强</h3>
+        <ul>
+          <li><strong>搜索 + 状态筛选</strong>：按名称/模型搜索，按运行中/已停止/启动中/异常筛选</li>
+          <li><strong>详情侧边栏</strong>：点击行展开，含基本信息、Endpoint（一键复制）、计费信息卡片、副本配置</li>
+          <li><strong>副本调整弹窗</strong>：滑块调整 min/max 副本，实时预览费用变化</li>
+          <li><strong>启停/删除操作</strong>：侧边栏底部操作按钮，一键启停或删除</li>
+          <li><strong>空状态引导</strong>：三步流程图 + 计费方式说明卡片，帮助新用户快速上手</li>
         </ul>
       </div>
     </div>

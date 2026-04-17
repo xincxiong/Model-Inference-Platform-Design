@@ -375,7 +375,9 @@ type UsageSummary struct {
 	Balance        float64      `json:"balance"`
 	TotalSpent     float64      `json:"total_spent"`
 	TotalTokens    int64        `json:"total_tokens"`
+	TotalRequests  int64        `json:"total_requests"`
 	DailyBreakdown []DailyUsage `json:"daily_breakdown,omitempty"`
+	ByModel        []ModelUsage `json:"by_model,omitempty"`
 }
 
 type DailyUsage struct {
@@ -383,4 +385,13 @@ type DailyUsage struct {
 	InputTokens  int64   `json:"input_tokens"`
 	OutputTokens int64   `json:"output_tokens"`
 	Cost         float64 `json:"cost"`
+	RequestCount int64   `json:"request_count"`
+}
+
+type ModelUsage struct {
+	Model        string  `json:"model"`
+	InputTokens  int64   `json:"input_tokens"`
+	OutputTokens int64   `json:"output_tokens"`
+	Cost         float64 `json:"cost"`
+	RequestCount int64   `json:"request_count"`
 }

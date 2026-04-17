@@ -28,16 +28,21 @@ func (h *BillingHandler) GetUsage(c *gin.Context) {
 
 	var totalSpent float64
 	var totalTokens int64
+	var totalRequests int64
 	_ = h.store.DB.QueryRow(context.Background(),
-		`SELECT COALESCE(SUM(cost), 0), COALESCE(SUM(input_tokens + output_tokens), 0)
+		`SELECT COALESCE(SUM(cost), 0),
+		        COALESCE(SUM(input_tokens + output_tokens), 0),
+		        COUNT(*)
 		 FROM usage_records WHERE user_id = $1`, auth.UserID).
-		Scan(&totalSpent, &totalTokens)
+		Scan(&totalSpent, &totalTokens, &totalRequests)
 
+	// Daily breakdown (last 30 days)
 	rows, err := h.store.DB.Query(context.Background(),
 		`SELECT DATE(created_at) as date,
 		        SUM(input_tokens) as input_tokens,
 		        SUM(output_tokens) as output_tokens,
-		        SUM(cost) as cost
+		        SUM(cost) as cost,
+		        COUNT(*) as request_count
 		 FROM usage_records WHERE user_id = $1
 		 GROUP BY DATE(created_at) ORDER BY date DESC LIMIT 30`, auth.UserID)
 
@@ -46,22 +51,48 @@ func (h *BillingHandler) GetUsage(c *gin.Context) {
 		defer rows.Close()
 		for rows.Next() {
 			var d model.DailyUsage
-			if err := rows.Scan(&d.Date, &d.InputTokens, &d.OutputTokens, &d.Cost); err != nil {
+			if err := rows.Scan(&d.Date, &d.InputTokens, &d.OutputTokens, &d.Cost, &d.RequestCount); err != nil {
 				continue
 			}
 			daily = append(daily, d)
 		}
 	}
-
 	if daily == nil {
 		daily = []model.DailyUsage{}
+	}
+
+	// Per-model breakdown
+	mRows, err := h.store.DB.Query(context.Background(),
+		`SELECT model,
+		        COALESCE(SUM(input_tokens), 0) as input_tokens,
+		        COALESCE(SUM(output_tokens), 0) as output_tokens,
+		        COALESCE(SUM(cost), 0) as cost,
+		        COUNT(*) as request_count
+		 FROM usage_records WHERE user_id = $1
+		 GROUP BY model ORDER BY cost DESC LIMIT 20`, auth.UserID)
+
+	var byModel []model.ModelUsage
+	if err == nil {
+		defer mRows.Close()
+		for mRows.Next() {
+			var m model.ModelUsage
+			if err := mRows.Scan(&m.Model, &m.InputTokens, &m.OutputTokens, &m.Cost, &m.RequestCount); err != nil {
+				continue
+			}
+			byModel = append(byModel, m)
+		}
+	}
+	if byModel == nil {
+		byModel = []model.ModelUsage{}
 	}
 
 	c.JSON(http.StatusOK, model.UsageSummary{
 		Balance:        balance,
 		TotalSpent:     totalSpent,
 		TotalTokens:    totalTokens,
+		TotalRequests:  totalRequests,
 		DailyBreakdown: daily,
+		ByModel:        byModel,
 	})
 }
 
