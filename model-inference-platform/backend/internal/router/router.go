@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/xincxiong/model-inference-platform/backend/internal/circuitbreaker"
 	"github.com/xincxiong/model-inference-platform/backend/internal/config"
+	"github.com/xincxiong/model-inference-platform/backend/internal/hami"
 	"github.com/xincxiong/model-inference-platform/backend/internal/handler"
 	"github.com/xincxiong/model-inference-platform/backend/internal/health"
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
@@ -16,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func Setup(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, hc *health.Checker, cb *circuitbreaker.Manager, logger *zap.Logger) *gin.Engine {
+func Setup(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, hc *health.Checker, cb *circuitbreaker.Manager, hamiScheduler *hami.Scheduler, logger *zap.Logger) *gin.Engine {
 	gin.SetMode(cfg.GinMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
@@ -65,7 +66,7 @@ func Setup(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, hc *
 	modelsH := handler.NewModelsHandler(s)
 	keysH := handler.NewAPIKeysHandler(s)
 	billingH := handler.NewBillingHandler(s)
-	dedH := handler.NewDedicatedEndpointsHandler(s)
+	dedH := handler.NewDedicatedEndpointsHandler(s, hamiScheduler, logger)
 	ftH := handler.NewFineTuningHandler(s)
 	filesH := handler.NewFilesHandler(s)
 	batchH := handler.NewBatchHandler(s)

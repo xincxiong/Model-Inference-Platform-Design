@@ -1,0 +1,67 @@
+# NVIDIA GPU Operator Helm Chart Values
+# Version: v24.9.x+
+# Chart: https://helm.ngc.nvidia.com/nvidia
+#
+# GPU Operator installs and manages all NVIDIA software components:
+#   - NVIDIA Driver (kernel module)
+#   - CUDA toolkit
+#   - Container Toolkit (nvidia-container-runtime)
+#   - Device Plugin (exposes nvidia.com/gpu resource)
+#   - DCGM Exporter (GPU metrics)
+#   - GFD (GPU Feature Discovery)
+#   - MIG Manager (Multi-Instance GPU)
+#
+# NOTE: HAMi replaces the upstream device plugin with its own.
+# Set devicePlugin.enabled=false when using HAMi alongside GPU Operator.
+
+operator:
+  defaultRuntime: containerd  # containerd | docker | crio
+
+# NVIDIA driver installation via operator
+driver:
+  enabled: true
+  # Use pre-installed driver on bare-metal nodes:
+  # enabled: false  # if driver is already installed on nodes
+
+# Container toolkit (nvidia-container-runtime)
+toolkit:
+  enabled: true
+
+# Device Plugin - DISABLE when using HAMi
+# HAMi provides its own enhanced device plugin
+devicePlugin:
+  enabled: false  # HAMi device plugin takes over
+
+# DCGM Exporter for GPU metrics (Prometheus)
+dcgmExporter:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: "30s"
+    namespace: inference-platform
+
+# GPU Feature Discovery
+gfd:
+  enabled: true
+
+# MIG (Multi-Instance GPU) Manager
+migManager:
+  enabled: false  # HAMi handles GPU slicing, MIG not required
+
+# Node Feature Discovery
+nfd:
+  enabled: true   # Detect GPU hardware topology
+
+# Validator (smoke-tests GPU availability after install)
+validator:
+  enabled: true
+
+# Tolerations for GPU nodes
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+
+# Node selector for GPU Operator daemonsets
+nodeSelector:
+  kubernetes.io/os: linux

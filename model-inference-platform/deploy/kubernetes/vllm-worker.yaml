@@ -1,0 +1,160 @@
+# vLLM Worker Deployment with HAMi GPU virtualization
+# HAMi resource annotations:
+#   nvidia.com/gpu       - number of virtual GPU slices to request
+#   nvidia.com/gpumem    - GPU memory in MiB (HAMi hard isolation)
+#   nvidia.com/gpucores  - GPU compute cores percentage (0-100)
+#
+# HAMi scheduler policy is set via pod annotation:
+#   hami.io/gpu-scheduler-policy: binpack | spread | topology-aware
+---
+# DeepSeek V3 Worker (shared inference cluster, Binpack policy)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-worker-deepseek-v3
+  namespace: inference-platform
+  labels:
+    app: vllm-worker
+    model: deepseek-v3
+    pool: shared
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-worker
+      model: deepseek-v3
+  template:
+    metadata:
+      labels:
+        app: vllm-worker
+        model: deepseek-v3
+        pool: shared
+      annotations:
+        # HAMi scheduler policy: binpack for maximum GPU utilization
+        hami.io/gpu-scheduler-policy: binpack
+    spec:
+      containers:
+        - name: vllm-worker
+          # Replace with actual vLLM image once real engine is integrated
+          image: vllm/vllm-openai:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          command:
+            - python3
+            - -m
+            - vllm.entrypoints.openai.api_server
+          args:
+            - --model
+            - deepseek-ai/DeepSeek-V3
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8000"
+            - --tensor-parallel-size
+            - "1"
+            - --max-model-len
+            - "32768"
+            - --served-model-name
+            - deepseek-ai/DeepSeek-V3
+          env:
+            - name: WORKER_MODEL
+              value: "deepseek-ai/DeepSeek-V3"
+            - name: WORKER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            limits:
+              # HAMi virtual GPU slice: 1 GPU slice with 20480 MiB (20GB) and 60% cores
+              nvidia.com/gpu: "1"
+              nvidia.com/gpumem: "20480"
+              nvidia.com/gpucores: "60"
+            requests:
+              nvidia.com/gpu: "1"
+              nvidia.com/gpumem: "20480"
+              nvidia.com/gpucores: "60"
+              cpu: "4"
+              memory: "16Gi"
+          volumeMounts:
+            - name: model-cache
+              mountPath: /root/.cache/huggingface
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 15
+      volumes:
+        - name: model-cache
+          persistentVolumeClaim:
+            claimName: model-weights-pvc
+      nodeSelector:
+        # Require GPU nodes with NVIDIA GPU Operator label
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+---
+# Service for vLLM Worker (DeepSeek V3)
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-deepseek-v3-svc
+  namespace: inference-platform
+  labels:
+    app: vllm-worker
+    model: deepseek-v3
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+  selector:
+    app: vllm-worker
+    model: deepseek-v3
+---
+# PersistentVolumeClaim for model weights cache
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-weights-pvc
+  namespace: inference-platform
+spec:
+  accessModes:
+    - ReadWriteMany   # Shared across worker pods
+  resources:
+    requests:
+      storage: 200Gi
+  storageClassName: ""  # Use cluster default, or specify NFS/CephFS for ReadWriteMany
+---
+# HPA for vLLM Worker (KEDA-compatible, requires KEDA installed separately)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: vllm-worker-deepseek-v3-hpa
+  namespace: inference-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vllm-worker-deepseek-v3
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80

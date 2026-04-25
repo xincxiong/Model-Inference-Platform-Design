@@ -1,5 +1,28 @@
 version: "3.9"
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Local development compose stack (Docker Compose, no Kubernetes)
+#
+# HAMi GPU virtualization is NOT available in this stack.
+# HAMi requires a real Kubernetes cluster with GPU nodes and the HAMi device
+# plugin installed (see deploy/hami/install.sh for production setup).
+#
+# In this stack, the backend runs with HAMI_ENABLED=false (default), which
+# activates HAMi stub mode: all scheduling calls succeed immediately without
+# connecting to a real HAMi scheduler. All endpoint creation APIs work normally.
+#
+# Inference Engine Configuration:
+#   - INFERENCE_ENGINE: Primary engine type (vllm|sglang|mock)
+#   - VLLM_ENDPOINT: vLLM server URL (default: http://localhost:8000)
+#   - SGLANG_ENDPOINT: SGLang server URL (default: http://localhost:30000)
+#   - CUSTOM_ENGINE_<MODEL_ID>: Per-model custom engine URL
+#
+# When no real engine endpoint is configured, the backend uses Mock engine
+# for development. To use real vLLM/SGLang:
+#   1. Start vLLM: docker run -p 8000:8000 vllm/vllm-openai:latest --model <model>
+#   2. Set env:    VLLM_ENDPOINT=http://localhost:8000
+# ──────────────────────────────────────────────────────────────────────────────
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -38,6 +61,22 @@ services:
       - "8080:8080"
     env_file:
       - .env
+    environment:
+      # ── Inference Engine Configuration ────────────────────────────────
+      # Primary engine: vllm | sglang | mock (default: mock for local dev)
+      INFERENCE_ENGINE: "mock"
+      # vLLM endpoint (uncomment and set URL when using real vLLM)
+      # VLLM_ENDPOINT: "http://localhost:8000"
+      # SGLang endpoint (uncomment and set URL when using real SGLang)
+      # SGLANG_ENDPOINT: "http://localhost:30000"
+      # Custom engine per-model override (format: CUSTOM_ENGINE_<MODEL_ID>=<URL>)
+      # Example: CUSTOM_ENGINE_deepseek-ai/DeepSeek-V3: "http://localhost:8001"
+
+      # ── HAMi Configuration ────────────────────────────────────────────
+      # HAMi stub mode: HAMI_ENABLED=false means no real K8s scheduling
+      # All dedicated_endpoint creation calls succeed via internal stub
+      HAMI_ENABLED: "false"
+      HAMI_SCHEDULER_ENDPOINT: "http://hami-scheduler.hami-system.svc.cluster.local:9090"
     depends_on:
       postgres:
         condition: service_healthy

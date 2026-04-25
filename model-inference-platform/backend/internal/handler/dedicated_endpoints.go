@@ -12,17 +12,21 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/xincxiong/model-inference-platform/backend/internal/hami"
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
 	"github.com/xincxiong/model-inference-platform/backend/internal/model"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
+	"go.uber.org/zap"
 )
 
 type DedicatedEndpointsHandler struct {
-	store *store.Store
+	store     *store.Store
+	scheduler *hami.Scheduler
+	logger    *zap.Logger
 }
 
-func NewDedicatedEndpointsHandler(s *store.Store) *DedicatedEndpointsHandler {
-	return &DedicatedEndpointsHandler{store: s}
+func NewDedicatedEndpointsHandler(s *store.Store, scheduler *hami.Scheduler, logger *zap.Logger) *DedicatedEndpointsHandler {
+	return &DedicatedEndpointsHandler{store: s, scheduler: scheduler, logger: logger}
 }
 
 // ListTemplates GET /v0/dedicated_endpoints/templates
@@ -53,7 +57,9 @@ func (h *DedicatedEndpointsHandler) List(c *gin.Context) {
 	auth := middleware.GetAuthInfo(c)
 	rows, err := h.store.DB.Query(c.Request.Context(),
 		`SELECT id, name, description, model_name, flavor_name, gpu_type, gpu_count, region,
-			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas, created_at, updated_at
+			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas,
+			gpu_memory_mib, gpu_cores, scheduler_policy, topology_aware, hard_isolation,
+			scheduled_node, physical_gpu_id, created_at, updated_at
 		 FROM dedicated_endpoints WHERE user_id = $1 ORDER BY created_at DESC`, auth.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error()}})
@@ -80,7 +86,11 @@ func (h *DedicatedEndpointsHandler) scanEndpoint(rows interface {
 	err := rows.Scan(
 		&ep.ID, &ep.Name, &ep.Description, &ep.ModelName, &ep.FlavorName,
 		&ep.GPUType, &ep.GPUCount, &ep.Region, &ep.MinReplicas, &ep.MaxReplicas,
-		&policyJSON, &ep.RoutingPrefix, &ep.Status, &ep.CurrentReplicas, &ep.CreatedAt, &ep.UpdatedAt,
+		&policyJSON, &ep.RoutingPrefix, &ep.Status, &ep.CurrentReplicas,
+		&ep.GPUMemoryMiB, &ep.GPUCores, &ep.SchedulerPolicy,
+		&ep.TopologyAware, &ep.HardIsolation,
+		&ep.ScheduledNode, &ep.PhysicalGPUID,
+		&ep.CreatedAt, &ep.UpdatedAt,
 	)
 	if err != nil {
 		return ep, err
@@ -120,6 +130,13 @@ func (h *DedicatedEndpointsHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": "max_replicas must be >= min_replicas"}})
 		return
 	}
+	// HAMi defaults
+	if req.GPUMemoryMiB <= 0 {
+		req.GPUMemoryMiB = 8192 // default 8GB
+	}
+	if req.SchedulerPolicy == "" {
+		req.SchedulerPolicy = "binpack"
+	}
 
 	auth := middleware.GetAuthInfo(c)
 	ctx := c.Request.Context()
@@ -153,14 +170,52 @@ func (h *DedicatedEndpointsHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// ── HAMi scheduling decision ──────────────────────────────────────────
+	scheduledNode := ""
+	physicalGPUID := 0
+	if h.scheduler != nil {
+		schedCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
+		defer cancel()
+
+		schedResult, schedErr := h.scheduler.ScheduleEndpoint(schedCtx, hami.EndpointScheduleRequest{
+			EndpointID: routingPrefix,
+			ModelName:  req.ModelName,
+			GPUSpec: hami.GPUResourceSpec{
+				Count:     req.GPUCount,
+				MemoryMiB: req.GPUMemoryMiB,
+				Cores:     req.GPUCores,
+				Vendor:    hami.VendorNVIDIA,
+			},
+			SchedulerPolicy: hami.SchedulerPolicy(req.SchedulerPolicy),
+			TopologyAware:   req.TopologyAware,
+			MinReplicas:     req.MinReplicas,
+			MaxReplicas:     req.MaxReplicas,
+			IsDedicated:     true,
+		})
+		if schedErr != nil {
+			// Log warning but do not block endpoint creation in stub mode
+			h.logger.Warn("hami scheduling failed, proceeding with stub placement",
+				zap.String("routing_prefix", routingPrefix),
+				zap.Error(schedErr))
+		} else {
+			scheduledNode = schedResult.NodeName
+			physicalGPUID = schedResult.PhysicalGPUID
+		}
+	}
+
 	var id string
 	err = h.store.DB.QueryRow(ctx,
 		`INSERT INTO dedicated_endpoints (
 			user_id, name, description, model_name, flavor_name, gpu_type, gpu_count, region,
-			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,'running',$13) RETURNING id`,
+			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas,
+			gpu_memory_mib, gpu_cores, scheduler_policy, topology_aware, hard_isolation,
+			scheduled_node, physical_gpu_id
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,'running',$13,
+			$14,$15,$16,$17,$18,$19,$20) RETURNING id`,
 		auth.UserID, req.Name, req.Description, req.ModelName, req.FlavorName, req.GPUType, req.GPUCount, req.Region,
 		req.MinReplicas, req.MaxReplicas, policyBytes, routingPrefix, req.MinReplicas,
+		req.GPUMemoryMiB, req.GPUCores, req.SchedulerPolicy, req.TopologyAware, req.HardIsolation,
+		scheduledNode, physicalGPUID,
 	).Scan(&id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error()}})
@@ -169,7 +224,9 @@ func (h *DedicatedEndpointsHandler) Create(c *gin.Context) {
 
 	row := h.store.DB.QueryRow(ctx,
 		`SELECT id, name, description, model_name, flavor_name, gpu_type, gpu_count, region,
-			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas, created_at, updated_at
+			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas,
+			gpu_memory_mib, gpu_cores, scheduler_policy, topology_aware, hard_isolation,
+			scheduled_node, physical_gpu_id, created_at, updated_at
 		 FROM dedicated_endpoints WHERE id = $1`, id)
 	ep, err := h.scanEndpoint(row)
 	if err != nil {
@@ -206,7 +263,9 @@ func (h *DedicatedEndpointsHandler) Patch(c *gin.Context) {
 
 	row := h.store.DB.QueryRow(ctx,
 		`SELECT id, name, description, model_name, flavor_name, gpu_type, gpu_count, region,
-			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas, created_at, updated_at
+			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas,
+			gpu_memory_mib, gpu_cores, scheduler_policy, topology_aware, hard_isolation,
+			scheduled_node, physical_gpu_id, created_at, updated_at
 		 FROM dedicated_endpoints WHERE id = $1 AND user_id = $2`, id, auth.UserID)
 	ep, err := h.scanEndpoint(row)
 	if err != nil {
@@ -243,6 +302,16 @@ func (h *DedicatedEndpointsHandler) Patch(c *gin.Context) {
 			return
 		}
 	}
+	// HAMi fields
+	if req.GPUMemoryMiB != nil {
+		ep.GPUMemoryMiB = *req.GPUMemoryMiB
+	}
+	if req.GPUCores != nil {
+		ep.GPUCores = *req.GPUCores
+	}
+	if req.SchedulerPolicy != nil {
+		ep.SchedulerPolicy = *req.SchedulerPolicy
+	}
 
 	if ep.MaxReplicas < ep.MinReplicas {
 		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": "max_replicas must be >= min_replicas"}})
@@ -253,10 +322,13 @@ func (h *DedicatedEndpointsHandler) Patch(c *gin.Context) {
 	_, err = h.store.DB.Exec(ctx,
 		`UPDATE dedicated_endpoints SET
 			name = $2, description = $3, min_replicas = $4, max_replicas = $5,
-			status = $6, current_replicas = $7, scaling_policy = $8::jsonb, updated_at = $9
-		 WHERE id = $1 AND user_id = $10`,
+			status = $6, current_replicas = $7, scaling_policy = $8::jsonb,
+			gpu_memory_mib = $9, gpu_cores = $10, scheduler_policy = $11,
+			updated_at = $12
+		 WHERE id = $1 AND user_id = $13`,
 		id, ep.Name, ep.Description, ep.MinReplicas, ep.MaxReplicas, ep.Status, ep.CurrentReplicas,
-		policyBytes, time.Now().UTC(), auth.UserID,
+		policyBytes, ep.GPUMemoryMiB, ep.GPUCores, ep.SchedulerPolicy,
+		time.Now().UTC(), auth.UserID,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error()}})
@@ -265,7 +337,9 @@ func (h *DedicatedEndpointsHandler) Patch(c *gin.Context) {
 
 	row2 := h.store.DB.QueryRow(ctx,
 		`SELECT id, name, description, model_name, flavor_name, gpu_type, gpu_count, region,
-			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas, created_at, updated_at
+			min_replicas, max_replicas, scaling_policy, routing_prefix, status, current_replicas,
+			gpu_memory_mib, gpu_cores, scheduler_policy, topology_aware, hard_isolation,
+			scheduled_node, physical_gpu_id, created_at, updated_at
 		 FROM dedicated_endpoints WHERE id = $1`, id)
 	ep2, err := h.scanEndpoint(row2)
 	if err != nil {

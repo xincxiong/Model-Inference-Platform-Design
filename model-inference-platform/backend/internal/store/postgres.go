@@ -67,6 +67,10 @@ func RunMigrations(ctx context.Context, db *pgxpool.Pool) error {
 	ALTER TABLE models ADD COLUMN IF NOT EXISTS quality_score NUMERIC(5,1) NOT NULL DEFAULT 0;
 	ALTER TABLE models ADD COLUMN IF NOT EXISTS features TEXT NOT NULL DEFAULT '';
 	ALTER TABLE models ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
+	-- engine_type: vllm | sglang | mock | custom (user-configurable)
+	ALTER TABLE models ADD COLUMN IF NOT EXISTS engine_type VARCHAR(32) NOT NULL DEFAULT '';
+	-- engine_addr: custom engine endpoint URL (for engine_type='custom')
+	ALTER TABLE models ADD COLUMN IF NOT EXISTS engine_addr TEXT NOT NULL DEFAULT '';
 
 	CREATE TABLE IF NOT EXISTS responses (
 		id VARCHAR(64) PRIMARY KEY,
@@ -155,6 +159,14 @@ func RunMigrations(ctx context.Context, db *pgxpool.Pool) error {
 		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 	CREATE INDEX IF NOT EXISTS idx_dedicated_endpoints_user ON dedicated_endpoints(user_id);
+	-- idempotent HAMi GPU virtualization column additions
+	ALTER TABLE dedicated_endpoints ADD COLUMN IF NOT EXISTS gpu_memory_mib INT NOT NULL DEFAULT 0;
+	ALTER TABLE dedicated_endpoints ADD COLUMN IF NOT EXISTS gpu_cores INT NOT NULL DEFAULT 0;
+	ALTER TABLE dedicated_endpoints ADD COLUMN IF NOT EXISTS scheduler_policy VARCHAR(32) NOT NULL DEFAULT 'binpack';
+	ALTER TABLE dedicated_endpoints ADD COLUMN IF NOT EXISTS topology_aware BOOLEAN NOT NULL DEFAULT FALSE;
+	ALTER TABLE dedicated_endpoints ADD COLUMN IF NOT EXISTS hard_isolation BOOLEAN NOT NULL DEFAULT FALSE;
+	ALTER TABLE dedicated_endpoints ADD COLUMN IF NOT EXISTS scheduled_node VARCHAR(255) NOT NULL DEFAULT '';
+	ALTER TABLE dedicated_endpoints ADD COLUMN IF NOT EXISTS physical_gpu_id INT NOT NULL DEFAULT 0;
 
 	CREATE TABLE IF NOT EXISTS fine_tuning_jobs (
 		id VARCHAR(64) PRIMARY KEY,

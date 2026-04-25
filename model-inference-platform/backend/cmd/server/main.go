@@ -13,6 +13,7 @@ import (
 	"github.com/xincxiong/model-inference-platform/backend/internal/circuitbreaker"
 	"github.com/xincxiong/model-inference-platform/backend/internal/config"
 	"github.com/xincxiong/model-inference-platform/backend/internal/engine"
+	"github.com/xincxiong/model-inference-platform/backend/internal/hami"
 	"github.com/xincxiong/model-inference-platform/backend/internal/health"
 	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
 	"github.com/xincxiong/model-inference-platform/backend/internal/queue"
@@ -90,11 +91,32 @@ func main() {
 	defer cancel()
 	consumer.Start(ctx)
 
-	// ── Inference engine ──────────────────────────────────────────────────
-	eng := engine.NewMockEngine()
-	mr := modelrouter.New(db, eng, logger)
+	// ── HAMi Scheduler ────────────────────────────────────────────────────
+	// Reads HAMI_ENABLED and HAMI_SCHEDULER_ENDPOINT from environment.
+	// In local dev (HAMI_ENABLED=false), uses stub mode: scheduling calls
+	// succeed immediately without connecting to a real HAMi instance.
+	// In production Kubernetes (HAMI_ENABLED=true), connects to HAMi extender.
+	hamiScheduler := hami.NewScheduler(logger)
+	if hamiScheduler.IsEnabled() {
+		logger.Info("HAMi scheduler enabled",
+			zap.String("endpoint", os.Getenv("HAMI_SCHEDULER_ENDPOINT")))
+	}
 
-	r := router.Setup(cfg, s, mr, hc, cb, logger)
+	// ── Inference engine (Multi-engine router) ─────────────────────────────
+	// Supports vLLM, SGLang, Mock, and custom engines.
+	// Configuration via environment variables:
+	//   - INFERENCE_ENGINE=vllm|sglang|mock|custom (default: vllm)
+	//   - VLLM_ENDPOINT=http://localhost:8000
+	//   - SGLANG_ENDPOINT=http://localhost:30000
+	//   - CUSTOM_ENGINE_<MODEL_ID>=<URL> (per-model override)
+	//
+	// When no real engine endpoint is configured, falls back to Mock.
+	engineRouter := engine.NewMultiEngineRouter(db, engine.DefaultRouterConfig(), logger)
+
+	// ── Model router ──────────────────────────────────────────────────────
+	mr := modelrouter.New(db, engineRouter, logger)
+
+	r := router.Setup(cfg, s, mr, hc, cb, hamiScheduler, logger)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.ServerPort),

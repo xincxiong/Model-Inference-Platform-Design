@@ -1,0 +1,89 @@
+# HAMi (Heterogeneous AI Computing Virtualization Middleware) Helm Chart Values
+# Version: v2.8.1+
+# Chart: https://project-hami.github.io/HAMi/
+#
+# HAMi enables GPU virtualization on Kubernetes:
+#   - Memory hard isolation (nvidia.com/gpumem in MiB)
+#   - Core quota enforcement (nvidia.com/gpucores in %)
+#   - Multi-vendor support: NVIDIA / Ascend / MLU / DCU / Hygon
+#   - Scheduling policies: Binpack / Spread / Topology-aware
+
+scheduler:
+  # HAMi scheduler extends kube-scheduler as an extender
+  extenderPort: 9090
+  defaultSchedulerPolicy: binpack   # binpack | spread
+  nodeScore:
+    # Weight for topology-aware scheduling (NVLink bandwidth)
+    nvlinkWeight: 10
+    # Weight for GPU utilization balancing
+    utilizationWeight: 5
+
+  # Scheduler extender config
+  kubeSchedulerConfig:
+    schedulerName: hami-scheduler
+    # Extender filter and prioritize endpoints
+    filterVerb: filter
+    prioritizeVerb: prioritize
+    weight: 10
+    enableHTTPS: false
+    nodeCacheCapable: true
+
+devicePlugin:
+  # NVIDIA device plugin config
+  nvidia:
+    enabled: true
+    # Resource name mappings
+    resourceName: "nvidia.com/gpu"
+    resourceMemName: "nvidia.com/gpumem"
+    resourceCoreName: "nvidia.com/gpucores"
+    # Enable GPU memory and core enforcement
+    enableMemLimit: true
+    enableCoreLimit: true
+    # Container injection mode: CDI (Container Device Interface)
+    deviceListStrategy: "envvar"  # envvar | volume-mounts | cdi
+
+  # Ascend NPU support (disabled by default, enable for Huawei Ascend)
+  ascend:
+    enabled: false
+    resourceName: "huawei.com/Ascend910"
+
+  # Cambricon MLU support
+  cambricon:
+    enabled: false
+
+  # Hygon DCU support
+  hygon:
+    enabled: false
+
+# Node feature discovery (detect GPU topology)
+nfd:
+  enabled: true
+
+# Metrics exporter for Prometheus
+metrics:
+  enabled: true
+  port: 9394
+  serviceMonitor:
+    enabled: true
+    namespace: inference-platform
+    interval: 30s
+
+# GPU usage monitoring sidecar
+monitor:
+  enabled: true
+  image:
+    repository: projecthami/hami-core-monitor
+    tag: v2.8.1
+
+# vGPU resource defaults (can be overridden per-pod)
+defaults:
+  gpuMemory: 8192      # MiB, default per container
+  gpuCores: 0          # 0 = no limit (unlimited cores)
+  gpuCount: 1          # number of virtual GPU slices
+
+# Webhook for pod mutation (inject HAMi env vars)
+webhook:
+  enabled: true
+  port: 9443
+  # Mutating webhook patches GPU resource requests
+  mutatingWebhookConfiguration: true
