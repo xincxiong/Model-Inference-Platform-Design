@@ -26,6 +26,7 @@
 |------|------|
 | [模型推理云平台-产品方案.md](模型推理云平台-产品方案.md) | 完整产品方案文档（Markdown，1500+ 行） |
 | [model-inference-platform-design.html](model-inference-platform-design.html) | 可视化产品架构设计（HTML，浏览器打开） |
+| [model-inference-platform-architecture.svg](model-inference-platform-architecture.svg) | 系统架构图（SVG，7层架构可视化） |
 | [docs/index.html](docs/index.html) | GitHub Pages 对外展示页（含竞品对比与定位分析） |
 | [model-inference-platform/](model-inference-platform/) | Phase 1 & Phase 2 代码实现（Go 后端 + Next.js 前端） |
 
