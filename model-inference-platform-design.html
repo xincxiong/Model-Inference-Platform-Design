@@ -810,6 +810,19 @@ code {
           <li>两种 flavor 模型输出完全一致</li>
         </ul>
       </div>
+      <div class="card highlight-card">
+        <h3>多推理引擎支持 (Multi-Engine Router)</h3>
+        <p>平台支持多种推理引擎，用户可根据需求自由选择：</p>
+        <ul>
+          <li><strong>vLLM</strong> — PagedAttention + Continuous Batching，吞吐最高，适合共享推理集群</li>
+          <li><strong>SGLang</strong> — RadixAttention 自动前缀缓存，多轮对话更快，适合 Agent 场景</li>
+          <li><strong>Custom</strong> — 用户自定义引擎地址（LMDeploy/TensorRT-LLM 等），适合私有部署</li>
+          <li><strong>Mock</strong> — 本地开发模拟，无需真实引擎，适合开发测试/CI/CD</li>
+          <li><strong>环境变量配置</strong> — INFERENCE_ENGINE / VLLM_ENDPOINT / SGLANG_ENDPOINT / CUSTOM_ENGINE_<MODEL_ID></li>
+          <li><strong>数据库配置</strong> — models.engine_type / models.engine_addr 字段</li>
+          <li><strong>自动降级</strong> — 无真实引擎时自动降级为 Mock，保障开发体验</li>
+        </ul>
+      </div>
     </div>
 
     <div class="highlight-box" style="margin-top: 20px;">
@@ -919,6 +932,20 @@ code {
           <li><strong>列表费率列</strong>：运行中端点显示 ¥X.XX/时 + ≈¥X/天，停止显示 —</li>
           <li><strong>顶部总费率</strong>：汇总所有运行中端点的实时费率</li>
           <li><strong>详情侧边栏</strong>：计费信息卡片（GPU 单价 + 当前费率 + 预估日费 + 计费公式）</li>
+        </ul>
+      </div>
+      <div class="card highlight-card">
+        <h3>HAMi GPU 资源隔离</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">基于 HAMi (CNCF Sandbox) 实现 GPU 资源硬隔离，杜绝 noisy neighbor：</p>
+        <ul>
+          <li><strong>GPU 内存硬隔离</strong> — <code>nvidia.com/gpumem</code> (MiB)，容器超用即 OOM，保障推理 SLA</li>
+          <li><strong>算力配额</strong> — <code>nvidia.com/gpucores</code> (0–100%)，精确控制 GPU 计算资源分配</li>
+          <li><strong>三种调度策略</strong>：</li>
+          <li style="padding-left: 18px;">• <strong>Binpack</strong> — 共享集群，最大化利用率，适合成本优化场景</li>
+          <li style="padding-left: 18px;">• <strong>Spread</strong> — 专属端点，跨节点分散部署，高可用保障</li>
+          <li style="padding-left: 18px;">• <strong>Topology-aware</strong> — MoE 专家并行，NVLink 优化，减少跨节点通信</li>
+          <li><strong>多厂商支持</strong> — NVIDIA / 华为昇腾 / 寒武纪 MLU / 海光 DCU，统一 API 透明切换</li>
+          <li><strong>本地开发降级</strong> — <code>HAMI_ENABLED=false</code> 自动 Stub 模式，无需 Kubernetes</li>
         </ul>
       </div>
       <div class="card">
@@ -1579,8 +1606,8 @@ code {
     <div class="arch-layer">
       <div class="arch-layer-label" style="color: var(--accent-emerald);">数据面 (Data Plane) — GPU 集群</div>
       <div class="arch-row">
-        <div class="arch-box arch-emerald">推理引擎集群 (vLLM / vLLM-Ascend / LMDeploy)</div>
-        <div class="arch-box arch-emerald">专属端点实例池</div>
+        <div class="arch-box arch-emerald">多引擎推理集群 (vLLM / SGLang / Custom / Mock)</div>
+        <div class="arch-box arch-emerald">专属端点实例池 (HAMi GPU 资源隔离)</div>
         <div class="arch-box arch-emerald">批量推理工作节点</div>
         <div class="arch-box arch-emerald">微调训练集群</div>
       </div>
@@ -1590,8 +1617,9 @@ code {
       <div class="arch-layer-label" style="color: var(--accent-amber);">调度与编排层 (Orchestration)</div>
       <div class="arch-row">
         <div class="arch-box arch-amber">Kubernetes + GPU Operator</div>
+        <div class="arch-box arch-amber">HAMi GPU 虚拟化 (Binpack/Spread/Topology-aware)</div>
         <div class="arch-box arch-amber">HPA / KEDA 自动伸缩</div>
-        <div class="arch-box arch-amber">KubeRay / Volcano 调度器</div>
+        <div class="arch-box arch-amber">Volcano / Kueue 调度器</div>
         <div class="arch-box arch-amber">模型镜像仓库 (OCI Registry)</div>
       </div>
     </div>
@@ -1877,8 +1905,20 @@ code {
         <div style="color: var(--text-muted);">          │   ├─→ 语义缓存检查（LanceDB 向量检索，cosine &gt; 0.97 直接返回）</div>
         <div style="color: var(--text-muted);">          │   └─→ A/B 测试分流（按比例分发到不同模型）</div>
         <div style="color: var(--text-muted);">          ├─→ routing_key 匹配 → 专属端点实例 (Dedicated)</div>
+        <div style="color: var(--text-muted);">          │   └─→ HAMi Scheduler (GPU 资源调度)</div>
+        <div style="color: var(--text-muted);">          │       ├─→ Binpack/Spread/Topology-aware 策略选择</div>
+        <div style="color: var(--text-muted);">          │       ├─→ GPU 内存硬隔离 (nvidia.com/gpumem MiB)</div>
+        <div style="color: var(--text-muted);">          │       └─→ 算力配额分配 (nvidia.com/gpucores %)</div>
         <div style="color: var(--text-muted);">          └─→ 模型名匹配 → 共享推理集群 (Shared Pool)</div>
-        <div style="color: var(--text-muted);">              └─→ Load Balancer → vLLM Worker (GPU)</div>
+        <div style="color: var(--text-muted);">              └─→ MultiEngineRouter (多引擎路由器)</div>
+        <div style="color: var(--text-muted);">                  ├─→ 查询 models.engine_type / models.engine_addr</div>
+        <div style="color: var(--text-muted);">                  ├─→ 环境变量配置检查 (INFERENCE_ENGINE)</div>
+        <div style="color: var(--text-muted);">                  ├─→ 单模型自定义引擎 (CUSTOM_ENGINE_<MODEL_ID>)</div>
+        <div style="color: var(--text-muted);">                  └─→ 选择推理引擎:</div>
+        <div style="color: var(--text-muted);">                      ├─→ vLLM (PagedAttention + Continuous Batching)</div>
+        <div style="color: var(--text-muted);">                      ├─→ SGLang (RadixAttention + JSON mode)</div>
+        <div style="color: var(--text-muted);">                      ├─→ Custom (用户自定义引擎地址)</div>
+        <div style="color: var(--text-muted);">                      └─→ Mock (本地开发降级)</div>
         <div style="color: var(--text-muted);">                  ├─→ Prompt Template 服务（变量插值 `{{user_name}}`）</div>
         <div style="color: var(--text-muted);">                  ├─→ 模型版本选择（多版本共存 + 平滑切换）</div>
         <div style="color: var(--text-muted);">                  ├─→ SSE Stream → Client</div>
@@ -1895,7 +1935,10 @@ code {
         <div style="color: var(--text-muted);">      └─→ Batch Job Scheduler (Temporal Workflow)</div>
         <div style="color: var(--text-muted);">          ├─→ 拆分子任务 (按行分片)</div>
         <div style="color: var(--text-muted);">          ├─→ 提交到推理队列 (低优先级)</div>
-        <div style="color: var(--text-muted);">          ├─→ vLLM Worker Pool (利用空闲 GPU)</div>
+        <div style="color: var(--text-muted);">          ├─→ MultiEngineWorkerPool (利用空闲 GPU)</div>
+        <div style="color: var(--text-muted);">          │   ├─→ vLLM Worker (PagedAttention)</div>
+        <div style="color: var(--text-muted);">          │   ├─→ SGLang Worker (RadixAttention)</div>
+        <div style="color: var(--text-muted);">          │   └─→ Custom Engine Worker (用户自定义)</div>
         <div style="color: var(--text-muted);">          ├─→ 聚合结果 → S3 (输出文件)</div>
         <div style="color: var(--text-muted);">          └─→ 更新任务状态 (PostgreSQL)</div>
         <div style="color: var(--text-muted);">              └─→ Webhook/Polling 通知客户端</div>
@@ -1907,7 +1950,11 @@ code {
         <div>Create Fine-tuning Job (API)</div>
         <div style="color: var(--text-muted);">  └─→ Training Scheduler (Temporal)</div>
         <div style="color: var(--text-muted);">      ├─→ 验证数据集格式 (Data Validator)</div>
-        <div style="color: var(--text-muted);">      ├─→ 分配 GPU 资源 (Volcano/Kueue)</div>
+        <div style="color: var(--text-muted);">      ├─→ 分配 GPU 资源 (HAMi + Volcano/Kueue)</div>
+        <div style="color: var(--text-muted);">      │   ├─→ HAMi Scheduler GPU 资源调度</div>
+        <div style="color: var(--text-muted);">      │   ├─→ GPU 内存硬隔离 (nvidia.com/gpumem)</div>
+        <div style="color: var(--text-muted);">      │   ├─→ 算力配额分配 (nvidia.com/gpucores)</div>
+        <div style="color: var(--text-muted);">      │   └─→ Volcano/Kueue 作业队列管理</div>
         <div style="color: var(--text-muted);">      ├─→ 拉取 Base Model (S3 / Registry)</div>
         <div style="color: var(--text-muted);">      ├─→ 执行训练 (PyTorch + DeepSpeed)</div>
         <div style="color: var(--text-muted);">      │   ├─→ Checkpoint → S3 (定期保存)</div>
@@ -1922,10 +1969,16 @@ code {
         <div>KEDA / Custom HPA Controller</div>
         <div style="color: var(--text-muted);">  └─→ 采集指标</div>
         <div style="color: var(--text-muted);">      ├─→ 推理队列深度 (Pending Requests)</div>
-        <div style="color: var(--text-muted);">      ├─→ GPU 利用率 (DCGM Exporter)</div>
+        <div style="color: var(--text-muted);">      ├─→ GPU 利用率 (DCGM Exporter + HAMi Metrics)</div>
+        <div style="color: var(--text-muted);">      │   ├─→ GPU 内存使用率 (nvidia.com/gpumem)</div>
+        <div style="color: var(--text-muted);">      │   ├─→ GPU 算力使用率 (nvidia.com/gpucores)</div>
+        <div style="color: var(--text-muted);">      │   └─→ GPU 类型利用率 (NVIDIA/昇腾/寒武纪/海光)</div>
         <div style="color: var(--text-muted);">      └─→ RPM/TPM 使用率 (Prometheus)</div>
         <div style="color: var(--text-muted);">  └─→ 伸缩决策</div>
-        <div style="color: var(--text-muted);">      ├─→ Scale Up: 新 Pod + GPU 分配</div>
+        <div style="color: var(--text-muted);">      ├─→ Scale Up: 新 Pod + GPU 分配 (HAMi Scheduler)</div>
+        <div style="color: var(--text-muted);">      │   ├─→ Binpack 策略 (共享集群)</div>
+        <div style="color: var(--text-muted);">      │   ├─→ Spread 策略 (专属端点)</div>
+        <div style="color: var(--text-muted);">      │   └─→ Topology-aware 策略 (MoE 专家并行)</div>
         <div style="color: var(--text-muted);">      ├─→ Scale Down: 优雅驱逐 + 请求迁移</div>
         <div style="color: var(--text-muted);">      └─→ Cluster Autoscaler (节点级扩容)</div>
       </div>
@@ -2413,7 +2466,7 @@ code {
 </main>
 
 <footer style="text-align: center; padding: 48px 24px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.85rem;">
-  Model Inference Cloud Platform — Architecture Design Document v2.1 &nbsp;|&nbsp; 2026-04-16
+  Model Inference Cloud Platform — Architecture Design Document v2.3 &nbsp;|&nbsp; 2026-04-26 &nbsp;|&nbsp; Phase 1 ✅ · Phase 2 ✅ · Phase 3 🚀（HAMi ✅ · K8s ✅ · 多引擎 ✅）
 </footer>
 
 <script>
