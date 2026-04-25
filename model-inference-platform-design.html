@@ -537,10 +537,10 @@ code {
       一站式模型推理云平台产品方案 — 涵盖功能设计、系统架构与技术选型的完整蓝图，支持从快速实验到生产级部署的全生命周期
     </p>
     <div class="meta">
-      <span>架构设计 v2.1</span>
-      <span>2026-04-16</span>
+      <span>架构设计 v2.3</span>
+      <span>2026-04-26</span>
       <span>产品架构方案</span>
-      <span>Phase 1 ✅ · Phase 2 ✅ · Phase 3 进行中</span>
+      <span>Phase 1 ✅ · Phase 2 ✅ · Phase 3 🚀（HAMi ✅ · K8s ✅ · 多引擎 ✅）</span>
     </div>
   </div>
 </header>
@@ -2062,6 +2062,9 @@ code {
         <span class="phase-badge" style="background: rgba(5,150,105,0.1); color: var(--accent-emerald);">Phase 3</span>
       </h4>
       <ul>
+        <li><strong style="color: var(--accent-emerald);">✅ HAMi GPU 虚拟化集成</strong>: internal/hami/ 包（types/client/scheduler）；Binpack/Spread/Topology-aware 三种调度策略；GPU 内存硬隔离（nvidia.com/gpumem MiB）+ 算力配额（nvidia.com/gpucores %）；HAMI_ENABLED=false 自动 Stub 降级；dedicated_endpoints 表新增 7 个 GPU 资源字段</li>
+        <li><strong style="color: var(--accent-emerald);">✅ Kubernetes 部署层</strong>: deploy/kubernetes/（9 个 YAML 文件：namespace/configmap/secrets/postgres/redis/backend/frontend/ingress/vllm-worker）；deploy/hami/（HAMi Helm values + GPU Operator values + 一键安装脚本）；vLLM Worker 含 HAMi GPU 资源声明示例（nvidia.com/gpumem: 20480 / gpucores: 60）</li>
+        <li><strong style="color: var(--accent-emerald);">✅ 多推理引擎支持</strong>: internal/engine/vllm.go（vLLM OpenAI-compatible 客户端）；internal/engine/sglang.go（SGLang OpenAI-compatible 客户端 + RadixAttention）；internal/engine/router.go（多引擎路由器）；环境变量配置（INFERENCE_ENGINE/VLLM_ENDPOINT/SGLANG_ENDPOINT/CUSTOM_ENGINE_<MODEL_ID>）；models 表新增 engine_type/engine_addr；默认 Mock fallback</li>
         <li><strong>共享推理集群分布式架构</strong>: Redis Cluster（多节点分布式缓存高可用）；多区域数据中心（跨 AZ/Kubernetes Cluster 主备自动切换）；请求追踪（OpenTelemetry 全链路延迟定位）；智能路由（跨域流量调度，单区域过载自动跨域）</li>
         <li><strong>语义缓存</strong>: LanceDB 向量近邻检索，cosine > 0.97 直接复用结果；动态 TTL 管理；命中率提升 40-80%，命中延迟 <1ms；缓存热力图可视化</li>
         <li><strong>智能路由</strong>: Query 复杂度评分器（轻量 BERT 分类器）自动选择模型档位（7B/32B/70B+）；用户侧透明；成本降低 50-70%</li>
