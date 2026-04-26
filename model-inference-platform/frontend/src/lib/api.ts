@@ -238,71 +238,109 @@ export async function removeMember(id: string) {
   return apiFetch(`/api/members/${id}`, { method: 'DELETE' });
 }
 
-export function streamChat(
+export function streamChatWithRetry(
   model: string,
   messages: { role: string; content: string }[],
   params: { temperature?: number; max_tokens?: number; top_p?: number },
   onChunk: (text: string) => void,
   onDone: () => void,
-  onError: (err: string) => void,
+  onError: (err: string, isRetrying: boolean) => void,
+  options?: { maxRetries?: number; retryDelay?: number },
 ) {
-  const controller = new AbortController();
+  const { maxRetries = 3, retryDelay = 1000 } = options || {}
+  let retryCount = 0
+  let accumulatedText = ''
+  const controller = new AbortController()
 
-  fetch(`${API_URL}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getApiKey()}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      stream: true,
-      ...params,
-    }),
-    signal: controller.signal,
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
-        onError(err.error?.message || res.statusText);
-        return;
-      }
-
-      const reader = res.body?.getReader();
-      if (!reader) return;
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data: ')) continue;
-          const data = trimmed.slice(6);
-          if (data === '[DONE]') {
-            onDone();
-            return;
-          }
-          try {
-            const chunk = JSON.parse(data);
-            const content = chunk.choices?.[0]?.delta?.content || '';
-            if (content) onChunk(content);
-          } catch {}
-        }
-      }
-      onDone();
+  const attempt = () => {
+    fetch(`${API_URL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getApiKey()}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        stream: true,
+        ...params,
+      }),
+      signal: controller.signal,
     })
-    .catch((err) => {
-      if (err.name !== 'AbortError') onError(err.message);
-    });
+      .then(async (res) => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
+          throw new Error(err.error?.message || res.statusText);
+        }
 
-  return controller;
+        const reader = res.body?.getReader();
+        if (!reader) {
+          onDone();
+          return;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let isActive = true;
+
+        while (isActive) {
+          try {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed || !trimmed.startsWith('data: ')) continue;
+              const data = trimmed.slice(6);
+              if (data === '[DONE]') {
+                isActive = false;
+                retryCount = 0;
+                onDone();
+                return;
+              }
+              try {
+                const chunk = JSON.parse(data);
+                const content = chunk.choices?.[0]?.delta?.content || '';
+                if (content) {
+                  accumulatedText += content;
+                  onChunk(content);
+                }
+              } catch {}
+            }
+          } catch (readErr) {
+            if (controller.signal.aborted) {
+              isActive = false;
+              return;
+            }
+            throw readErr;
+          }
+        }
+
+        onDone();
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError') {
+          return;
+        }
+
+        if (retryCount < maxRetries) {
+          retryCount++;
+          onError(`连接中断，${retryDelay / 1000}秒后重试 (${retryCount}/${maxRetries})...`, true);
+          setTimeout(attempt, retryDelay * retryCount);
+        } else {
+          onError(err.message || '流式传输失败', false);
+        }
+      });
+  };
+
+  attempt();
+
+  return {
+    abort: () => controller.abort(),
+    getAccumulatedText: () => accumulatedText,
+  };
 }

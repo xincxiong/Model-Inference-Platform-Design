@@ -1,0 +1,90 @@
+# KEDA ScaledObject for vLLM Worker Autoscaling
+# Scales based on GPU utilization and request queue depth
+---
+# ScaledObject for GPU utilization-based scaling
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: vllm-worker-gpu-scaledobject
+  namespace: inference-platform
+  labels:
+    app: vllm-worker
+    scaled: gpu-utilization
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vllm-worker-deepseek-v3
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  pollingInterval: 15
+  cooldownPeriod: 300
+  triggers:
+    # Primary trigger: GPU utilization
+    - type: prometheus
+      metricType: AverageValue
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: vllm_gpu_utilization
+        threshold: "75"
+        query: |
+          avg(DCGM_FI_DEV_GPU_UTIL{namespace="inference-platform"})
+    # Secondary trigger: vLLM queue depth
+    - type: prometheus
+      metricType: AverageValue
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: vllm_queue_depth
+        threshold: "10"
+        query: |
+          sum(vllm_request_queue_depth{namespace="inference-platform"})
+---
+# ScaledObject for request queue depth (rapid scaling)
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: vllm-worker-queue-scaledobject
+  namespace: inference-platform
+  labels:
+    app: vllm-worker
+    scaled: queue-depth
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vllm-worker-deepseek-v3
+  minReplicaCount: 1
+  maxReplicaCount: 20
+  pollingInterval: 5
+  cooldownPeriod: 60
+  triggers:
+    - type: prometheus
+      metricType: AverageValue
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: vllm_requests_per_second
+        threshold: "50"
+        query: |
+          sum(rate(vllm_requests_total{namespace="inference-platform"}[1m]))
+---
+# TriggerAuthentication for Prometheus with bearer token
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: prometheus-auth
+  namespace: inference-platform
+spec:
+  secretTargetRef:
+    - parameter: bearerToken
+      name: keda-prom-auth
+      key: token
+---
+# Secret for Prometheus authentication
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keda-prom-auth
+  namespace: inference-platform
+type: Opaque
+stringData:
+  token: ""

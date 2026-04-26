@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Sidebar } from '@/components/Sidebar'
+import { NotificationContainer } from '@/components/NotificationContainer'
 
 export const metadata: Metadata = {
   title: 'Inference Platform Console',
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen bg-[var(--bg-secondary)]">
         <Sidebar />
         <main className="flex-1 ml-60 p-8 max-w-[1400px]">{children}</main>
+        <NotificationContainer />
       </body>
     </html>
   )

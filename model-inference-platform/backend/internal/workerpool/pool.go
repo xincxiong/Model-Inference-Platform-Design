@@ -1,13 +1,3 @@
-// Package workerpool manages a pool of inference worker instances.
-//
-// Workers register themselves via Register, sending heartbeats every TTL/2.
-// The pool uses Redis to persist worker state so multiple gateway replicas
-// share the same view of the fleet.
-//
-// Layout of Redis keys
-//
-//	wp:worker:<id>      – HASH  (fields: id, addr, models, load, status, updated_at)
-//	wp:index:<model>    – SET   (member = worker id)
 package workerpool
 
 import (
@@ -21,6 +11,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/xincxiong/model-inference-platform/backend/internal/hami"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +21,6 @@ const (
 	defaultTTL      = 60 * time.Second
 )
 
-// WorkerStatus represents the availability state of a worker.
 type WorkerStatus string
 
 const (
@@ -39,49 +29,55 @@ const (
 	WorkerStatusDraining WorkerStatus = "draining"
 )
 
-// Worker holds metadata about one inference worker instance.
 type Worker struct {
-	ID        string       `json:"id"`
-	Addr      string       `json:"addr"`        // base URL, e.g. http://10.0.1.5:8000
-	Models    []string     `json:"models"`      // model IDs this worker can serve
-	Load      float64      `json:"load"`        // 0.0–1.0 normalised load
+	ID        string     `json:"id"`
+	Addr      string     `json:"addr"`
+	Models    []string   `json:"models"`
+	Load      float64    `json:"load"`
 	Status    WorkerStatus `json:"status"`
-	UpdatedAt time.Time    `json:"updated_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	NodeName  string     `json:"node_name"`
+	PodName   string     `json:"pod_name"`
+	GPUAllocated int     `json:"gpu_allocated"`
 }
 
-// Pool is a Redis-backed worker pool.
 type Pool struct {
-	rdb    *redis.Client
-	logger *zap.Logger
-	ttl    time.Duration
-
-	mu      sync.Mutex
-	localCB map[string]int // simple local failure counter (circuit breaker hint)
+	rdb         *redis.Client
+	logger      *zap.Logger
+	ttl         time.Duration
+	mu          sync.Mutex
+	localCB     map[string]int
+	hamiClient  *hami.Scheduler
+	k8sWatcher *K8sWatcher
 }
 
-// New creates a Pool with the given Redis client.
-func New(rdb *redis.Client, logger *zap.Logger) *Pool {
-	return &Pool{
-		rdb:     rdb,
-		logger:  logger,
-		ttl:     defaultTTL,
-		localCB: make(map[string]int),
+func New(rdb *redis.Client, logger *zap.Logger, hamiClient *hami.Scheduler) *Pool {
+	p := &Pool{
+		rdb:        rdb,
+		logger:       logger,
+		ttl:          defaultTTL,
+		localCB:      make(map[string]int),
+		hamiClient:   hamiClient,
 	}
+	
+	if hamiClient != nil {
+		p.k8sWatcher = NewK8sWatcher(logger, p)
+	}
+	
+	return p
 }
 
-// Register writes a worker record to Redis and keeps it alive.
-// Call this inside the worker process; it blocks until ctx is done.
 func (p *Pool) Register(ctx context.Context, w *Worker) error {
 	if err := p.upsert(ctx, w); err != nil {
 		return err
 	}
+	
 	go p.heartbeat(ctx, w)
+	
 	return nil
 }
 
-// Deregister removes a worker from the pool immediately.
 func (p *Pool) Deregister(ctx context.Context, id string) error {
-	// Remove from all model indexes
 	workers, _ := p.ListAll(ctx)
 	for _, w := range workers {
 		if w.ID == id {
@@ -94,8 +90,6 @@ func (p *Pool) Deregister(ctx context.Context, id string) error {
 	return p.rdb.Del(ctx, workerKeyPrefix+id).Err()
 }
 
-// Pick selects the least-loaded healthy worker that can serve the given model.
-// Returns ErrNoWorker if no suitable worker is available.
 func (p *Pool) Pick(ctx context.Context, modelID string) (*Worker, error) {
 	ids, err := p.rdb.SMembers(ctx, indexKeyPrefix+modelID).Result()
 	if err != nil || len(ids) == 0 {
@@ -112,8 +106,18 @@ func (p *Pool) Pick(ctx context.Context, modelID string) (*Worker, error) {
 			continue
 		}
 		if time.Since(w.UpdatedAt) > p.ttl {
-			continue // stale, skip
+			continue
 		}
+		
+		if p.hamiClient != nil && p.hamiClient.IsEnabled() {
+			if !p.validateHAMiAllocation(ctx, w) {
+				p.logger.Warn("worker hami allocation validation failed",
+					zap.String("worker_id", w.ID),
+					zap.String("pod_name", w.PodName))
+				continue
+			}
+		}
+		
 		candidates = append(candidates, w)
 	}
 
@@ -121,7 +125,6 @@ func (p *Pool) Pick(ctx context.Context, modelID string) (*Worker, error) {
 		return nil, ErrNoWorker
 	}
 
-	// Sort by load ascending, with a small random tiebreak to spread evenly.
 	rand.Shuffle(len(candidates), func(i, j int) {
 		candidates[i], candidates[j] = candidates[j], candidates[i]
 	})
@@ -132,19 +135,37 @@ func (p *Pool) Pick(ctx context.Context, modelID string) (*Worker, error) {
 	return candidates[0], nil
 }
 
-// UpdateLoad updates the load value for a worker (called by the worker after each request).
+func (p *Pool) validateHAMiAllocation(ctx context.Context, w *Worker) bool {
+	if w.NodeName == "" || w.PodName == "" {
+		return true
+	}
+	
+	return p.k8sWatcher.ValidatePodGPUAllocation(w.PodName, w.NodeName)
+}
+
+func (p *Pool) UpdateHAMiAllocation(ctx context.Context, workerID string, nodeName string, gpuMemMiB int) error {
+	w, err := p.get(ctx, workerID)
+	if err != nil {
+		return err
+	}
+	
+	w.NodeName = nodeName
+	w.GPUAllocated = gpuMemMiB
+	w.UpdatedAt = time.Now()
+	
+	return p.upsert(ctx, w)
+}
+
 func (p *Pool) UpdateLoad(ctx context.Context, id string, load float64) error {
 	key := workerKeyPrefix + id
 	return p.rdb.HSet(ctx, key, "load", load, "updated_at", time.Now().Unix()).Err()
 }
 
-// SetStatus updates the status of a worker.
 func (p *Pool) SetStatus(ctx context.Context, id string, status WorkerStatus) error {
 	key := workerKeyPrefix + id
 	return p.rdb.HSet(ctx, key, "status", string(status), "updated_at", time.Now().Unix()).Err()
 }
 
-// ListAll returns all known workers (including stale ones).
 func (p *Pool) ListAll(ctx context.Context) ([]*Worker, error) {
 	var cursor uint64
 	var keys []string
@@ -172,7 +193,6 @@ func (p *Pool) ListAll(ctx context.Context) ([]*Worker, error) {
 	return workers, nil
 }
 
-// HealthySummary returns counts of workers by status.
 func (p *Pool) HealthySummary(ctx context.Context) map[WorkerStatus]int {
 	all, _ := p.ListAll(ctx)
 	counts := map[WorkerStatus]int{}
@@ -183,8 +203,6 @@ func (p *Pool) HealthySummary(ctx context.Context) map[WorkerStatus]int {
 	}
 	return counts
 }
-
-// ── internal ──────────────────────────────────────────────────────────────
 
 func (p *Pool) upsert(ctx context.Context, w *Worker) error {
 	modelsJSON, _ := json.Marshal(w.Models)
@@ -198,6 +216,9 @@ func (p *Pool) upsert(ctx context.Context, w *Worker) error {
 		"load", w.Load,
 		"status", string(w.Status),
 		"updated_at", time.Now().Unix(),
+		"node_name", w.NodeName,
+		"pod_name", w.PodName,
+		"gpu_allocated", w.GPUAllocated,
 	)
 	pipe.Expire(ctx, key, p.ttl*2)
 
@@ -233,6 +254,8 @@ func (p *Pool) get(ctx context.Context, id string) (*Worker, error) {
 		ID:     vals["id"],
 		Addr:   vals["addr"],
 		Status: WorkerStatus(vals["status"]),
+		NodeName: vals["node_name"],
+		PodName:  vals["pod_name"],
 	}
 
 	if ts, ok := vals["updated_at"]; ok {
@@ -241,6 +264,7 @@ func (p *Pool) get(ctx context.Context, id string) (*Worker, error) {
 		w.UpdatedAt = time.Unix(unix, 0)
 	}
 	fmt.Sscanf(vals["load"], "%f", &w.Load)
+	fmt.Sscanf(vals["gpu_allocated"], "%d", &w.GPUAllocated)
 
 	if m, ok := vals["models"]; ok {
 		json.Unmarshal([]byte(m), &w.Models)
@@ -249,5 +273,4 @@ func (p *Pool) get(ctx context.Context, id string) (*Worker, error) {
 	return w, nil
 }
 
-// ErrNoWorker is returned when no healthy worker is available for a model.
 var ErrNoWorker = fmt.Errorf("no healthy worker available")

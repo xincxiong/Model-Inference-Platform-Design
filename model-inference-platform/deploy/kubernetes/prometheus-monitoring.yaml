@@ -1,0 +1,137 @@
+---
+# Prometheus ServiceMonitor for DCGM Exporter
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dcgm-exporter
+  namespace: monitoring
+  labels:
+    app: dcgm-exporter
+    release: prometheus
+spec:
+  namespaceSelector:
+    matchNames:
+      - inference-platform
+  selector:
+    matchLabels:
+      app: dcgm-exporter
+  endpoints:
+    - port: gpu-metrics
+      interval: 15s
+      path: /metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+---
+# Prometheus ServiceMonitor for vLLM metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vllm-metrics
+  namespace: monitoring
+  labels:
+    app: vllm-worker
+    release: prometheus
+spec:
+  namespaceSelector:
+    matchNames:
+      - inference-platform
+  selector:
+    matchLabels:
+      app: vllm-worker
+  endpoints:
+    - port: metrics
+      interval: 5s
+      path: /metrics
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          regex: 'vllm_(.*)'
+          targetLabel: metric_type
+          replacement: 'vllm'
+---
+# PrometheusRule for GPU utilization alerts
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: gpu-alerts
+  namespace: monitoring
+  labels:
+    app: gpu-monitoring
+spec:
+  groups:
+    - name: gpu-utilization
+      rules:
+        - alert: HighGPUUtilization
+          expr: DCGM_FI_DEV_GPU_UTIL > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High GPU utilization detected"
+            description: "GPU {{ $labels.gpu }} on node {{ $labels.node }} has {{ $value }}% utilization"
+        - alert: GPUOutOfMemory
+          expr: DCGM_FI_DEV_FB_FREE < 1024
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "GPU running out of memory"
+            description: "GPU {{ $labels.gpu }} on node {{ $labels.node }} has less than 1GB free memory"
+        - alert: vLLMQueueDepthHigh
+          expr: vllm_request_queue_depth > 20
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "vLLM request queue depth high"
+            description: "Request queue depth is {{ $value }} for model {{ $labels.model }}"
+        - alert: vLLMTTFTLatencyHigh
+          expr: vllm_time_to_first_token_seconds > 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "vLLM TTFT latency high"
+            description: "Time to first token is {{ $value }}s for model {{ $labels.model }}"
+---
+# Grafana Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gpu-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  gpu-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "GPU Inference Platform",
+        "panels": [
+          {
+            "title": "GPU Utilization",
+            "targets": [{
+              "expr": "DCGM_FI_DEV_GPU_UTIL"
+            }]
+          },
+          {
+            "title": "vLLM Queue Depth",
+            "targets": [{
+              "expr": "vllm_request_queue_depth"
+            }]
+          },
+          {
+            "title": "Time to First Token",
+            "targets": [{
+              "expr": "vllm_time_to_first_token_seconds"
+            }]
+          },
+          {
+            "title": "Tokens per Second",
+            "targets": [{
+              "expr": "vllm_tokens_per_second"
+            }]
+          }
+        ]
+      }
+    }
