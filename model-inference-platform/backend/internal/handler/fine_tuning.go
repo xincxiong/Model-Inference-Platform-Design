@@ -11,9 +11,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/xincxiong/model-inference-platform/backend/internal/config"
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
 	"github.com/xincxiong/model-inference-platform/backend/internal/model"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
+	"github.com/xincxiong/model-inference-platform/backend/internal/volcano"
+	"go.uber.org/zap"
+	batchv1alpha1 "volcano.sh/apis/pkg/apis/batch/v1alpha1"
 )
 
 var validMethods = map[string]bool{
@@ -30,11 +34,14 @@ var validRolloutScenarios = map[string]bool{
 }
 
 type FineTuningHandler struct {
-	store *store.Store
+	store         *store.Store
+	volcanoClient *volcano.Client
+	volcanoCfg    config.VolcanoConfig
+	logger        *zap.Logger
 }
 
-func NewFineTuningHandler(s *store.Store) *FineTuningHandler {
-	return &FineTuningHandler{store: s}
+func NewFineTuningHandler(s *store.Store, vc *volcano.Client, volcanoCfg config.VolcanoConfig, logger *zap.Logger) *FineTuningHandler {
+	return &FineTuningHandler{store: s, volcanoClient: vc, volcanoCfg: volcanoCfg, logger: logger}
 }
 
 func isRLMethod(m string) bool {
@@ -69,12 +76,10 @@ func (h *FineTuningHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Validate: RL methods require rollout_scenario
 	if isRLMethod(method) && rolloutScenario == "" {
-		rolloutScenario = model.RolloutChat // default
+		rolloutScenario = model.RolloutChat
 	}
 
-	// Serialize JSON fields
 	hp := req.Hyperparameters
 	if hp == nil {
 		hp = map[string]interface{}{}
@@ -83,7 +88,15 @@ func (h *FineTuningHandler) Create(c *gin.Context) {
 	if rolloutCfg == nil {
 		rolloutCfg = map[string]interface{}{}
 	}
-	// Merge slime engine_config and data_buffer_config into rollout_config for storage
+	// 调度元数据落盘，便于观察与审计
+	rolloutCfg["volcano_queue"] = h.volcanoCfg.Queue
+	rolloutCfg["volcano_namespace"] = h.volcanoCfg.Namespace
+	if h.volcanoCfg.PriorityClass != "" {
+		rolloutCfg["volcano_priority_class"] = h.volcanoCfg.PriorityClass
+	}
+	if h.volcanoCfg.SchedulerPolicy != "" {
+		rolloutCfg["volcano_scheduler_policy"] = h.volcanoCfg.SchedulerPolicy
+	}
 	if req.EngineConfig != nil {
 		b, _ := json.Marshal(req.EngineConfig)
 		var ec map[string]interface{}
@@ -122,7 +135,12 @@ func (h *FineTuningHandler) Create(c *gin.Context) {
 		return
 	}
 
-	go h.simulateJobFinish(jobID, req.Model)
+	// Submit VolcanoJob if Volcano is enabled, otherwise simulate
+	if h.volcanoClient != nil && h.volcanoClient.IsEnabled() {
+		go h.submitVolcanoJob(jobID, req.Model, method, rolloutScenario, rolloutCfg)
+	} else {
+		go h.simulateJobFinish(jobID, req.Model)
+	}
 
 	row := h.store.DB.QueryRow(ctx, selectJobSQL+` WHERE id = $1`, jobID)
 	j, err := h.scanJobRow(row)
@@ -133,7 +151,6 @@ func (h *FineTuningHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, jobToAPI(j))
 }
 
-// simulateJobFinish: queued → running → succeeded (async, ~1.5s, MVP placeholder)
 func (h *FineTuningHandler) simulateJobFinish(jobID, baseModel string) {
 	ctx := context.Background()
 	pool := h.store.DB
@@ -153,6 +170,127 @@ func (h *FineTuningHandler) simulateJobFinish(jobID, baseModel string) {
 		`UPDATE fine_tuning_jobs SET status = 'succeeded', fine_tuned_model = $2, updated_at = $3
 		 WHERE id = $1 AND status = 'running'`,
 		jobID, ftName, time.Now().UTC())
+}
+
+func (h *FineTuningHandler) submitVolcanoJob(jobID, baseModel, method, rolloutScenario string, rolloutCfg map[string]interface{}) {
+	ctx := context.Background()
+	gpuCount := int32(4)
+	if method == "full" {
+		gpuCount = 8
+	}
+
+	namespace := h.volcanoCfg.Namespace
+	if namespace == "" {
+		namespace = "inference-platform"
+	}
+	if ns := h.volcanoClient.Namespace(); ns != "" {
+		namespace = ns
+	}
+
+	queueName := h.volcanoCfg.Queue
+	if queueName == "" {
+		queueName = "inference-platform-queue"
+	}
+
+	imageName := h.volcanoCfg.JobImage
+	if imageName == "" {
+		imageName = "pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime"
+	}
+
+	minAvailable := gpuCount
+	if h.volcanoCfg.MinAvailableOverride > 0 {
+		minAvailable = int32(h.volcanoCfg.MinAvailableOverride)
+	}
+
+	schedulerPolicy := h.volcanoCfg.SchedulerPolicy
+	if schedulerPolicy == "" {
+		schedulerPolicy = "spread"
+	}
+
+	vJob := volcano.BuildFineTuningJob(
+		jobID,
+		namespace,
+		queueName,
+		imageName,
+		gpuCount,
+		40960,
+		80,
+		h.buildTrainingCommand(baseModel, method, rolloutScenario),
+		volcano.JobOptions{
+			MinAvailable:           minAvailable,
+			TTLSecondsAfterFinish:  int32(h.volcanoCfg.TTLSecondsAfterFinish),
+			PriorityClass:          h.volcanoCfg.PriorityClass,
+			SchedulerPolicy:        schedulerPolicy,
+		},
+	)
+
+	created, err := h.volcanoClient.CreateJob(ctx, vJob)
+	if err != nil {
+		h.logger.Error("failed to create volcano job", zap.String("job_id", jobID), zap.Error(err))
+		_, _ = h.store.DB.Exec(ctx,
+			`UPDATE fine_tuning_jobs SET status = 'failed', error_message = $2, updated_at = $3 WHERE id = $1`,
+			jobID, err.Error(), time.Now().UTC())
+		return
+	}
+
+	h.logger.Info("volcano job submitted",
+		zap.String("job_id", jobID),
+		zap.String("volcano_job_name", created.Name),
+		zap.String("queue", queueName),
+		zap.String("namespace", namespace),
+		zap.Int32("gpu_count", gpuCount))
+
+	_, _ = h.store.DB.Exec(ctx,
+		`UPDATE fine_tuning_jobs SET status = 'running', updated_at = $2 WHERE id = $1 AND status = 'queued'`,
+		jobID, time.Now().UTC())
+
+	go h.monitorVolcanoJob(jobID)
+}
+
+func (h *FineTuningHandler) monitorVolcanoJob(jobID string) {
+	ctx := context.Background()
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		phase, err := h.volcanoClient.GetJobStatus(ctx, jobID)
+		if err != nil {
+			h.logger.Warn("failed to get volcano job status", zap.String("job_id", jobID), zap.Error(err))
+			continue
+		}
+
+		switch phase {
+		case batchv1alpha1.Completed:
+			_, _ = h.store.DB.Exec(ctx,
+				`UPDATE fine_tuning_jobs SET status = 'succeeded', fine_tuned_model = $2, updated_at = $3 WHERE id = $1 AND status = 'running'`,
+				jobID, jobID+"-completed", time.Now().UTC())
+			return
+		case batchv1alpha1.Failed:
+			_, _ = h.store.DB.Exec(ctx,
+				`UPDATE fine_tuning_jobs SET status = 'failed', error_message = 'volcano job failed', updated_at = $2 WHERE id = $1 AND status = 'running'`,
+				jobID, time.Now().UTC())
+			return
+		case batchv1alpha1.Terminated, batchv1alpha1.Terminating:
+			_, _ = h.store.DB.Exec(ctx,
+				`UPDATE fine_tuning_jobs SET status = 'cancelled', updated_at = $2 WHERE id = $1 AND status = 'running'`,
+				jobID, time.Now().UTC())
+			return
+		case batchv1alpha1.Running:
+			h.logger.Debug("volcano job running", zap.String("job_id", jobID))
+		default:
+			h.logger.Debug("volcano job phase", zap.String("job_id", jobID), zap.String("phase", string(phase)))
+		}
+	}
+}
+
+func (h *FineTuningHandler) buildTrainingCommand(baseModel, method, rolloutScenario string) string {
+	if method == "lora" || method == "qlora" {
+		return "pip install transformers peft accelerate && python train_lora.py --model " + baseModel
+	}
+	if method == "full" {
+		return "pip install transformers deepspeed && deepspeed train_full.py --model " + baseModel
+	}
+	return "pip install transformers && python train_rl.py --model " + baseModel + " --method " + method
 }
 
 func (h *FineTuningHandler) List(c *gin.Context) {
@@ -197,6 +335,12 @@ func (h *FineTuningHandler) Cancel(c *gin.Context) {
 	id := c.Param("id")
 	auth := middleware.GetAuthInfo(c)
 	ctx := c.Request.Context()
+
+	// Cancel VolcanoJob if enabled
+	if h.volcanoClient != nil && h.volcanoClient.IsEnabled() {
+		_ = h.volcanoClient.CancelJob(ctx, id)
+	}
+
 	res, err := h.store.DB.Exec(ctx,
 		`UPDATE fine_tuning_jobs SET status = 'cancelled', updated_at = $2
 		 WHERE id = $1 AND user_id = $3 AND status IN ('queued','running')`,

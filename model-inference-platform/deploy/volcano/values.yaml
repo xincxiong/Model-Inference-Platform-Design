@@ -1,0 +1,100 @@
+# Volcano Helm Chart Values for Model Inference Platform
+# Reference: https://github.com/volcano-sh/volcano
+
+# ─── Basic Configuration ──────────────────────────────────────────────────────
+image:
+  tag: v1.9.0
+
+# ─── Scheduler Configuration ──────────────────────────────────────────────────
+scheduler:
+  enabled: true
+  replicas: 1
+  # Scheduler plugins (Gang, Capacity, Priority, etc.)
+  plugins:
+    - gang
+    - capacity
+    - priority
+    - nodeorder
+    - binpack
+  # Gang scheduling timeout
+  gangTimeout: 30s
+
+# ─── Controller Manager Configuration ─────────────────────────────────────────
+controllerManager:
+  enabled: true
+  replicas: 1
+  # Enable Job, Queue, PodGroup controllers
+  controllers:
+    - job
+    - queue
+    - podgroup
+    - command
+  # GC (Garbage Collection) for completed jobs
+  gcInterval: 60s
+  workerThreads: 5
+
+# ─── Admission Webhook Configuration ──────────────────────────────────────────
+admission:
+  enabled: true
+  replicas: 1
+  # Validate PodGroup and Job resources
+  validateResources: true
+  # Mutate schedulerName for Jobs
+  mutateSchedulerName: true
+
+# ─── Custom Resource Definitions ──────────────────────────────────────────────
+# Volcano CRDs (auto-installed by Helm)
+# - batch.volcano.sh/v1alpha1: Job
+# - scheduling.volcano.sh/v1beta1: Queue, PodGroup
+# - bus.volcano.sh/v1alpha1: Command
+
+# ─── Queue Configuration ─────────────────────────────────────────────────────
+# Default queue for inference platform
+defaultQueue:
+  name: inference-platform-queue
+  weight: 1
+  reclaimable: true
+  capability:
+    nvidia.com/gpu: 32  # Total GPU quota for the platform
+
+# ─── Integration with HAMi ───────────────────────────────────────────────────
+# Volcano works with HAMi for GPU resource allocation
+# HAMi handles: GPU memory isolation, core quota
+# Volcano handles: Gang scheduling, queue management, preemption
+hami:
+  enabled: true
+  # HAMi scheduler endpoint (if using HAMi extender)
+  schedulerEndpoint: "http://hami-scheduler.hami-system.svc.cluster.local:9090"
+
+# ─── Monitoring ──────────────────────────────────────────────────────────────
+metrics:
+  enabled: true
+  port: 8081
+  # Prometheus integration
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+
+# ─── Resource Limits ─────────────────────────────────────────────────────────
+resources:
+  scheduler:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  controllerManager:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  admission:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "500m"
+      memory: 256Mi

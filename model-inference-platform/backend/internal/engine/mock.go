@@ -238,3 +238,37 @@ func hashStr(s string) int {
 	}
 	return h
 }
+
+// VideoGeneration returns mock video data.
+func (m *MockEngine) VideoGeneration(_ context.Context, req model.VideoGenerationRequest) (*model.VideoGenerationResponse, error) {
+    n := 1
+    if req.N != nil && *req.N > 0 {
+        n = *req.N
+    }
+
+    data := make([]model.VideoData, n)
+    for i := range data {
+        data[i] = model.VideoData{
+            URL:           fmt.Sprintf("https://placehold.co/video/%d.mp4", i+1),
+            RevisedPrompt: req.Prompt,
+        }
+    }
+
+    return &model.VideoGenerationResponse{
+        Created: time.Now().Unix(),
+        Data:    data,
+    }, nil
+}
+
+// Transcription returns mock transcription text.
+func (m *MockEngine) Transcription(_ context.Context, req model.TranscriptionRequest) (*model.TranscriptionResponse, error) {
+    return &model.TranscriptionResponse{
+        Text: fmt.Sprintf("[Mock transcription from %s] This is a simulated speech-to-text output. In production, this would be real ASR output from the model.", req.Model),
+    }, nil
+}
+
+// Speech returns mock audio data (silence placeholder).
+func (m *MockEngine) Speech(_ context.Context, req model.SpeechRequest) ([]byte, error) {
+    // Return minimal MP3 silence placeholder
+    return []byte(fmt.Sprintf("[Mock TTS audio from %s for: %s]", req.Model, req.Input)), nil
+}

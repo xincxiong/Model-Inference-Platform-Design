@@ -38,7 +38,6 @@ func (h *FilesHandler) Upload(c *gin.Context) {
 	}
 	defer file.Close()
 
-	// Read content to compute size and hash
 	content, err := io.ReadAll(io.LimitReader(file, 512*1024*1024)) // 512MB limit
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "failed to read file", "type": "api_error"}})
@@ -50,6 +49,19 @@ func (h *FilesHandler) Upload(c *gin.Context) {
 	fileID := "file-" + strings.ReplaceAll(uuid.New().String(), "-", "")[:20]
 
 	ctx := c.Request.Context()
+
+	// Upload to S3 when可用，失败回退到 DB
+	if h.store.S3 != nil {
+		contentType := header.Header.Get("Content-Type")
+		if contentType == "" {
+			contentType = "application/octet-stream"
+		}
+		if err := h.store.S3.Upload(ctx, fileID, contentType, content); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "failed to upload to s3: " + err.Error(), "type": "api_error"}})
+			return
+		}
+	}
+
 	_, err = h.store.DB.Exec(ctx,
 		`INSERT INTO files (id, user_id, filename, purpose, bytes, checksum, content)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
@@ -150,7 +162,8 @@ func (h *FilesHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	auth := middleware.GetAuthInfo(c)
 
-	res, err := h.store.DB.Exec(c.Request.Context(),
+	ctx := c.Request.Context()
+	res, err := h.store.DB.Exec(ctx,
 		`DELETE FROM files WHERE id = $1 AND user_id = $2`, id, auth.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error()}})
@@ -160,6 +173,11 @@ func (h *FilesHandler) Delete(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "file not found"}})
 		return
 	}
+
+	if h.store.S3 != nil {
+		_ = h.store.S3.Delete(ctx, id)
+	}
+
 	c.JSON(http.StatusOK, gin.H{"id": id, "object": "file", "deleted": true})
 }
 
@@ -170,7 +188,28 @@ func (h *FilesHandler) GetContent(c *gin.Context) {
 
 	var content []byte
 	var filename string
-	err := h.store.DB.QueryRow(c.Request.Context(),
+	ctx := c.Request.Context()
+
+	if h.store.S3 != nil {
+		data, contentType, err := h.store.S3.Download(ctx, id)
+		if err == nil {
+			// Fetch filename from DB for attachment header
+			err = h.store.DB.QueryRow(ctx,
+				`SELECT filename FROM files WHERE id = $1 AND user_id = $2`,
+				id, auth.UserID).Scan(&filename)
+			if err != nil {
+				filename = id
+			}
+			c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+			if contentType == "" {
+				contentType = "application/octet-stream"
+			}
+			c.Data(http.StatusOK, contentType, data)
+			return
+		}
+	}
+
+	err := h.store.DB.QueryRow(ctx,
 		`SELECT content, filename FROM files WHERE id = $1 AND user_id = $2`,
 		id, auth.UserID).Scan(&content, &filename)
 	if err != nil {

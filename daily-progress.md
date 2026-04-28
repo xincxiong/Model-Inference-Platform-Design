@@ -2,6 +2,121 @@
 
 - 记录口径：每日收尾时按日期追加，简述当日可交付变更，方便事后追溯。
 
+### 2026-04-29（下午/晚间）
+- **S3 对象存储集成**
+  - 新增 `config.S3` 配置结构体（S3_ENABLED/ENDPOINT/BUCKET/REGION/ACCESS_KEY/SECRET_KEY/S3_PATH_STYLE）
+  - 新增 `internal/storage/s3store.go`：基于 MinIO/S3 兼容客户端，支持上传/下载/删除/健康检查/预签名 URL
+  - `Store` 结构注入可选 S3 客户端接口；三端（`cmd/server` / `cmd/management-server` / `cmd/inference-server`）统一初始化，失败自动回退 DB 存储
+  - `FilesHandler` 上传/下载/删除优先走 S3，失败回退 DB，下载自动回退并获取文件名
+  - 编译验证通过（`go build ./...` 零错误）
+- **语义缓存（Semantic Cache）**
+  - 新增 `config.SemanticCache` 配置（SEM_CACHE_ENABLED/LANCEDB_URI/SEM_CACHE_EMBED_MODEL/SEM_CACHE_THRESHOLD/SEM_CACHE_TOPK）
+  - 新增 `internal/semcache/cache.go`：纯 Go 内存实现，LRU 淘汰（默认 10000 条），余弦相似度匹配
+  - `Store` 注入 `*semcache.Cache`；三端统一初始化，失败记录警告并禁用
+  - 集成到 `ChatCompletionsHandler` 和 `CompletionsHandler`：非流式请求先计算 prompt 向量，命中缓存直接返回（附带相似度元数据），未命中则正常推理后写入缓存
+  - 新增 `internal/handler/semantic_cache.go`：嵌入函数构建器（调用 embedding 模型）+ 聊天消息拼接
+  - 编译验证通过（`go build ./...` 零错误）
+- **Video/Speech Handler**
+  - 新增 `internal/model/models.go` 扩展：`TranscriptionRequest/Response`、`SpeechRequest`、`VideoGenerationRequest/Response`
+  - 新增 `internal/handler/audio.go`：`/v1/audio/transcriptions`（语音转文本，multipart 文件上传）、`/v1/audio/speech`（文本转语音，返回音频流）
+  - 新增 `internal/handler/video.go`：`/v1/videos/generations`（视频生成）
+  - `Engine` 接口扩展：新增 `VideoGeneration`/`Transcription`/`Speech` 方法
+  - MockEngine/vLLM/SGLang/MultiEngineRouter 全部实现对应方法（vLLM/SGLang 返回不支持错误，Mock 返回模拟数据）
+  - 注册到推理路由：`/v1/videos/generations`、`/v1/audio/transcriptions`、`/v1/audio/speech`
+  - 编译验证通过（`go build ./...` 零错误）
+- **多集群 Volcano 调度与跨域算力管理**
+  - 新增 `internal/volcano/multi_cluster.go`：`MultiClusterClient` 支持多 Kubernetes 集群注册、Volcano 客户端管理
+  - 集群选择策略：按区域/可用区过滤 → 选择可用 GPU 最多的集群 → 主集群兜底
+  - 资源使用跟踪：`ClusterUsage` 结构（TotalGPUs/AvailableGPUs/TotalCPU/AvailableCPU/TotalMemory/AvailableMemory/JobCount）
+  - 周期性刷新：`RefreshClusterUsage` 轮询各集群 Node 资源状态，`StartUsageRefresh` 后台定时更新
+  - 跨集群提交：`SubmitJobAcrossClusters` 自动选择最佳集群并提交 VolcanoJob，更新使用统计
+  - `Client` 结构体扩展：新增 `clusterName`/`region`/`zone` 字段
+  - 编译验证通过（`go build ./...` 零错误）
+- **文档更新**
+  - `README.md`：新增 Video/Speech API 端点、语义缓存环境变量、S3 配置说明、多集群调度功能记录
+
+### 2026-04-29（上午）
+- **项目整体更新（基于产品方案 v2.5）**
+  - 更新 `model-inference-platform/ALIGNMENT.md`：产品方案 vs 代码实现对齐分析报告，总体对齐度 ~72%
+  - 更新 `model-inference-platform/README.md`：加入 GPU 虚拟化方案、跨域算力管理设计、技术栈更新
+  - 更新 `frontend/src/components/Sidebar.tsx`：版本信息更新至 v0.3.0 · GPU 虚拟化 & 跨域算力
+  - 详细差距分析：Video/Speech Handler 缺失、Lance/LanceDB 未集成、S3 未集成、跨域算力管理代码未实现、NVIDIA MIG 未实现、国产算力虚拟化仅枚举定义
+  - 更新优先级清单：高优先级（Video/Speech Handler、语义缓存、S3 存储、可观测性、智能路由）；中优先级（MIG、国产算力虚拟化、SSO/RBAC、多集群调度）；低优先级（PD 分离、MoE 并行、模型市场）
+- **GPU 虚拟化方案产品方案（Phase 3 核心设计）**
+  - 新增产品方案 3.3.1 章节：GPU 虚拟化方案（MIG/vGPU/国产算力虚拟化）
+  - NVIDIA MIG：H100/H200/A100 硬件级强隔离，单卡最多切分 7 个独立实例，性能损耗 <5%
+  - HAMi vGPU：软件层虚拟化，GPU 内存硬隔离 + 算力配额，volcano-vgpu-device-plugin 插件实现
+  - 昇腾 NPU 虚拟化：CANN 抽象实现 AI Core 隔离 + HBM 内存配额
+  - 海光 DCU 虚拟化：ROCm 兼容层实现计算单元隔离 + 显存配额
+  - 寒武纪 MLU 虚拟化：Neuware 抽象实现 AI 引擎隔离 + 显存配额
+  - 虚拟化方案选择策略：高性能推理用 MIG，共享集群用 vGPU，国产合规用 NPU 虚拟化，跨域混合用 HAMi 统一抽象
+  - 更新基础设施与编排章节技术选型表，细化 GPU 虚拟化方案
+  - 更新架构分层图，加入 GPU 虚拟化层详细结构
+- **跨域算力管理产品方案（Phase 3/4 核心设计）**
+  - 新增产品方案 4.3'.8 章节：跨域算力管理与统一调度
+  - 全局算力资源池设计：全局算力视图/跨域部署选择/智能路由/故障转移/成本优化
+  - 跨域队列调度设计：Volcano 联邦调度/全局队列资源池/跨域任务迁移/优先级抢占/负载均衡/多集群 AI 负载感知
+  - 算力利用率优化：GPU 利用率 >85%/跨域负载均衡 <10% 差异/成本优化 20-40% 降低/冷启动 <30s
+  - 跨域部署配置示例：JSON 格式展示多区域部署策略（regions/failover/cost_optimization）
+  - 全局算力监控仪表盘：资源总览/跨域流量分布/成本分析/告警规则/容量规划
+  - 更新 Phase 3/4/5 实施路线图，加入跨域算力管理相关交付物
+- **调度与编排层重构（Phase 3 核心架构优化）**
+  - 明确设计原则：HAMi + Volcano 联合方案为主，K8s 原生组件为辅，避免引入不必要第三方组件
+  - 更新 `internal/config/config.go`：新增 `VolcanoConfig` 结构体（Enabled/Namespace/Queue/JobImage/SchedulerPolicy/PriorityClass/TTLSecondsAfterFinish/MinAvailableOverride）
+  - 更新 `internal/volcano/client.go`：新增 `JobOptions` 结构体，支持 MinAvailable/TTL/PriorityClass/SchedulerPolicy 可配置
+  - 更新 `internal/handler/fine_tuning.go`：接收 Volcano 配置，落盘调度元数据到 rollout_config，提交 VolcanoJob 时应用配置化参数
+  - 更新 `cmd/server/main.go` 与 `cmd/management-server/main.go`：使用配置化 Volcano 客户端替代环境变量直读
+  - 更新 `internal/router/router.go`：传递 Volcano 配置到 FineTuningHandler
+  - 编译验证通过（`go build ./...` 零错误）
+- **产品文档刷新**
+  - 更新 `模型推理云平台-产品方案.md` 至 v2.5（2026-04-29）
+  - 微调训练数据流 (5.4) 完整重写，加入 HAMi+Volcano 联合调度全流程
+  - 基础设施与编排 (6.5) 详细描述联合调度架构，移除不必要组件（KEDA/Istio/Terraform 等）
+  - 新增 4.4.3 Agentic RL 平台原生支持（Megatron-LM + SGLang + Data Buffer + Volcano/HAMi）
+  - Phase 4 新增多集群 Volcano 调度与 Agentic RL 平台增强
+  - Phase 5 新增算力利用率优化、智能成本路由、多集群调度与百万级并发架构
+  - 持续演进方向增补 Volcano 多集群调度、GPU 碎片整理、算力利用率预测
+  - 演进优先级矩阵调整：成本优化与调度智能化从 🟢 低 → 🔴 高优先级
+- **项目文档同步更新**
+  - 更新 `model-inference-platform/README.md`：加入 Volcano 调度与编排层、Phase 3 完整交付记录、技术栈更新
+  - 更新 `README.md`：技术选型加入 HAMi + Volcano + K8s 原生组件，系统架构描述更新
+  - 创建 `model-inference-platform/ALIGNMENT.md`：产品方案 vs 代码实现 对齐分析报告（总体对齐度 ~75%）
+- **架构收益**：
+  - 调度简化：HAMi 负责硬件抽象，Volcano 负责队列/优先级/Gang 调度，K8s 原生处理常规工作负载
+  - 组件精简：移除 KEDA/Istio/Terraform/Harbor 等不必要组件，降低运维复杂度
+  - 算力利用率：目标 GPU 利用率 >85%，支持碎片整理与紧凑调度
+
+### 2026-04-28
+- **控制面/数据面分离（Phase 3 核心架构重构）**
+  - 新增 `backend/cmd/inference-server/main.go`：推理数据面服务，处理 `/v1/chat/completions`、`/v1/responses`、`/v1/embeddings`、`/v1/rerank`、`/v1/images/generations` 等推理端点，默认端口 8080
+  - 新增 `backend/cmd/management-server/main.go`：控制面服务，处理 `/v0/dedicated_endpoints`、`/v1/fine_tuning`、`/v1/batches`、`/v1/datasets`、`/v1/deployments`、`/api/*` 等管理端点，默认端口 8081
+  - 重构 `backend/internal/router/router.go`：拆分为 `SetupInferenceRouter()` 和 `SetupManagementRouter()` 两个独立函数，职责清晰分离
+  - 更新 `backend/internal/config/config.go`：新增 `ManagementPort` 配置项（默认 8081）
+  - 更新 `backend/cmd/server/main.go`：单体模式同时启动两个服务（推理 + 管理），便于本地开发和测试
+  - 更新 `docker-compose.yml`：添加 `management-server` 服务，独立端口 8081
+  - 更新 `backend/Dockerfile`：支持构建两个二进制文件（inference-server + management-server）
+  - 编译验证通过（`go build ./...` 零错误）
+- **Volcano 微调调度（Phase 3）**
+  - 新增 `internal/volcano/` 客户端，读取 `VOLCANO_ENABLED`/`VOLCANO_NAMESPACE`/`VOLCANO_QUEUE`/`VOLCANO_JOB_IMAGE`，禁用时模拟运行
+  - `fine_tuning` Handler 使用 Volcano JobPhase 常量轮询，支持可配置队列/命名空间，并在失败/取消时回写状态
+  - 新增 `deploy/volcano/`（install.sh / values.yaml / volcano-job-examples.yaml）与 README 部署说明，支持 Helm 安装 + Gang 队列示例
+- **架构收益**：
+  - 故障隔离：管理接口 OOM/panic 不影响推理服务
+  - 独立扩缩容：可单独设置推理/管理服务的副本数
+  - 资源优化：独立连接池配置，避免管理操作耗尽推理资源
+  - 安全边界：可限制管理接口访问，降低暴露面
+- **产品文档更新**：
+  - 更新 `模型推理云平台-产品方案.md` 至 v2.4（2026-04-28）
+  - 新增控制面/数据面分离、前端增强、KEDA、Prometheus 等 Phase 3 交付物
+  - 修正前端技术栈描述（移除未使用的 shadcn/ui、TanStack Query、ECharts）
+  - 更新侧边栏版本信息（Phase 2 → Phase 3）
+  - 更新 README.md：添加双服务架构说明、K8s 部署清单、技术栈更新
+- **项目全面分析**：
+  - 后端：13 个内部包，17 个 Handler，完整的多引擎路由和 HAMi GPU 虚拟化
+  - 前端：11 个页面，4 个工具库（errorHandler、optimisticUpdate、Zustand、api）
+  - 部署：14 个 YAML 文件（11 个 K8s + 3 个 HAMi）
+  - 架构：控制面/数据面分离、多推理引擎、HAMi GPU 虚拟化、KEDA 自动伸缩
+
 ### 2026-04-26
 - **HAMi 基础集成（Phase 3 核心里程碑）**
   - 新增 `backend/internal/hami/` 包（`types.go` / `client.go` / `scheduler.go`），实现 HAMi Scheduler HTTP 客户端，支持 Binpack / Spread / Topology-aware 三种调度策略，本地开发自动降级为 Stub 模式（`HAMI_ENABLED=false`）

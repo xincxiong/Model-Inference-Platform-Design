@@ -213,6 +213,18 @@ func (s *SGLangClient) ImageGeneration(ctx context.Context, req model.ImageGener
 	return nil, fmt.Errorf("SGLang does not support image generation")
 }
 
+func (s *SGLangClient) VideoGeneration(ctx context.Context, req model.VideoGenerationRequest) (*model.VideoGenerationResponse, error) {
+	return nil, fmt.Errorf("SGLang does not support video generation")
+}
+
+func (s *SGLangClient) Transcription(ctx context.Context, req model.TranscriptionRequest) (*model.TranscriptionResponse, error) {
+	return nil, fmt.Errorf("SGLang does not support audio transcription")
+}
+
+func (s *SGLangClient) Speech(ctx context.Context, req model.SpeechRequest) ([]byte, error) {
+	return nil, fmt.Errorf("SGLang does not support speech synthesis")
+}
+
 // Health checks SGLang server connectivity.
 func (s *SGLangClient) Health(ctx context.Context) error {
 	url := s.baseURL + "/health"

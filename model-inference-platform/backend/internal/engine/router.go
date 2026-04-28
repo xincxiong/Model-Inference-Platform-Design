@@ -228,6 +228,21 @@ func (r *MultiEngineRouter) ImageGeneration(ctx context.Context, req model.Image
 	return eng.ImageGeneration(ctx, req)
 }
 
+func (r *MultiEngineRouter) VideoGeneration(ctx context.Context, req model.VideoGenerationRequest) (*model.VideoGenerationResponse, error) {
+	eng := r.GetEngine(ctx, req.Model)
+	return eng.VideoGeneration(ctx, req)
+}
+
+func (r *MultiEngineRouter) Transcription(ctx context.Context, req model.TranscriptionRequest) (*model.TranscriptionResponse, error) {
+	eng := r.GetEngine(ctx, req.Model)
+	return eng.Transcription(ctx, req)
+}
+
+func (r *MultiEngineRouter) Speech(ctx context.Context, req model.SpeechRequest) ([]byte, error) {
+	eng := r.GetEngine(ctx, req.Model)
+	return eng.Speech(ctx, req)
+}
+
 // Health checks all registered engines.
 func (r *MultiEngineRouter) Health(ctx context.Context) map[EngineType]bool {
 	r.mu.RLock()

@@ -211,6 +211,18 @@ func (v *VLLMClient) ImageGeneration(ctx context.Context, req model.ImageGenerat
 	return nil, fmt.Errorf("vLLM does not support image generation; deploy FLUX/SD model separately")
 }
 
+func (v *VLLMClient) VideoGeneration(ctx context.Context, req model.VideoGenerationRequest) (*model.VideoGenerationResponse, error) {
+	return nil, fmt.Errorf("vLLM does not support video generation; deploy CogVideoX/SVD model separately")
+}
+
+func (v *VLLMClient) Transcription(ctx context.Context, req model.TranscriptionRequest) (*model.TranscriptionResponse, error) {
+	return nil, fmt.Errorf("vLLM does not support audio transcription; deploy Whisper model separately")
+}
+
+func (v *VLLMClient) Speech(ctx context.Context, req model.SpeechRequest) ([]byte, error) {
+	return nil, fmt.Errorf("vLLM does not support speech synthesis; deploy CosyVoice/TTS model separately")
+}
+
 // Health checks vLLM server connectivity.
 func (v *VLLMClient) Health(ctx context.Context) error {
 	url := v.baseURL + "/health"

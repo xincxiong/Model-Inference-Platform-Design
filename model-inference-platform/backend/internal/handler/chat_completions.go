@@ -13,16 +13,19 @@ import (
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
 	"github.com/xincxiong/model-inference-platform/backend/internal/model"
 	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
+	"github.com/xincxiong/model-inference-platform/backend/internal/semcache"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
 )
 
 type ChatCompletionsHandler struct {
-	store  *store.Store
-	router *modelrouter.ModelRouter
+	store      *store.Store
+	router     *modelrouter.ModelRouter
+	cache      *semcache.Cache
+	embedModel string
 }
 
-func NewChatCompletionsHandler(s *store.Store, mr *modelrouter.ModelRouter) *ChatCompletionsHandler {
-	return &ChatCompletionsHandler{store: s, router: mr}
+func NewChatCompletionsHandler(s *store.Store, mr *modelrouter.ModelRouter, cache *semcache.Cache, embedModel string) *ChatCompletionsHandler {
+	return &ChatCompletionsHandler{store: s, router: mr, cache: cache, embedModel: embedModel}
 }
 
 var chatAllowedTypes = []string{"text-to-text", "vision"}
@@ -103,7 +106,45 @@ func (h *ChatCompletionsHandler) handleStream(c *gin.Context, req model.ChatComp
 func (h *ChatCompletionsHandler) handleNonStream(c *gin.Context, req model.ChatCompletionRequest, resolved *modelrouter.ResolvedModel, eng interface {
 	ChatCompletion(context.Context, model.ChatCompletionRequest) (<-chan model.ChatCompletionChunk, error)
 }, auth middleware.AuthInfo) {
-	ch, err := eng.ChatCompletion(c.Request.Context(), req)
+	ctx := c.Request.Context()
+	promptText := joinChatMessages(req.Messages)
+	inputTokens := estimateTokens(req.Messages)
+	var promptVec []float32
+
+	if h.cache != nil && h.cache.Enabled() && h.embedModel != "" {
+		embedder := buildEmbedder(h.router, h.embedModel, auth)
+		if vec, err := embedder(ctx, promptText); err == nil {
+			promptVec = vec
+			if hit, err := h.cache.LookupWithVec(auth.UserID, resolved.ID, vec); err == nil && hit != nil {
+				content := hit.Row.Response
+				created := hit.Row.CreatedAt
+				if created == 0 {
+					created = time.Now().Unix()
+				}
+				resp := model.ChatCompletionResponse{
+					ID:      hit.Row.ID,
+					Object:  "chat.completion",
+					Created: created,
+					Model:   req.Model,
+					Choices: []model.ChatCompletionChoice{{
+						Index:        0,
+						Message:      model.ChatMessage{Role: "assistant", Content: content},
+						FinishReason: "stop",
+					}},
+					Usage: model.Usage{
+						PromptTokens:     inputTokens,
+						CompletionTokens: len(strings.Fields(content)),
+						TotalTokens:      inputTokens + len(strings.Fields(content)),
+					},
+				}
+				c.JSON(http.StatusOK, resp)
+				go h.recordUsage(auth, resolved, resp.Usage.PromptTokens, resp.Usage.CompletionTokens)
+				return
+			}
+		}
+	}
+
+	ch, err := eng.ChatCompletion(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": err.Error(), "type": "server_error"},
@@ -120,7 +161,6 @@ func (h *ChatCompletionsHandler) handleNonStream(c *gin.Context, req model.ChatC
 		}
 	}
 
-	inputTokens := estimateTokens(req.Messages)
 	outputTokens := len(strings.Fields(fullContent.String()))
 
 	resp := model.ChatCompletionResponse{
@@ -144,6 +184,18 @@ func (h *ChatCompletionsHandler) handleNonStream(c *gin.Context, req model.ChatC
 
 	go h.recordUsage(auth, resolved, inputTokens, outputTokens)
 	c.JSON(http.StatusOK, resp)
+
+	if h.cache != nil && h.cache.Enabled() && len(promptVec) > 0 {
+		_ = h.cache.Insert(ctx, semcache.CacheRow{
+			ID:        completionID,
+			UserID:    auth.UserID,
+			ModelID:   resolved.ID,
+			Prompt:    promptText,
+			Response:  fullContent.String(),
+			Embedding: promptVec,
+			CreatedAt: resp.Created,
+		})
+	}
 }
 
 func (h *ChatCompletionsHandler) recordUsage(auth middleware.AuthInfo, resolved *modelrouter.ResolvedModel, inputTokens, outputTokens int) {

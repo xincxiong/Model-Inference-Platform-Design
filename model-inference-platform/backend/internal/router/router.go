@@ -14,12 +14,11 @@ import (
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
 	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
+	"github.com/xincxiong/model-inference-platform/backend/internal/volcano"
 	"go.uber.org/zap"
 )
 
 // SetupInferenceRouter configures the inference data plane (推理请求处理).
-// This server handles /v1/chat/completions, /v1/responses, /v1/embeddings, etc.
-// It is designed to be deployed as a separate binary for independent scaling.
 func SetupInferenceRouter(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, hc *health.Checker, cb *circuitbreaker.Manager, logger *zap.Logger) *gin.Engine {
 	gin.SetMode(cfg.GinMode)
 	r := gin.New()
@@ -31,7 +30,6 @@ func SetupInferenceRouter(cfg *config.Config, s *store.Store, mr *modelrouter.Mo
 		AllowCredentials: true,
 	}))
 
-	// ── Health & metrics (shared by both servers) ─────────────────────────
 	r.GET("/health", func(c *gin.Context) {
 		report := hc.Latest()
 		status := http.StatusOK
@@ -40,11 +38,7 @@ func SetupInferenceRouter(cfg *config.Config, s *store.Store, mr *modelrouter.Mo
 		}
 		c.JSON(status, report)
 	})
-
-	r.GET("/health/live", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
+	r.GET("/health/live", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 	r.GET("/health/ready", func(c *gin.Context) {
 		report := hc.Check()
 		status := http.StatusOK
@@ -53,27 +47,23 @@ func SetupInferenceRouter(cfg *config.Config, s *store.Store, mr *modelrouter.Mo
 		}
 		c.JSON(status, report)
 	})
-
-	r.GET("/health/circuit-breakers", func(c *gin.Context) {
-		c.JSON(http.StatusOK, cb.Snapshot())
-	})
-
+	r.GET("/health/circuit-breakers", func(c *gin.Context) { c.JSON(http.StatusOK, cb.Snapshot()) })
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	// ── Inference handlers ────────────────────────────────────────────────
-	chatH := handler.NewChatCompletionsHandler(s, mr)
-	complH := handler.NewCompletionsHandler(s, mr)
+	chatH := handler.NewChatCompletionsHandler(s, mr, s.SemanticCache, cfg.SemanticCache.EmbeddingModel)
+	complH := handler.NewCompletionsHandler(s, mr, s.SemanticCache, cfg.SemanticCache.EmbeddingModel)
 	respH := handler.NewResponsesHandler(s, mr)
 	embedH := handler.NewEmbeddingsHandler(s, mr)
 	rerankH := handler.NewRerankHandler(s, mr)
 	imagesH := handler.NewImagesHandler(s, mr)
+	videoH := handler.NewVideoHandler(s, mr)
+	audioH := handler.NewAudioHandler(s, mr)
 	modelsH := handler.NewModelsHandler(s)
 
 	v1 := r.Group("/v1")
 	v1.Use(middleware.AuthMiddleware(s.DB, s.Redis))
 	v1.Use(middleware.RateLimitMiddleware(s.Redis))
 	{
-		// ── Inference endpoints ───────────────────────────────────────────
 		v1.POST("/chat/completions", chatH.Create)
 		v1.POST("/completions", complH.Create)
 		v1.POST("/responses", respH.Create)
@@ -82,8 +72,9 @@ func SetupInferenceRouter(cfg *config.Config, s *store.Store, mr *modelrouter.Mo
 		v1.POST("/embeddings", embedH.Create)
 		v1.POST("/rerank", rerankH.Create)
 		v1.POST("/images/generations", imagesH.Generate)
-
-		// ── Model catalog (read-only, used by inference) ──────────────────
+		v1.POST("/videos/generations", videoH.Generate)
+		v1.POST("/audio/transcriptions", audioH.CreateTranscription)
+		v1.POST("/audio/speech", audioH.CreateSpeech)
 		v1.GET("/models", modelsH.List)
 	}
 
@@ -91,10 +82,7 @@ func SetupInferenceRouter(cfg *config.Config, s *store.Store, mr *modelrouter.Mo
 }
 
 // SetupManagementRouter configures the control plane (管理操作处理).
-// This server handles /v0/dedicated_endpoints, /v1/fine_tuning, /v1/batches,
-// /v1/datasets, /v1/deployments, /api/*, etc.
-// It is designed to be deployed as a separate binary for independent scaling.
-func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, hc *health.Checker, cb *circuitbreaker.Manager, hamiScheduler *hami.Scheduler, logger *zap.Logger) *gin.Engine {
+func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.ModelRouter, hc *health.Checker, cb *circuitbreaker.Manager, hamiScheduler *hami.Scheduler, volcanoClient *volcano.Client, logger *zap.Logger) *gin.Engine {
 	gin.SetMode(cfg.GinMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
@@ -105,7 +93,6 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 		AllowCredentials: true,
 	}))
 
-	// ── Health & metrics (shared by both servers) ─────────────────────────
 	r.GET("/health", func(c *gin.Context) {
 		report := hc.Latest()
 		status := http.StatusOK
@@ -114,11 +101,7 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 		}
 		c.JSON(status, report)
 	})
-
-	r.GET("/health/live", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
+	r.GET("/health/live", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 	r.GET("/health/ready", func(c *gin.Context) {
 		report := hc.Check()
 		status := http.StatusOK
@@ -127,19 +110,14 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 		}
 		c.JSON(status, report)
 	})
-
-	r.GET("/health/circuit-breakers", func(c *gin.Context) {
-		c.JSON(http.StatusOK, cb.Snapshot())
-	})
-
+	r.GET("/health/circuit-breakers", func(c *gin.Context) { c.JSON(http.StatusOK, cb.Snapshot()) })
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	// ── Management handlers ──────────────────────────────────────────────
 	modelsH := handler.NewModelsHandler(s)
 	keysH := handler.NewAPIKeysHandler(s)
 	billingH := handler.NewBillingHandler(s)
 	dedH := handler.NewDedicatedEndpointsHandler(s, hamiScheduler, logger)
-	ftH := handler.NewFineTuningHandler(s)
+	ftH := handler.NewFineTuningHandler(s, volcanoClient, cfg.Volcano, logger)
 	filesH := handler.NewFilesHandler(s)
 	batchH := handler.NewBatchHandler(s)
 	dsH := handler.NewDatasetsHandler(s)
@@ -147,7 +125,6 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 	membersH := handler.NewMembersHandler(s)
 	mvH := handler.NewModelVersionsHandler(s)
 
-	// ── v0: Dedicated Endpoints (legacy API) ─────────────────────────────
 	v0 := r.Group("/v0")
 	v0.Use(middleware.AuthMiddleware(s.DB, s.Redis))
 	{
@@ -158,30 +135,25 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 		v0.DELETE("/dedicated_endpoints/:id", dedH.Delete)
 	}
 
-	// ── v1: Management APIs ──────────────────────────────────────────────
 	v1 := r.Group("/v1")
 	v1.Use(middleware.AuthMiddleware(s.DB, s.Redis))
 	{
-		// Fine-tuning
 		v1.POST("/fine_tuning/jobs", ftH.Create)
 		v1.GET("/fine_tuning/jobs", ftH.List)
 		v1.GET("/fine_tuning/jobs/:id", ftH.Get)
 		v1.POST("/fine_tuning/jobs/:id/cancel", ftH.Cancel)
 
-		// Files
 		v1.POST("/files", filesH.Upload)
 		v1.GET("/files", filesH.List)
 		v1.GET("/files/:id", filesH.Get)
 		v1.DELETE("/files/:id", filesH.Delete)
 		v1.GET("/files/:id/content", filesH.GetContent)
 
-		// Batches
 		v1.POST("/batches", batchH.Create)
 		v1.GET("/batches", batchH.List)
 		v1.GET("/batches/:id", batchH.Get)
 		v1.POST("/batches/:id/cancel", batchH.Cancel)
 
-		// Datasets
 		v1.POST("/datasets", dsH.Create)
 		v1.GET("/datasets", dsH.List)
 		v1.GET("/datasets/:id", dsH.Get)
@@ -191,14 +163,12 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 		v1.GET("/datasets/:id/export", dsH.Export)
 		v1.GET("/datasets/:id/query", dsH.Query)
 
-		// Deployments
 		v1.POST("/deployments", deployH.Create)
 		v1.GET("/deployments", deployH.List)
 		v1.GET("/deployments/:id", deployH.Get)
 		v1.PATCH("/deployments/:id", deployH.Patch)
 		v1.DELETE("/deployments/:id", deployH.Delete)
 
-		// Model Versions
 		v1.GET("/models/:model_id/versions", mvH.List)
 		v1.POST("/models/:model_id/versions", mvH.Create)
 		v1.PATCH("/models/:model_id/versions/:version_id", mvH.Patch)
@@ -207,7 +177,6 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 		v1.PUT("/models/:model_id/ab-test", mvH.SetABTest)
 	}
 
-	// ── api: Console APIs ────────────────────────────────────────────────
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(s.DB, s.Redis))
 	{
@@ -218,7 +187,6 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 		api.GET("/usage", billingH.GetUsage)
 		api.POST("/billing/redeem", billingH.RedeemPromo)
 
-		// Members
 		api.POST("/members", membersH.Invite)
 		api.GET("/members", membersH.List)
 		api.PATCH("/members/:id", membersH.PatchRole)

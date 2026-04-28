@@ -3,22 +3,27 @@ package handler
 import (
 	"context"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/xincxiong/model-inference-platform/backend/internal/middleware"
 	"github.com/xincxiong/model-inference-platform/backend/internal/model"
 	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
+	"github.com/xincxiong/model-inference-platform/backend/internal/semcache"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
 )
 
 type CompletionsHandler struct {
-	store  *store.Store
-	router *modelrouter.ModelRouter
+	store      *store.Store
+	router     *modelrouter.ModelRouter
+	cache      *semcache.Cache
+	embedModel string
 }
 
-func NewCompletionsHandler(s *store.Store, mr *modelrouter.ModelRouter) *CompletionsHandler {
-	return &CompletionsHandler{store: s, router: mr}
+func NewCompletionsHandler(s *store.Store, mr *modelrouter.ModelRouter, cache *semcache.Cache, embedModel string) *CompletionsHandler {
+	return &CompletionsHandler{store: s, router: mr, cache: cache, embedModel: embedModel}
 }
 
 var completionsAllowedTypes = []string{"text-to-text"}
@@ -47,8 +52,46 @@ func (h *CompletionsHandler) Create(c *gin.Context) {
 		return
 	}
 
+	ctx := c.Request.Context()
+	prompt := req.Prompt
+	promptTokens := len(strings.Fields(prompt)) + 2
+	var promptVec []float32
+
+	if h.cache != nil && h.cache.Enabled() && h.embedModel != "" {
+		embedder := buildEmbedder(h.router, h.embedModel, auth)
+		if vec, err := embedder(ctx, prompt); err == nil {
+			promptVec = vec
+			if hit, err := h.cache.LookupWithVec(auth.UserID, resolved.ID, vec); err == nil && hit != nil {
+				content := hit.Row.Response
+				created := hit.Row.CreatedAt
+				if created == 0 {
+					created = time.Now().Unix()
+				}
+				resp := model.CompletionResponse{
+					ID:      hit.Row.ID,
+					Object:  "text_completion",
+					Created: created,
+					Model:   req.Model,
+					Choices: []model.CompletionChoice{{
+						Index:        0,
+						Text:         content,
+						FinishReason: "stop",
+					}},
+					Usage: model.Usage{
+						PromptTokens:     promptTokens,
+						CompletionTokens: len(strings.Fields(content)),
+						TotalTokens:      promptTokens + len(strings.Fields(content)),
+					},
+				}
+				c.JSON(http.StatusOK, resp)
+				go h.recordUsage(auth, resolved, resp.Usage.PromptTokens, resp.Usage.CompletionTokens)
+				return
+			}
+		}
+	}
+
 	eng := h.router.GetEngine(resolved)
-	resp, err := eng.Completion(c.Request.Context(), req)
+	resp, err := eng.Completion(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": err.Error(), "type": "server_error"},
@@ -57,8 +100,19 @@ func (h *CompletionsHandler) Create(c *gin.Context) {
 	}
 
 	go h.recordUsage(auth, resolved, resp.Usage.PromptTokens, resp.Usage.CompletionTokens)
-
 	c.JSON(http.StatusOK, resp)
+
+	if h.cache != nil && h.cache.Enabled() && len(promptVec) > 0 && len(resp.Choices) > 0 {
+		_ = h.cache.Insert(ctx, semcache.CacheRow{
+			ID:        resp.ID,
+			UserID:    auth.UserID,
+			ModelID:   resolved.ID,
+			Prompt:    prompt,
+			Response:  resp.Choices[0].Text,
+			Embedding: promptVec,
+			CreatedAt: resp.Created,
+		})
+	}
 }
 
 func (h *CompletionsHandler) recordUsage(auth middleware.AuthInfo, resolved *modelrouter.ResolvedModel, inputTokens, outputTokens int) {

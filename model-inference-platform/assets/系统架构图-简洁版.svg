@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 820">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: -apple-system, "PingFang SC", sans-serif; font-weight: 700; }
+    .label { font-family: -apple-system, "PingFang SC", sans-serif; }
+    .small { font-family: -apple-system, "PingFang SC", sans-serif; font-size: 11px; }
+  </style>
+
+  <rect width="1100" height="820" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="550" y="30" text-anchor="middle" class="title" font-size="18" fill="#0f172a">模型推理云平台 — 系统架构</text>
+  <text x="550" y="48" text-anchor="middle" class="small" fill="#94a3b8">v2.5 · 7层云原生架构</text>
+
+  <rect x="30" y="65" width="1040" height="55" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1" stroke-dasharray="6,3" opacity="0.6"/>
+  <text x="50" y="87" class="title" font-size="13" fill="#3b82f6">接入层</text>
+
+  <rect x="30" y="135" width="1040" height="55" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="1" stroke-dasharray="6,3" opacity="0.6"/>
+  <text x="50" y="157" class="title" font-size="13" fill="#f59e0b">网关层</text>
+
+  <rect x="30" y="205" width="1040" height="140" rx="10" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="6,3" opacity="0.6"/>
+  <text x="50" y="227" class="title" font-size="13" fill="#8b5cf6">控制面</text>
+
+  <rect x="30" y="360" width="1040" height="140" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1" stroke-dasharray="6,3" opacity="0.6"/>
+  <text x="50" y="382" class="title" font-size="13" fill="#10b981">数据面 (GPU 集群)</text>
+
+  <rect x="30" y="515" width="1040" height="100" rx="10" fill="#fdf2f8" stroke="#ec4899" stroke-width="1" stroke-dasharray="6,3" opacity="0.6"/>
+  <text x="50" y="537" class="title" font-size="13" fill="#ec4899">调度与编排</text>
+
+  <rect x="30" y="630" width="1040" height="80" rx="10" fill="#eef2ff" stroke="#6366f1" stroke-width="1" stroke-dasharray="6,3" opacity="0.6"/>
+  <text x="50" y="652" class="title" font-size="13" fill="#6366f1">存储层</text>
+
+  <rect x="30" y="725" width="1040" height="70" rx="10" fill="#faf5ff" stroke="#a855f7" stroke-width="1" stroke-dasharray="6,3" opacity="0.6"/>
+  <text x="50" y="747" class="title" font-size="13" fill="#a855f7">可观测性</text>
+
+  <rect x="120" y="93" width="150" height="28" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="195" y="111" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">Web Console</text>
+  <rect x="300" y="93" width="200" height="28" rx="6" fill="white" stroke="#2563eb" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="400" y="111" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">API (Responses + Chat)</text>
+  <rect x="530" y="93" width="120" height="28" rx="6" fill="white" stroke="#0ea5e9" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="590" y="111" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">SDK</text>
+  <rect x="680" y="93" width="120" height="28" rx="6" fill="white" stroke="#06b6d4" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="740" y="111" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">CLI</text>
+  <rect x="830" y="93" width="160" height="28" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="910" y="111" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">第三方集成</text>
+  <rect x="120" y="163" width="140" height="28" rx="6" fill="white" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="190" y="181" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">API Gateway</text>
+  <rect x="290" y="163" width="140" height="28" rx="6" fill="white" stroke="#d97706" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="360" y="181" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">认证鉴权</text>
+  <rect x="460" y="163" width="140" height="28" rx="6" fill="white" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="530" y="181" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">速率限制</text>
+  <rect x="630" y="163" width="140" height="28" rx="6" fill="white" stroke="#d97706" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="700" y="181" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">智能路由</text>
+  <rect x="800" y="163" width="160" height="28" rx="6" fill="white" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="880" y="181" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">语义缓存</text>
+  <rect x="80" y="233" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="145" y="252" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">用户与团队</text>
+  <rect x="230" y="233" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="295" y="252" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">计费系统</text>
+  <rect x="380" y="233" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="445" y="252" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">端点管理</text>
+  <rect x="530" y="233" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="595" y="252" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">模型注册</text>
+  <rect x="680" y="233" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="745" y="252" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">负载均衡</text>
+  <rect x="830" y="233" width="140" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="900" y="252" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">微调调度</text>
+  <rect x="80" y="277" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="145" y="296" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">Data Lab</text>
+  <rect x="230" y="277" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="295" y="296" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">批量推理</text>
+  <rect x="380" y="277" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="445" y="296" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">Prompt 模板</text>
+  <rect x="530" y="277" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="595" y="296" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">版本管理</text>
+  <rect x="680" y="277" width="130" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="745" y="296" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">A/B 测试</text>
+  <rect x="830" y="277" width="140" height="30" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="900" y="296" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">Agentic RL</text>
+  <rect x="80" y="388" width="260" height="90" rx="8" fill="white" stroke="#10b981" stroke-width="2" filter="url(#shadow)"/>
+  <text x="210" y="408" text-anchor="middle" class="label" font-size="13" font-weight="700" fill="#059669">MultiEngineRouter</text>
+  <text x="100" y="428" class="small" fill="#475569">vLLM · SGLang · Custom · Mock</text>
+  <text x="100" y="444" class="small" fill="#475569">PagedAttention · 前缀缓存 · PD 分离</text>
+  <text x="100" y="460" class="small" fill="#475569">FlashAttention-4 · 投机解码</text>
+  <rect x="370" y="388" width="220" height="90" rx="8" fill="white" stroke="#10b981" stroke-width="2" filter="url(#shadow)"/>
+  <text x="480" y="408" text-anchor="middle" class="label" font-size="13" font-weight="700" fill="#059669">专属端点</text>
+  <text x="390" y="428" class="small" fill="#475569">H100 / A100 / L40S</text>
+  <text x="390" y="444" class="small" fill="#475569">昇腾 / 海光 / 寒武纪</text>
+  <text x="390" y="460" class="small" fill="#475569">HAMi 隔离 · Autoscaler</text>
+  <rect x="620" y="388" width="200" height="40" rx="8" fill="white" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="720" y="412" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#059669">批量推理</text>
+  <rect x="620" y="438" width="200" height="40" rx="8" fill="white" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="720" y="462" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#059669">微调训练</text>
+  <rect x="80" y="540" width="420" height="50" rx="8" fill="white" stroke="#ec4899" stroke-width="2" filter="url(#shadow)"/>
+  <text x="290" y="560" text-anchor="middle" class="label" font-size="13" font-weight="700" fill="#db2777">Volcano Scheduler</text>
+  <text x="290" y="577" text-anchor="middle" class="small" fill="#64748b">Gang Scheduling · Queue · Preemption · BinPack</text>
+  <rect x="80" y="597" width="420" height="42" rx="8" fill="white" stroke="#ec4899" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="290" y="617" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#db2777">HAMi Device Plugin</text>
+  <text x="290" y="631" text-anchor="middle" class="small" fill="#64748b">GPU 虚拟化 · 内存隔离 · 多厂商适配</text>
+  <rect x="540" y="540" width="460" height="99" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="770" y="563" text-anchor="middle" class="label" font-size="12" font-weight="700" fill="#db2777">Volcano 联邦调度 (跨域)</text>
+  <text x="560" y="583" class="small" fill="#475569">全局队列 · 跨域迁移 · 优先级抢占</text>
+  <text x="560" y="599" class="small" fill="#475569">AI 负载感知 · 成本优化 · 故障转移</text>
+  <text x="560" y="615" class="small" fill="#475569">RPO&lt;1min · RTO&lt;5min · 负载均衡 &lt;10%</text>
+  <rect x="80" y="655" width="120" height="36" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="140" y="677" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">PostgreSQL</text>
+  <rect x="220" y="655" width="100" height="36" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="270" y="677" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">Redis</text>
+  <rect x="340" y="655" width="100" height="36" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="390" y="677" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">S3/OSS</text>
+  <rect x="460" y="655" width="130" height="36" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="525" y="677" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">ClickHouse</text>
+  <rect x="610" y="655" width="100" height="36" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="660" y="677" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">Kafka</text>
+  <rect x="730" y="655" width="120" height="36" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="790" y="677" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">LanceDB</text>
+  <rect x="870" y="655" width="140" height="36" rx="6" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="940" y="677" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#1e293b">Model Registry</text>
+  <rect x="80" y="747" width="200" height="32" rx="6" fill="white" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="180" y="767" text-anchor="middle" class="label" font-size="11" font-weight="600" fill="#1e293b">Prometheus + VictoriaMetrics</text>
+  <rect x="310" y="747" width="120" height="32" rx="6" fill="white" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="370" y="767" text-anchor="middle" class="label" font-size="11" font-weight="600" fill="#1e293b">Grafana</text>
+  <rect x="460" y="747" width="180" height="32" rx="6" fill="white" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="550" y="767" text-anchor="middle" class="label" font-size="11" font-weight="600" fill="#1e293b">OpenTelemetry + Jaeger</text>
+  <rect x="670" y="747" width="130" height="32" rx="6" fill="white" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="735" y="767" text-anchor="middle" class="label" font-size="11" font-weight="600" fill="#1e293b">Loki + Alloy</text>
+  <rect x="830" y="747" width="140" height="32" rx="6" fill="white" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="900" y="767" text-anchor="middle" class="label" font-size="11" font-weight="600" fill="#1e293b">Webhook 告警</text>
+  <line x1="200" y1="120" x2="200" y2="135" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="200" y1="190" x2="200" y2="205" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="400" y1="120" x2="400" y2="135" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="400" y1="190" x2="400" y2="205" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="600" y1="120" x2="600" y2="135" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="600" y1="190" x2="600" y2="205" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="800" y1="120" x2="800" y2="135" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="800" y1="190" x2="800" y2="205" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="950" y1="120" x2="950" y2="135" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="950" y1="190" x2="950" y2="205" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="300" y1="345" x2="210" y2="360" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="550" y1="345" x2="480" y2="360" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="800" y1="345" x2="720" y2="360" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="300" y1="500" x2="300" y2="515" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="720" y1="500" x2="720" y2="515" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="300" y1="615" x2="300" y2="630" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="720" y1="615" x2="720" y2="630" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="300" y1="710" x2="300" y2="725" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="720" y1="710" x2="720" y2="725" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrow)"/>
+</svg>

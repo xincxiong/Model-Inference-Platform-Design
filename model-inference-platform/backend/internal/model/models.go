@@ -330,6 +330,53 @@ type ImageData struct {
 }
 
 // =============================================
+// Audio/Speech API
+// =============================================
+
+type TranscriptionRequest struct {
+	Model    string `form:"model" binding:"required"`
+	File     []byte `form:"-"` // multipart file
+	Language string `form:"language,omitempty"`
+	Prompt   string `form:"prompt,omitempty"`
+}
+
+type TranscriptionResponse struct {
+	Text string `json:"text"`
+}
+
+type SpeechRequest struct {
+	Model          string  `json:"model" binding:"required"`
+	Input          string  `json:"input" binding:"required"`
+	Voice          string  `json:"voice,omitempty"`
+	Speed          float64 `json:"speed,omitempty"`
+	ResponseFormat string  `json:"response_format,omitempty"` // mp3, wav, opus
+}
+
+// =============================================
+// Video Generation API
+// =============================================
+
+type VideoGenerationRequest struct {
+	Model          string `json:"model" binding:"required"`
+	Prompt         string `json:"prompt" binding:"required"`
+	N              *int   `json:"n,omitempty"`
+	Size           string `json:"size,omitempty"` // e.g., "1280x720"
+	Duration       *int   `json:"duration,omitempty"` // seconds
+	ResponseFormat string `json:"response_format,omitempty"`
+}
+
+type VideoGenerationResponse struct {
+	Created int64        `json:"created"`
+	Data    []VideoData `json:"data"`
+}
+
+type VideoData struct {
+	URL           string `json:"url,omitempty"`
+	B64JSON       string `json:"b64_json,omitempty"`
+	RevisedPrompt string `json:"revised_prompt,omitempty"`
+}
+
+// =============================================
 // OpenAI Models API
 // =============================================
 

@@ -1,0 +1,194 @@
+# VolcanoJob Example for Fine-tuning Tasks
+# Demonstrates Gang Scheduling + HAMi GPU virtualization
+---
+# Example 1: LoRA Fine-tuning with 4 GPUs (Gang Scheduling)
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: finetune-deepseek-v3-lora
+  namespace: inference-platform
+  labels:
+    app: finetuning
+    type: lora
+    model: deepseek-v3
+  annotations:
+    # Assign to inference platform queue
+    scheduling.volcano.sh/queue-name: inference-platform-queue
+spec:
+  # Gang Scheduling: all 4 tasks must start together
+  minAvailable: 4
+  schedulerName: volcano
+  # Clean up completed jobs after 7 days
+  ttlSecondsAfterFinished: 604800
+  tasks:
+    - replicas: 4
+      name: "worker"
+      template:
+        metadata:
+          labels:
+            app: finetuning-worker
+            model: deepseek-v3
+          annotations:
+            # HAMi scheduler policy
+            hami.io/gpu-scheduler-policy: spread
+        spec:
+          containers:
+            - name: trainer
+              image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+              command:
+                - bash
+                - -c
+                - |
+                  pip install transformers accelerate deepspeed
+                  python -m torch.distributed.run \
+                    --nproc_per_node=1 \
+                    --nnodes=$VOLCANO_WORKER_NUM \
+                    --node_rank=$VOLCANO_WORKER_INDEX \
+                    --master_addr=$MASTER_ADDR \
+                    --master_port=23456 \
+                    train_lora.py \
+                    --model_name deepseek-ai/DeepSeek-V3 \
+                    --dataset /data/train.jsonl \
+                    --lora_rank 16 \
+                    --epochs 3 \
+                    --batch_size 4 \
+                    --learning_rate 2e-4
+              env:
+                - name: MASTER_ADDR
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: status.podIP
+                - name: VOLCANO_WORKER_NUM
+                  value: "4"
+                - name: VOLCANO_WORKER_INDEX
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['volcano.sh/job-task-index']
+              resources:
+                limits:
+                  # HAMi virtual GPU: 40GB memory + 80% cores
+                  nvidia.com/gpu: "1"
+                  nvidia.com/gpumem: "40960"
+                  nvidia.com/gpucores: "80"
+                  cpu: "8"
+                  memory: "64Gi"
+                requests:
+                  nvidia.com/gpu: "1"
+                  nvidia.com/gpumem: "40960"
+                  nvidia.com/gpucores: "80"
+                  cpu: "8"
+                  memory: "64Gi"
+              volumeMounts:
+                - name: training-data
+                  mountPath: /data
+                - name: model-cache
+                  mountPath: /root/.cache/huggingface
+                - name: output
+                  mountPath: /output
+          volumes:
+            - name: training-data
+              persistentVolumeClaim:
+                claimName: training-data-pvc
+            - name: model-cache
+              persistentVolumeClaim:
+                claimName: model-weights-pvc
+            - name: output
+              persistentVolumeClaim:
+                claimName: finetune-output-pvc
+          nodeSelector:
+            nvidia.com/gpu.present: "true"
+          tolerations:
+            - key: nvidia.com/gpu
+              operator: Exists
+              effect: NoSchedule
+---
+# Example 2: Full Fine-tuning with 8 GPUs (High-priority Queue)
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: finetune-qwen3-72b-full
+  namespace: inference-platform
+  labels:
+    app: finetuning
+    type: full
+    model: qwen3-72b
+  annotations:
+    scheduling.volcano.sh/queue-name: inference-platform-queue
+spec:
+  minAvailable: 8
+  schedulerName: volcano
+  ttlSecondsAfterFinished: 604800
+  # Priority class for preemption
+  priorityClassName: high-priority
+  tasks:
+    - replicas: 8
+      name: "worker"
+      template:
+        metadata:
+          annotations:
+            hami.io/gpu-scheduler-policy: topology-aware
+        spec:
+          containers:
+            - name: trainer
+              image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+              command:
+                - bash
+                - -c
+                - |
+                  pip install transformers deepspeed
+                  deepspeed train_full.py \
+                    --deepspeed ds_config.json \
+                    --model_name Qwen/Qwen3-72B \
+                    --dataset /data/train.jsonl \
+                    --epochs 2 \
+                    --batch_size 1 \
+                    --gradient_accumulation 8
+              resources:
+                limits:
+                  # Full GPU for large model training
+                  nvidia.com/gpu: "1"
+                  nvidia.com/gpumem: "81920"  # 80GB (full A100/H100)
+                  nvidia.com/gpucores: "100"
+                  cpu: "16"
+                  memory: "128Gi"
+                requests:
+                  nvidia.com/gpu: "1"
+                  nvidia.com/gpumem: "81920"
+                  nvidia.com/gpucores: "100"
+                  cpu: "16"
+                  memory: "128Gi"
+---
+# PriorityClass for high-priority training jobs
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000000
+globalDefault: false
+description: "High priority fine-tuning jobs (can preempt low-priority)"
+---
+# PersistentVolumeClaim for training data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: training-data-pvc
+  namespace: inference-platform
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Gi
+---
+# PersistentVolumeClaim for fine-tuning output
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: finetune-output-pvc
+  namespace: inference-platform
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 200Gi

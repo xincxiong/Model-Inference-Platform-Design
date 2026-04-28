@@ -1,0 +1,252 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1100">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#059669"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ea580c"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#7c3aed"/>
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+    <linearGradient id="layer-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+
+  <style>
+    .title { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; font-weight: 700; }
+    .label { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .small { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 11px; }
+  </style>
+
+  <!-- Background -->
+  <rect width="1200" height="1100" fill="#ffffff"/>
+
+  <!-- Main Title -->
+  <text x="600" y="32" text-anchor="middle" class="title" font-size="20" fill="#0f172a">模型推理云平台 — 系统架构图</text>
+  <text x="600" y="52" text-anchor="middle" class="small" fill="#64748b">v2.5 · 云原生微服务架构 · 7层分层设计</text>
+
+  <!-- 接入层 (Access Layer) -->
+  <rect x="40" y="70" width="1120" height="70" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.5"/>
+  <text x="60" y="92" class="title" font-size="14" fill="#3b82f6">🌐 接入层 (Access Layer)</text>
+
+  <!-- 网关与路由层 (Gateway & Routing) -->
+  <rect x="40" y="155" width="1120" height="70" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.5"/>
+  <text x="60" y="177" class="title" font-size="14" fill="#f59e0b">🔀 网关与路由层 (Gateway &amp; Routing)</text>
+
+  <!-- 控制面 (Control Plane) -->
+  <rect x="40" y="240" width="1120" height="200" rx="8" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.5"/>
+  <text x="60" y="262" class="title" font-size="14" fill="#8b5cf6">🎛️ 控制面 (Control Plane)</text>
+
+  <!-- 数据面 (Data Plane) — GPU 集群 -->
+  <rect x="40" y="455" width="1120" height="200" rx="8" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.5"/>
+  <text x="60" y="477" class="title" font-size="14" fill="#10b981">⚡ 数据面 (Data Plane) — GPU 集群</text>
+
+  <!-- 调度与编排层 (Orchestration) -->
+  <rect x="40" y="670" width="1120" height="160" rx="8" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.5"/>
+  <text x="60" y="692" class="title" font-size="14" fill="#ec4899">📋 调度与编排层 (Orchestration)</text>
+
+  <!-- 存储与数据层 (Storage & Data) -->
+  <rect x="40" y="845" width="1120" height="120" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.5"/>
+  <text x="60" y="867" class="title" font-size="14" fill="#6366f1">💾 存储与数据层 (Storage &amp; Data)</text>
+
+  <!-- 可观测性 (Observability) -->
+  <rect x="40" y="980" width="1120" height="90" rx="8" fill="#f3e8ff" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.5"/>
+  <text x="60" y="1002" class="title" font-size="14" fill="#a855f7">📊 可观测性 (Observability)</text>
+
+  <rect x="100" y="100" width="180" height="36" rx="6" fill="white" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="190" y="118" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">Web Console</text>
+  <text x="190" y="132" text-anchor="middle" class="small" fill="#64748b">React 前端</text>
+  <rect x="310" y="100" width="220" height="36" rx="6" fill="white" stroke="#2563eb" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="420" y="118" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">Responses API +</text>
+  <text x="420" y="132" text-anchor="middle" class="small" fill="#64748b">Chat Completions API</text>
+  <rect x="560" y="100" width="160" height="36" rx="6" fill="white" stroke="#0ea5e9" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="640" y="118" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">SDK</text>
+  <text x="640" y="132" text-anchor="middle" class="small" fill="#64748b">Python / JS / Go</text>
+  <rect x="750" y="100" width="160" height="36" rx="6" fill="white" stroke="#06b6d4" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="830" y="118" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">CLI 工具</text>
+  <text x="830" y="132" text-anchor="middle" class="small" fill="#64748b">Go 单二进制</text>
+  <rect x="940" y="100" width="180" height="36" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1030" y="118" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">第三方集成</text>
+  <text x="1030" y="132" text-anchor="middle" class="small" fill="#64748b">LangChain / Cursor 等</text>
+  <rect x="100" y="185" width="140" height="36" rx="6" fill="white" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="170" y="203" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">API Gateway</text>
+  <text x="170" y="217" text-anchor="middle" class="small" fill="#64748b">Kong / Envoy</text>
+  <rect x="265" y="185" width="150" height="36" rx="6" fill="white" stroke="#d97706" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="340" y="203" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">Responses Adapter</text>
+  <text x="340" y="217" text-anchor="middle" class="small" fill="#64748b">Items ↔ Messages</text>
+  <rect x="440" y="185" width="130" height="36" rx="6" fill="white" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="505" y="203" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">认证鉴权</text>
+  <text x="505" y="217" text-anchor="middle" class="small" fill="#64748b">JWT / API Key</text>
+  <rect x="595" y="185" width="130" height="36" rx="6" fill="white" stroke="#d97706" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="660" y="203" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">速率限制</text>
+  <text x="660" y="217" text-anchor="middle" class="small" fill="#64748b">Redis 滑动窗口</text>
+  <rect x="750" y="185" width="140" height="36" rx="6" fill="white" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="820" y="203" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">智能路由</text>
+  <text x="820" y="217" text-anchor="middle" class="small" fill="#64748b">Router</text>
+  <rect x="915" y="185" width="140" height="36" rx="6" fill="white" stroke="#d97706" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="985" y="203" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">语义缓存</text>
+  <text x="985" y="217" text-anchor="middle" class="small" fill="#64748b">LanceDB &lt;1ms</text>
+  <rect x="80" y="270" width="130" height="36" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="145" y="288" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">用户/团队服务</text>
+  <text x="145" y="302" text-anchor="middle" class="small" fill="#64748b">RBAC / SSO</text>
+  <rect x="230" y="270" width="130" height="36" rx="6" fill="white" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="295" y="288" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">计费服务</text>
+  <text x="295" y="302" text-anchor="middle" class="small" fill="#64748b">Token / GPU·时</text>
+  <rect x="380" y="270" width="130" height="36" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="445" y="288" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">端点管理服务</text>
+  <text x="445" y="302" text-anchor="middle" class="small" fill="#64748b">Autoscaler</text>
+  <rect x="530" y="270" width="130" height="36" rx="6" fill="white" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="595" y="288" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">模型注册中心</text>
+  <text x="595" y="302" text-anchor="middle" class="small" fill="#64748b">Model Registry</text>
+  <rect x="680" y="270" width="130" height="36" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="745" y="288" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">负载均衡器</text>
+  <text x="745" y="302" text-anchor="middle" class="small" fill="#64748b">NVIDIA Dynamo</text>
+  <rect x="830" y="270" width="130" height="36" rx="6" fill="white" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="895" y="288" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">A/B 测试框架</text>
+  <text x="895" y="302" text-anchor="middle" class="small" fill="#64748b">Traffic Split</text>
+  <rect x="980" y="270" width="130" height="36" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1045" y="288" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">微调调度服务</text>
+  <text x="1045" y="302" text-anchor="middle" class="small" fill="#64748b">Job Manager</text>
+  <rect x="80" y="320" width="130" height="36" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="145" y="338" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">模型评测引擎</text>
+  <text x="145" y="352" text-anchor="middle" class="small" fill="#64748b">Benchmark</text>
+  <rect x="230" y="320" width="130" height="36" rx="6" fill="white" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="295" y="338" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">Prompt 模板服务</text>
+  <text x="295" y="352" text-anchor="middle" class="small" fill="#64748b">变量插值</text>
+  <rect x="380" y="320" width="130" height="36" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="445" y="338" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">预算告警服务</text>
+  <text x="445" y="352" text-anchor="middle" class="small" fill="#64748b">Webhook / 邮件</text>
+  <rect x="530" y="320" width="130" height="36" rx="6" fill="white" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="595" y="338" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">Data Lab 服务</text>
+  <text x="595" y="352" text-anchor="middle" class="small" fill="#64748b">Lance/LanceDB</text>
+  <rect x="680" y="320" width="130" height="36" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="745" y="338" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">批量推理服务</text>
+  <text x="745" y="352" text-anchor="middle" class="small" fill="#64748b">Temporal Workflow</text>
+  <rect x="830" y="320" width="130" height="36" rx="6" fill="white" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="895" y="338" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">模型版本管理</text>
+  <text x="895" y="352" text-anchor="middle" class="small" fill="#64748b">Git-style 版本</text>
+  <rect x="980" y="320" width="130" height="36" rx="6" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1045" y="338" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">Agentic RL 平台</text>
+  <text x="1045" y="352" text-anchor="middle" class="small" fill="#64748b">Megatron+SGLang</text>
+  <text x="600" y="390" text-anchor="middle" class="small" fill="#7c3aed">控制面通过 REST API 管理数据面 · 不直接处理推理请求</text>
+  <rect x="80" y="485" width="280" height="120" rx="8" fill="white" stroke="#10b981" stroke-width="2" filter="url(#shadow)"/>
+  <text x="220" y="507" text-anchor="middle" class="label" font-size="14" font-weight="700" fill="#059669">MultiEngineRouter</text>
+  <text x="220" y="523" text-anchor="middle" class="small" fill="#64748b">多引擎路由器</text>
+  <text x="100" y="533" class="small" fill="#374151">├─ vLLM — PagedAttention / FlashAttention-4 / 连续批处理</text>
+  <text x="100" y="549" class="small" fill="#374151">├─ SGLang — RadixAttention 自动前缀缓存</text>
+  <text x="100" y="565" class="small" fill="#374151">├─ Custom — LMDeploy / TensorRT-LLM 等</text>
+  <text x="100" y="581" class="small" fill="#374151">├─ Mock — 本地开发降级</text>
+  <rect x="400" y="485" width="240" height="120" rx="8" fill="white" stroke="#059669" stroke-width="2" filter="url(#shadow)"/>
+  <text x="520" y="507" text-anchor="middle" class="label" font-size="14" font-weight="700" fill="#059669">专属端点实例池</text>
+  <text x="520" y="523" text-anchor="middle" class="small" fill="#64748b">HAMi GPU 资源隔离</text>
+  <text x="420" y="537" class="small" fill="#374151">• H100 / A100 / L40S / RTX4090</text>
+  <text x="420" y="553" class="small" fill="#374151">• 昇腾 910B / 950 (国产)</text>
+  <text x="420" y="569" class="small" fill="#374151">• 海光 K100 / 寒武纪 590</text>
+  <text x="420" y="585" class="small" fill="#374151">• Autoscaler · 缩至零 · Warm Pool</text>
+  <rect x="680" y="485" width="220" height="55" rx="8" fill="white" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="790" y="507" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#059669">批量推理工作节点</text>
+  <text x="790" y="523" text-anchor="middle" class="small" fill="#64748b">空闲 GPU 资源 · 50% 折扣</text>
+  <rect x="680" y="555" width="220" height="50" rx="8" fill="white" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="790" y="575" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#059669">微调训练集群</text>
+  <text x="790" y="591" text-anchor="middle" class="small" fill="#64748b">LoRA / QLoRA / RLHF</text>
+  <rect x="940" y="485" width="180" height="120" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="1030" y="507" text-anchor="middle" class="label" font-size="12" font-weight="700" fill="#059669">PD 分离架构</text>
+  <text x="960" y="527" class="small" fill="#374151">┌─ Prefill Worker</text>
+  <text x="960" y="543" class="small" fill="#374151">│  (计算密集型 GEMM)</text>
+  <text x="960" y="559" class="small" fill="#374151">├─ NIXL KV 传输</text>
+  <text x="960" y="575" class="small" fill="#374151">└─ Decode Worker</text>
+  <text x="960" y="591" class="small" fill="#374151">   (内存带宽型 GEMV)</text>
+  <rect x="100" y="700" width="440" height="60" rx="8" fill="white" stroke="#ec4899" stroke-width="2" filter="url(#shadow)"/>
+  <text x="320" y="722" text-anchor="middle" class="label" font-size="14" font-weight="700" fill="#db2777">Volcano Scheduler (主调度器)</text>
+  <text x="320" y="742" text-anchor="middle" class="small" fill="#64748b">Gang Scheduling · Queue Management · Preemption · Capacity/Fair · BinPack</text>
+  <line x1="320" y1="760" x2="320" y2="775" stroke="#ec4899" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+  <text x="340" y="770" class="small" fill="#db2777">调度决策</text>
+  <rect x="100" y="778" width="440" height="48" rx="8" fill="white" stroke="#ec4899" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="320" y="798" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#db2777">HAMi Device Plugin (资源抽象)</text>
+  <text x="320" y="814" text-anchor="middle" class="small" fill="#64748b">GPU Memory Isolation · GPU Cores Quota · 多厂商适配 (NVIDIA/昇腾/海光/寒武纪)</text>
+  <rect x="100" y="830" width="440" height="36" rx="6" fill="#fdf2f8" stroke="#ec4899" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="320" y="852" text-anchor="middle" class="small" fill="#db2777">K8s 原生组件: HPA / Deployment / Service / PVC (fallback)</text>
+  <rect x="600" y="700" width="520" height="126" rx="8" fill="#fdf2f8" stroke="#ec4899" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="860" y="722" text-anchor="middle" class="label" font-size="13" font-weight="700" fill="#db2777">Volcano 联邦调度 (跨域)</text>
+  <text x="620" y="742" class="small" fill="#374151">• 全局队列资源池 · 跨域任务迁移 · 优先级抢占</text>
+  <text x="620" y="760" class="small" fill="#374151">• 多集群 AI 负载感知 (GPU 利用率/队列深度/网络延迟)</text>
+  <text x="620" y="778" class="small" fill="#374151">• 智能路由 · 成本优化 (Spot 混合调度 降本 20-40%)</text>
+  <text x="620" y="796" class="small" fill="#374151">• 故障转移 RPO&lt;1min / RTO&lt;5min · 跨域负载均衡 &lt;10% 差异</text>
+  <rect x="80" y="875" width="140" height="50" rx="8" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="150" y="900" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">PostgreSQL</text>
+  <text x="150" y="917" text-anchor="middle" class="small" fill="#64748b">元数据</text>
+  <rect x="240" y="875" width="110" height="50" rx="8" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="295" y="900" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">Redis</text>
+  <text x="295" y="917" text-anchor="middle" class="small" fill="#64748b">缓存 / 限流</text>
+  <rect x="370" y="875" width="110" height="50" rx="8" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="425" y="900" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">S3 / OSS</text>
+  <text x="425" y="917" text-anchor="middle" class="small" fill="#64748b">对象存储</text>
+  <rect x="500" y="875" width="140" height="50" rx="8" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="570" y="900" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">ClickHouse</text>
+  <text x="570" y="917" text-anchor="middle" class="small" fill="#64748b">分析 / 日志</text>
+  <rect x="660" y="875" width="110" height="50" rx="8" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="715" y="900" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">Kafka</text>
+  <text x="715" y="917" text-anchor="middle" class="small" fill="#64748b">事件流</text>
+  <rect x="790" y="875" width="140" height="50" rx="8" fill="white" stroke="#8b5cf6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="860" y="900" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">LanceDB</text>
+  <text x="860" y="917" text-anchor="middle" class="small" fill="#64748b">AI 原生数据</text>
+  <rect x="950" y="875" width="160" height="50" rx="8" fill="white" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1030" y="900" text-anchor="middle" class="label" font-size="13" font-weight="600" fill="#0f172a">Model Registry</text>
+  <text x="1030" y="917" text-anchor="middle" class="small" fill="#64748b">权重 / Checkpoint</text>
+  <rect x="100" y="1005" width="200" height="40" rx="6" fill="white" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="200" y="1024" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">Prometheus + VictoriaMetrics</text>
+  <text x="200" y="1038" text-anchor="middle" class="small" fill="#64748b">指标采集</text>
+  <rect x="330" y="1005" width="160" height="40" rx="6" fill="white" stroke="#9333ea" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="410" y="1024" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">Grafana</text>
+  <text x="410" y="1038" text-anchor="middle" class="small" fill="#64748b">仪表盘</text>
+  <rect x="520" y="1005" width="200" height="40" rx="6" fill="white" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="620" y="1024" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">OpenTelemetry + Jaeger</text>
+  <text x="620" y="1038" text-anchor="middle" class="small" fill="#64748b">分布式追踪</text>
+  <rect x="750" y="1005" width="160" height="40" rx="6" fill="white" stroke="#9333ea" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="830" y="1024" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">Loki + Alloy</text>
+  <text x="830" y="1038" text-anchor="middle" class="small" fill="#64748b">日志聚合</text>
+  <rect x="940" y="1005" width="160" height="40" rx="6" fill="white" stroke="#a855f7" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1020" y="1024" text-anchor="middle" class="label" font-size="12" font-weight="600" fill="#0f172a">Webhook 告警</text>
+  <text x="1020" y="1038" text-anchor="middle" class="small" fill="#64748b">钉钉/飞书/邮件</text>
+  <line x1="200" y1="140" x2="200" y2="155" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="420" y1="140" x2="420" y2="155" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="640" y1="140" x2="640" y2="155" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="830" y1="140" x2="830" y2="155" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1030" y1="140" x2="1030" y2="155" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="200" y1="225" x2="200" y2="240" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="420" y1="225" x2="420" y2="240" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="640" y1="225" x2="640" y2="240" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="830" y1="225" x2="830" y2="240" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1030" y1="225" x2="1030" y2="240" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="320" y1="440" x2="220" y2="455" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrow-purple)"/>
+  <line x1="600" y1="440" x2="520" y2="455" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrow-purple)"/>
+  <line x1="880" y1="440" x2="790" y2="455" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrow-purple)"/>
+  <line x1="320" y1="655" x2="320" y2="670" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <line x1="790" y1="655" x2="790" y2="670" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <line x1="320" y1="830" x2="320" y2="845" stroke="#ec4899" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+  <line x1="790" y1="830" x2="790" y2="845" stroke="#ec4899" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+  <line x1="320" y1="965" x2="320" y2="980" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="790" y1="965" x2="790" y2="980" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="40" y="1080" width="1120" height="18" rx="4" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <line x1="60" y1="1089" x2="90" y2="1089" stroke="#2563eb" stroke-width="2"/>
+  <text x="95" y="1093" class="small" fill="#475569">推理请求流</text>
+  <line x1="200" y1="1089" x2="230" y2="1089" stroke="#7c3aed" stroke-width="2"/>
+  <text x="235" y="1093" class="small" fill="#475569">控制面→数据面</text>
+  <line x1="380" y1="1089" x2="410" y2="1089" stroke="#059669" stroke-width="2"/>
+  <text x="415" y="1093" class="small" fill="#475569">数据面→调度层</text>
+  <line x1="560" y1="1089" x2="590" y2="1089" stroke="#ec4899" stroke-width="2"/>
+  <text x="595" y="1093" class="small" fill="#475569">调度层→存储层</text>
+  <line x1="740" y1="1089" x2="770" y2="1089" stroke="#6366f1" stroke-width="2"/>
+  <text x="775" y="1093" class="small" fill="#475569">指标/日志流</text>
+  <line x1="900" y1="1089" x2="930" y2="1089" stroke="#ea580c" stroke-width="2"/>
+  <text x="935" y="1093" class="small" fill="#475569">跨域联邦调度</text>
+</svg>

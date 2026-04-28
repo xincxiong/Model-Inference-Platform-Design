@@ -18,7 +18,9 @@ import (
 	"github.com/xincxiong/model-inference-platform/backend/internal/modelrouter"
 	"github.com/xincxiong/model-inference-platform/backend/internal/queue"
 	"github.com/xincxiong/model-inference-platform/backend/internal/router"
+	"github.com/xincxiong/model-inference-platform/backend/internal/semcache"
 	"github.com/xincxiong/model-inference-platform/backend/internal/store"
+	"github.com/xincxiong/model-inference-platform/backend/internal/volcano"
 	"github.com/xincxiong/model-inference-platform/backend/internal/workerpool"
 	"go.uber.org/zap"
 )
@@ -51,7 +53,24 @@ func main() {
 	}
 	defer rdb.Close()
 
-	s := &store.Store{DB: db, Redis: rdb}
+	s3Client, err := store.NewS3(cfg.S3)
+	if err != nil {
+		logger.Warn("failed to init s3 client, falling back to db file storage", zap.Error(err))
+	}
+
+	semCache, err := semcache.New(context.Background(), semcache.Config{
+		Enabled:         cfg.SemanticCache.Enabled,
+		URI:             cfg.SemanticCache.URI,
+		Table:           cfg.SemanticCache.Table,
+		EmbeddingModel:  cfg.SemanticCache.EmbeddingModel,
+		SimilarityLimit: cfg.SemanticCache.SimilarityLimit,
+		TopK:            cfg.SemanticCache.TopK,
+	}, logger)
+	if err != nil {
+		logger.Warn("semantic cache disabled: init failed", zap.Error(err))
+	}
+
+	s := &store.Store{DB: db, Redis: rdb, SemanticCache: semCache, S3: s3Client}
 
 	store.SeedModels(context.Background(), db)
 
@@ -116,6 +135,20 @@ func main() {
 	// ── Model router ──────────────────────────────────────────────────────
 	mr := modelrouter.New(db, engineRouter, logger)
 
+	// ── Volcano Client ────────────────────────────────────────────────────
+	volcanoClient, err := volcano.NewClient(logger, volcano.Config{
+		Enabled:   cfg.Volcano.Enabled,
+		Namespace: cfg.Volcano.Namespace,
+	})
+	if err != nil {
+		logger.Warn("failed to create volcano client, fine-tuning will use simulation mode", zap.Error(err))
+	}
+	if volcanoClient != nil && volcanoClient.IsEnabled() {
+		logger.Info("Volcano scheduler enabled",
+			zap.String("namespace", cfg.Volcano.Namespace),
+			zap.String("queue", cfg.Volcano.Queue))
+	}
+
 	// ── Setup inference router (data plane) ───────────────────────────────
 	r := router.SetupInferenceRouter(cfg, s, mr, hc, cb, logger)
 
@@ -134,7 +167,7 @@ func main() {
 	}()
 
 	// ── Setup management router (control plane) ───────────────────────────
-	managementRouter := router.SetupManagementRouter(cfg, s, mr, hc, cb, hamiScheduler, logger)
+	managementRouter := router.SetupManagementRouter(cfg, s, mr, hc, cb, hamiScheduler, volcanoClient, logger)
 	managementSrv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.ManagementPort),
 		Handler:      managementRouter,

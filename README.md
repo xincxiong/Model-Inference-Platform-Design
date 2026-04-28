@@ -42,7 +42,7 @@
 
 > Text-to-Text · Vision · Embedding · Rerank · Text-to-Image · Text-to-Video · Speech
 
-**系统架构**：云原生微服务，7 层分层（接入层 → 网关路由 → 控制面 → 数据面 → 调度编排 → 存储数据 → 可观测性）
+**系统架构**：云原生微服务，7 层分层（接入层 → 网关路由 → 控制面 → 数据面 → 调度编排 → 存储数据 → 可观测性）；调度与编排层采用 HAMi + Volcano 联合方案为主，K8s 原生组件为辅
 
 **技术选型**：
 
@@ -53,7 +53,7 @@
 | 后端 | Go (Gin) · Kong/Envoy · Temporal · Kafka |
 | 前端 | React 19 · Next.js 15 · TailwindCSS · Monaco Editor |
 | 存储 | PostgreSQL 16 · Redis 7 · ClickHouse · S3 · Lance/LanceDB |
-| 基础设施 | Kubernetes · GPU Operator · KEDA · Volcano |
+| 基础设施 | Kubernetes · GPU Operator · HAMi · Volcano · K8s 原生组件 (HPA/Deployment/Service) |
 | 可观测性 | Prometheus · Grafana · OpenTelemetry · Loki |
 
 ## 实施路线图
@@ -126,6 +126,48 @@ cd model-inference-platform
 docker compose up -d
 ```
 
+## Volcano 微调调度（Phase 3）
+
+[Volcano](https://volcano.sh/) 提供微调/批训练的 Gang Scheduling、队列隔离与抢占策略，与 HAMi GPU 虚拟化协同：HAMi 负责 GPU 资源切分，Volcano 负责队列管理与并行调度。
+
+### 快速部署
+
+```bash
+cd model-inference-platform/deploy/volcano
+./install.sh
+# 查看 Volcano 组件
+kubectl get pods -n volcano-system
+# 查看默认队列
+kubectl get queue inference-platform-queue
+```
+
+### 后端环境变量
+
+```bash
+# 启用 Volcano 集成（默认 false 为本地模拟）
+VOLCANO_ENABLED=true
+# VolcanoJob 所在命名空间（默认 inference-platform）
+VOLCANO_NAMESPACE=inference-platform
+# Gang 队列名称（默认 inference-platform-queue）
+VOLCANO_QUEUE=inference-platform-queue
+# 训练镜像（默认 pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime）
+VOLCANO_JOB_IMAGE=pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+# Gang 最小可用副本（可选，未设置时使用 GPU 数量）
+VOLCANO_MIN_AVAILABLE=4
+# 作业完成后清理的 TTL（秒，默认 604800 = 7 天）
+VOLCANO_TTL_SECONDS=604800
+# 高优先级队列的 PriorityClass（可选）
+VOLCANO_PRIORITY_CLASS=high-priority
+# HAMi 调度策略：spread | binpack | topology-aware（默认 spread）
+VOLCANO_SCHEDULER_POLICY=spread
+```
+
+### 示例作业
+
+```bash
+kubectl apply -f deploy/volcano/volcano-job-examples.yaml
+```
+
 ## 推理引擎配置
 
 平台支持多种推理引擎，用户可根据需求自由选择：
@@ -194,10 +236,14 @@ deploy/
 │   ├── frontend-deployment.yaml
 │   ├── ingress.yaml            # Nginx Ingress + HPA
 │   └── vllm-worker.yaml        # vLLM Worker + HAMi GPU 资源声明示例
-└── hami/
-    ├── values.yaml             # HAMi Helm Chart 配置
-    ├── gpu-operator-values.yaml # NVIDIA GPU Operator 配置
-    └── install.sh              # 一键安装脚本（7 步）
+├── hami/
+│   ├── values.yaml             # HAMi Helm Chart 配置
+│   ├── gpu-operator-values.yaml # NVIDIA GPU Operator 配置
+│   └── install.sh              # 一键安装脚本（7 步）
+└── volcano/
+    ├── values.yaml             # Volcano Helm 配置（Gang 调度 + Queue）
+    ├── volcano-job-examples.yaml # 微调/全量训练示例 Job
+    └── install.sh              # 一键安装脚本
 ```
 
 ## 竞品对比
