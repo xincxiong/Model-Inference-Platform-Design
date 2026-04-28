@@ -62,10 +62,6 @@ func main() {
 	cb := circuitbreaker.New(circuitbreaker.DefaultConfig())
 
 	// ── HAMi Scheduler ────────────────────────────────────────────────────
-	// Reads HAMI_ENABLED and HAMI_SCHEDULER_ENDPOINT from environment.
-	// In local dev (HAMI_ENABLED=false), uses stub mode: scheduling calls
-	// succeed immediately without connecting to a real HAMi instance.
-	// In production Kubernetes (HAMI_ENABLED=true), connects to HAMi extender.
 	hamiScheduler := hami.NewScheduler(logger)
 	if hamiScheduler.IsEnabled() {
 		logger.Info("HAMi scheduler enabled",
@@ -102,65 +98,39 @@ func main() {
 	defer cancel()
 	consumer.Start(ctx)
 
-	// ── Inference engine (Multi-engine router) ─────────────────────────────
-	// Supports vLLM, SGLang, Mock, and custom engines.
-	// Configuration via environment variables:
-	//   - INFERENCE_ENGINE=vllm|sglang|mock|custom (default: vllm)
-	//   - VLLM_ENDPOINT=http://localhost:8000
-	//   - SGLANG_ENDPOINT=http://localhost:30000
-	//   - CUSTOM_ENGINE_<MODEL_ID>=<URL> (per-model override)
-	//
-	// When no real engine endpoint is configured, falls back to Mock.
+	// ── Inference engine (Multi-engine router) ────────────────────────────
+	// Management server needs engine router for model resolution validation
 	engineRouter := engine.NewMultiEngineRouter(db, engine.DefaultRouterConfig(), logger)
 
 	// ── Model router ──────────────────────────────────────────────────────
 	mr := modelrouter.New(db, engineRouter, logger)
 
-	// ── Setup inference router (data plane) ───────────────────────────────
-	r := router.SetupInferenceRouter(cfg, s, mr, hc, cb, logger)
+	// ── Setup management router (control plane) ───────────────────────────
+	r := router.SetupManagementRouter(cfg, s, mr, hc, cb, hamiScheduler, logger)
 
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.ServerPort),
+		Addr:         fmt.Sprintf(":%d", cfg.ManagementPort),
 		Handler:      r,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 120 * time.Second,
 	}
 
 	go func() {
-		logger.Info("inference server starting", zap.Int("port", cfg.ServerPort))
+		logger.Info("management server starting", zap.Int("port", cfg.ManagementPort))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatal("server error", zap.Error(err))
-		}
-	}()
-
-	// ── Setup management router (control plane) ───────────────────────────
-	managementRouter := router.SetupManagementRouter(cfg, s, mr, hc, cb, hamiScheduler, logger)
-	managementSrv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.ManagementPort),
-		Handler:      managementRouter,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 120 * time.Second,
-	}
-
-	go func() {
-		logger.Info("management server starting", zap.Int("port", cfg.ManagementPort))
-		if err := managementSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("management server error", zap.Error(err))
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	logger.Info("shutting down servers...")
+	logger.Info("shutting down management server...")
 
 	shutCtx, shutCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutCancel()
 	if err := srv.Shutdown(shutCtx); err != nil {
 		logger.Fatal("server forced to shutdown", zap.Error(err))
 	}
-	if err := managementSrv.Shutdown(shutCtx); err != nil {
-		logger.Fatal("management server forced to shutdown", zap.Error(err))
-	}
-	logger.Info("servers exited")
+	logger.Info("management server exited")
 }

@@ -48,7 +48,7 @@ type Pool struct {
 	mu          sync.Mutex
 	localCB     map[string]int
 	hamiClient  *hami.Scheduler
-	k8sWatcher *K8sWatcher
+	k8sWatcher *hami.K8sWatcher
 }
 
 func New(rdb *redis.Client, logger *zap.Logger, hamiClient *hami.Scheduler) *Pool {
@@ -61,7 +61,7 @@ func New(rdb *redis.Client, logger *zap.Logger, hamiClient *hami.Scheduler) *Poo
 	}
 	
 	if hamiClient != nil {
-		p.k8sWatcher = NewK8sWatcher(logger, p)
+		p.k8sWatcher = hami.NewK8sWatcher(logger, p)
 	}
 	
 	return p
