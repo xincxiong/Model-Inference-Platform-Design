@@ -4,23 +4,24 @@
 
 <h1 align="center">Model Inference Platform</h1>
 
-<p align="center"><strong>Phase 1–2</strong> · 模型推理云平台</p>
+<p align="center"><strong>Phase 1–3</strong> · 模型推理云平台</p>
 
-模型推理云平台：Phase 1 MVP + Phase 2 专属端点与微调（管理面 `/v0`、OpenAI 风格微调任务 API）。
+模型推理云平台：Phase 1 MVP + Phase 2 专属端点与微调 + Phase 3 多引擎支持、HAMi GPU 虚拟化、控制面/数据面分离。
 
 **Logo 含义**：深蓝圆角底座象征稳定云底座；上方三节点汇聚到中心端点，表示多模型路由与统一推理出口；顶部箭头暗示请求流入与低延迟响应。青蓝配色与控制台强调色一致。README 使用 **PNG** 以保证在 GitHub 上稳定显示。
 
 ## Quick Start
 
 ```bash
-# 启动所有服务 (PostgreSQL + Redis + Backend + Frontend + Prometheus + Grafana)
+# 启动所有服务 (PostgreSQL + Redis + Inference Server + Management Server + Frontend + Prometheus + Grafana)
 docker-compose up --build
 
 # 访问
-# - Frontend Console: http://localhost:3000
-# - Backend API:      http://localhost:8080
-# - Prometheus:       http://localhost:9090
-# - Grafana:          http://localhost:3001 (admin/admin)
+# - Frontend Console:    http://localhost:3000
+# - Inference Server:    http://localhost:8080
+# - Management Server:   http://localhost:8081
+# - Prometheus:          http://localhost:9090
+# - Grafana:             http://localhost:3001 (admin/admin)
 ```
 
 ## 项目结构
@@ -28,6 +29,21 @@ docker-compose up --build
 ```
 ├── assets/           品牌资源（logo.png）
 ├── backend/          Go API 服务 (Gin)
+│   ├── cmd/
+│   │   ├── inference-server/    推理数据面（/v1/chat/completions 等）
+│   │   ├── management-server/   控制面（/v0/dedicated_endpoints 等）
+│   │   └── server/              单体模式（同时启动两个服务）
+│   ├── internal/
+│   │   ├── engine/              多推理引擎（vLLM/SGLang/Mock/Custom）
+│   │   ├── hami/                HAMi GPU 虚拟化调度
+│   │   ├── handler/             HTTP 处理器（17 个）
+│   │   ├── modelrouter/         模型路由与解析
+│   │   ├── router/              路由注册（分离为两个函数）
+│   │   ├── store/               数据访问层（PostgreSQL + Redis）
+│   │   └── ...
+│   └── deploy/
+│       ├── kubernetes/          K8s 部署清单（11 个 YAML）
+│       └── hami/                HAMi Helm Chart 配置
 ├── frontend/         Next.js 15 控制台
 ├── monitoring/       Prometheus + Grafana 配置
 ├── docs/             迁移指南
@@ -36,7 +52,7 @@ docker-compose up --build
 
 ## API Endpoints
 
-### Inference (OpenAI Compatible)
+### Inference (OpenAI Compatible) — Inference Server (port 8080)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|

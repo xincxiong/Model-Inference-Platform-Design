@@ -121,7 +121,7 @@ export function Sidebar() {
       </nav>
 
       <div className="px-6 py-4 border-t border-[var(--border-light)]">
-        <p className="text-[11px] text-[var(--text-muted)]">Phase 2 完成 · v0.2.0</p>
+        <p className="text-[11px] text-[var(--text-muted)]">Phase 3 进行中 · v0.3.0</p>
       </div>
     </aside>
   )
