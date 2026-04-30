@@ -537,10 +537,10 @@ code {
       一站式模型推理云平台产品方案 — 涵盖功能设计、系统架构与技术选型的完整蓝图，支持从快速实验到生产级部署的全生命周期
     </p>
     <div class="meta">
-      <span>架构设计 v2.3</span>
-      <span>2026-04-26</span>
+      <span>架构设计 v2.6</span>
+      <span>2026-04-30</span>
       <span>产品架构方案</span>
-      <span>Phase 1 ✅ · Phase 2 ✅ · Phase 3 🚀（HAMi ✅ · K8s ✅ · 多引擎 ✅）</span>
+      <span>Phase 1 ✅ · Phase 2 ✅ · Phase 3 🚀（HAMi ✅ · K8s ✅ · 多引擎 ✅ · 前端新增功能 ✅）</span>
     </div>
   </div>
 </header>
@@ -570,7 +570,7 @@ code {
 
   <div class="stats-row">
     <div class="stat-card">
-      <div class="stat-value v-blue">15</div>
+      <div class="stat-value v-blue">17</div>
       <div class="stat-label">核心功能模块</div>
     </div>
     <div class="stat-card">
@@ -2118,8 +2118,21 @@ code {
         <li><strong style="color: var(--accent-emerald);">✅ HAMi GPU 虚拟化集成</strong>: internal/hami/ 包（types/client/scheduler）；Binpack/Spread/Topology-aware 三种调度策略；GPU 内存硬隔离（nvidia.com/gpumem MiB）+ 算力配额（nvidia.com/gpucores %）；HAMI_ENABLED=false 自动 Stub 降级；dedicated_endpoints 表新增 7 个 GPU 资源字段</li>
         <li><strong style="color: var(--accent-emerald);">✅ Kubernetes 部署层</strong>: deploy/kubernetes/（9 个 YAML 文件：namespace/configmap/secrets/postgres/redis/backend/frontend/ingress/vllm-worker）；deploy/hami/（HAMi Helm values + GPU Operator values + 一键安装脚本）；vLLM Worker 含 HAMi GPU 资源声明示例（nvidia.com/gpumem: 20480 / gpucores: 60）</li>
         <li><strong style="color: var(--accent-emerald);">✅ 多推理引擎支持</strong>: internal/engine/vllm.go（vLLM OpenAI-compatible 客户端）；internal/engine/sglang.go（SGLang OpenAI-compatible 客户端 + RadixAttention）；internal/engine/router.go（多引擎路由器）；环境变量配置（INFERENCE_ENGINE/VLLM_ENDPOINT/SGLANG_ENDPOINT/CUSTOM_ENGINE_<MODEL_ID>）；models 表新增 engine_type/engine_addr；默认 Mock fallback</li>
+        <li><strong style="color: var(--accent-emerald);">✅ 控制面/数据面分离</strong>: cmd/inference-server（推理数据面，端口 8080）；cmd/management-server（管理控制面，端口 8081）；router 拆分为 SetupInferenceRouter 和 SetupManagementRouter；故障隔离、独立扩缩容</li>
+        <li><strong style="color: var(--accent-emerald);">✅ Volcano 微调调度</strong>: internal/volcano/ 客户端；支持可配置队列/命名空间/Gang 调度；deploy/volcano/（install.sh + values.yaml + job examples）</li>
+        <li><strong style="color: var(--accent-emerald);">✅ 多集群 Volcano 调度与跨域算力管理</strong>: internal/volcano/multi_cluster.go；集群选择策略（区域/可用区过滤 → GPU 最多集群 → 主集群兜底）；资源使用跟踪（ClusterUsage）；跨集群提交（SubmitJobAcrossClusters）</li>
+        <li><strong style="color: var(--accent-emerald);">✅ S3 对象存储集成</strong>: config.S3 配置结构体；internal/storage/s3store.go（MinIO/S3 兼容客户端）；FilesHandler 优先走 S3，失败回退 DB</li>
+        <li><strong style="color: var(--accent-emerald);">✅ 语义缓存（Semantic Cache）</strong>: config.SemanticCache 配置；internal/semcache/cache.go（纯 Go 内存 LRU 淘汰）；集成到 ChatCompletionsHandler 和 CompletionsHandler</li>
+        <li><strong style="color: var(--accent-emerald);">✅ Video/Speech Handler</strong>: /v1/videos/generations（视频生成）；/v1/audio/transcriptions（语音转文本）；/v1/audio/speech（文本转语音）</li>
+        <li><strong style="color: var(--accent-emerald);">✅ 前端新增功能（4 个页面）</strong>: 
+          <ul style="margin-top: 4px; margin-left: 16px;">
+            <li><strong>/observability（可观测性）</strong>: 6 个关键指标卡片（RPM/TPM/TTFT/错误率/GPU 利用率/活跃副本）；时间范围选择（15m/1h/6h/24h）；延迟/吞吐量/错误率三个标签页；GPU 节点利用率监控；端点状态监控</li>
+            <li><strong>/datalab（数据实验室）</strong>: 推理日志浏览（50 条模拟日志，分页）；SQL 查询编辑器（支持编写和运行查询）；数据集管理（Lance/JSONL/Parquet 格式支持，CRUD + 导出）</li>
+            <li><strong>/costs（成本分析）</strong>: 费用概览（本月累计/今日花费/预计月度/平均单价）；每日成本趋势（近 30 天，支持按模型拆分）；费用预测（未来 6 个月，基准/乐观/悲观场景）；预算管理（生产/开发/训练独立预算，阈值告警）</li>
+            <li><strong>/compare（模型对比）</strong>: 模型选择器（2-6 个模型）；基准评测对比（MMLU/HumanEval/GSM8K/MATH/C-Eval）；性能指标对比（TTFT/TPS/上下文窗口）；成本效益分析（定价对比/性价比评分/场景成本估算）</li>
+          </ul>
+        </li>
         <li><strong>共享推理集群分布式架构</strong>: Redis Cluster（多节点分布式缓存高可用）；多区域数据中心（跨 AZ/Kubernetes Cluster 主备自动切换）；请求追踪（OpenTelemetry 全链路延迟定位）；智能路由（跨域流量调度，单区域过载自动跨域）</li>
-        <li><strong>语义缓存</strong>: LanceDB 向量近邻检索，cosine > 0.97 直接复用结果；动态 TTL 管理；命中率提升 40-80%，命中延迟 <1ms；缓存热力图可视化</li>
         <li><strong>智能路由</strong>: Query 复杂度评分器（轻量 BERT 分类器）自动选择模型档位（7B/32B/70B+）；用户侧透明；成本降低 50-70%</li>
         <li><strong>LLM-as-Judge 自动评估</strong>: 用 GPT-4o/Claude 对生产流量质量打分；构建持续质量监控仪表盘；自动检测质量下降告警；支持自定义 Judge 模型</li>
         <li><strong>数据飞轮</strong>: 生产日志 → 难样本挖掘 → 数据标注 → 微调 → 评测 → 部署全闭环；自动生成微调数据集；质量提升数据可视化</li>
@@ -2127,16 +2140,11 @@ code {
         <li><strong>私有模型托管 (BYOM)</strong>: 用户上传自有权重获得隔离推理端点；支持 GGUF / SafeTensors / AWQ；一键从 HuggingFace/ModelScope 导入；与微调数据隔离</li>
         <li><strong>Webhook 集成</strong>: 任务完成自动回调用户系统；支持重试机制；签名验证保障安全；事件订阅（微调完成/端点状态变更）</li>
         <li><strong>自定义域名</strong>: 用户绑定自有域名访问端点；SSL 证书自动签发；CNAME 配置指引；支持多域名绑定</li>
-        <li>Data Lab 推理日志采集与 SQL 查询系统</li>
-        <li>完整的可观测性面板 (延迟/吞吐/错误/伸缩)</li>
         <li>Prometheus API 导出 + Grafana 集成</li>
         <li>第三方集成生态: 框架 (LangChain, LlamaIndex, CrewAI 等)、Coding Assistants (Cursor, Continue, Cline)、API Routers</li>
-        <li>Embedding + Rerank (/v1/rerank) 模型支持</li>
-        <li>Text-to-Image 模型支持</li>
         <li>Prompt Preset 管理与团队共享</li>
         <li>Cookbook 开发者示例库上线 (GitHub 开源)</li>
         <li><strong>CLI 命令行工具</strong>: Go 单二进制，覆盖推理/微调/批量/端点/数据集全流程；Homebrew/npm/pip/Docker 多渠道分发；交互式 REPL + CI/CD 脚本化双模式</li>
-        <li>Chat Completions 日志导入 Data Lab</li>
         <li>PD 分离部署 + NVIDIA Dynamo 编排 + KV-aware 路由</li>
         <li>MoE 弹性专家并行 + DeepEP 通信优化</li>
       </ul>
@@ -2466,7 +2474,7 @@ code {
 </main>
 
 <footer style="text-align: center; padding: 48px 24px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.85rem;">
-  Model Inference Cloud Platform — Architecture Design Document v2.3 &nbsp;|&nbsp; 2026-04-26 &nbsp;|&nbsp; Phase 1 ✅ · Phase 2 ✅ · Phase 3 🚀（HAMi ✅ · K8s ✅ · 多引擎 ✅）
+  Model Inference Cloud Platform — Architecture Design Document v2.6 &nbsp;|&nbsp; 2026-04-30 &nbsp;|&nbsp; Phase 1 ✅ · Phase 2 ✅ · Phase 3 🚀（HAMi ✅ · K8s ✅ · 多引擎 ✅ · 前端新增功能 ✅）
 </footer>
 
 <script>
