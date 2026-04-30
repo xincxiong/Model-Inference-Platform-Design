@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { LineChart, BarChart } from '@/components/charts'
 
 // ── Mock cost data ───────────────────────────────────────────────────────────
@@ -238,10 +238,23 @@ function StatCard({ label, value, color, sub }: { label: string; value: string; 
   )
 }
 
-// ── Stacked bar chart by model (SVG) ──────────────────────────────────────────
+// ── Stacked bar chart by model (SVG, responsive) ──────────────────────────────
 function StackedBarChart({ dailyCost, models }: { dailyCost: { date: string; cost: number }[]; models: { name: string; color: string }[] }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerW, setContainerW] = useState(800)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setContainerW(Math.max(entry.contentRect.width, 300))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const pad = 40
-  const w = 800
+  const w = containerW
   const h = 210
   const chartH = 180
   const maxV = Math.max(...dailyCost.map(d => d.cost))
@@ -256,7 +269,7 @@ function StackedBarChart({ dailyCost, models }: { dailyCost: { date: string; cos
   })
 
   return (
-    <div className="overflow-x-auto">
+    <div ref={containerRef} className="w-full overflow-x-auto">
       <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ maxHeight: `${h}px` }}>
         {gridLines.map((g, i) => (
           <g key={i}>
@@ -275,8 +288,7 @@ function StackedBarChart({ dailyCost, models }: { dailyCost: { date: string; cos
           })
           return <g key={i}>{segs}</g>
         })}
-        {/* x labels */}
-        {bars.filter((_, i) => i % 5 === 0).map((b, i, a) => {
+        {bars.filter((_, i) => i % 5 === 0).map((b, i) => {
           const idx = bars.indexOf(b)
           const x = pad + (idx / bars.length) * (w - pad - 10)
           return <text key={i} x={x + barW / 2} y={h - 2} textAnchor="middle" fill="var(--text-muted)" fontSize="9">{b.date}</text>
