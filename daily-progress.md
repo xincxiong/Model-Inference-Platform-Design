@@ -2,6 +2,223 @@
 
 - 记录口径：每日收尾时按日期追加，简述当日可交付变更，方便事后追溯。
 
+### 2026-04-30（下午/晚间）
+- **前端新增功能后端支持验证**
+  - 验证范围：可观测性、数据实验室、成本分析、模型对比四大模块
+  - 生成详细验证报告：`docs/前端新增功能-后端支持验证报告.md`
+  
+- **后端支持现状总览**
+  - 可观测性：30% 支持（Prometheus 端点已配置，缺少推理指标收集、日志查询、GPU 监控）
+  - 数据实验室：70% 支持（Datasets API 完整，缺少推理日志存储、Lance 格式支持）
+  - 成本分析：40% 支持（基础用量统计 API 已就绪，缺少预算管理、费用预测、优化建议）
+  - 模型对比：10% 支持（几乎全部缺失，缺少基准数据、对比 API）
+  - 平均支持度：37.5%
+
+- **已支持功能清单 ✅**
+  - Prometheus 指标导出：`GET /metrics`（数据面/管理面均已配置）
+  - 基础用量统计：`GET /api/usage`（余额、总花费、每日分解、按模型分解）
+  - Datasets API：完整 CRUD + 导出 + SQL 查询（`/v1/datasets`）
+  - 健康检查：`GET /health/*`（Live/Ready/熔断器状态）
+  - Promo Code：`POST /api/billing/redeem`（推广码兑换）
+
+- **待开发功能清单 ❌（按优先级排序）**
+
+  **P0 - 立即开发（预计 10.5 天）**
+  1. 推理指标收集中间件（2 天）
+     - 在推理请求时自动收集 TTFT、TPS、错误率、Token 数
+     - 创建 `internal/middleware/metrics.go`
+     - 集成到 ChatCompletionsHandler 和 CompletionsHandler
+  
+  2. 推理日志存储（1.5 天）
+     - 设计 `inference_logs` 表（user_id/model/timestamp/input_tokens/output_tokens/ttft_ms/tps/total_latency_ms/status_code/input_text/output_text/metadata）
+     - 创建数据库迁移脚本
+     - 实现日志写入逻辑
+  
+  3. 可观测性查询 API（2 天）
+     - 支持时间范围、模型过滤、分页查询指标
+     - API: `GET /api/observability/logs?model=xxx&start_time=xxx&end_time=xxx&page=1&limit=50`
+  
+  4. 推理日志查询 API（1.5 天）
+     - 支持按模型/时间/项目/API Key 过滤 + 分页
+     - API: `GET /api/datalab/logs`
+  
+  5. 预算 CRUD API（2 天）
+     - 设计 `budgets` 表（user_id/name/limit_amount/spent_amount/period/alert_thresholds）
+     - 实现创建/查询/更新/删除
+     - API: `GET/POST/PATCH/DELETE /api/budgets`
+  
+  6. 模型基准数据表（1 天）
+     - 设计 `model_benchmarks` 表（model_name/provider/mmlu/humaneval/gsm8k/math/ceval/avg_ttft_ms/avg_tps/context_window/input_price_per_m/output_price_per_m）
+     - 录入主流模型评测数据（DeepSeek-V3/Qwen3.5-72B/GLM-5/Llama-4-70B/Kimi-K2.5/豆包 2.0）
+  
+  7. 模型对比 API（1.5 天）
+     - 获取多模型对比数据（基准/性能/成本）
+     - API: `GET /api/compare?models=ds,qw,ll`
+
+  **P1 - 本周内完成（预计 8 天）**
+  8. GPU 节点状态查询（2 天）
+     - 集成 K8s API 查询 GPU 节点利用率和显存
+     - API: `GET /api/observability/gpu-nodes`
+  
+  9. 端点副本状态查询（1 天）
+     - 查询端点运行状态和副本数
+     - API: `GET /api/observability/endpoints`
+  
+  10. Lance/LanceDB 集成（3 天）
+      - 使用 Lance 格式存储推理日志
+      - 支持向量混合查询
+      - 实现数据集版本管理
+  
+  11. 费用预测服务（2 天）
+      - 基于历史数据的简单预测算法
+      - 支持基准/乐观/悲观三种场景
+      - API: `GET /api/costs/forecast?months=6`
+  
+  12. 第三方评测数据集成（2 天）
+      - 自动同步 OpenCompass/HELM 等评测数据
+      - 定期更新模型基准数据
+
+  **P2 - 下周完成（预计 7 天）**
+  13. Prometheus 自定义指标（1 天）
+      - 暴露 TTFT/TPS/GPU 利用率等自定义指标
+  
+  14. 状态码分布统计（0.5 天）
+      - 按 HTTP 状态码分组统计请求数
+  
+  15. 数据标注功能（2 天）
+      - 支持对推理日志进行标注和筛选
+  
+  16. 预算阈值告警（2 天）
+      - 定时检查预算使用率
+      - 触发邮件/Webhook 通知
+  
+  17. 成本优化建议（2 天）
+      - 模型替换建议算法
+      - 语义缓存收益估算
+      - 批量任务迁移建议
+  
+  18. 专属端点成本分析（1.5 天）
+      - 分析高频率调用是否适合专属端点
+
+- **数据库设计建议**
+  ```sql
+  -- 推理日志表
+  CREATE TABLE inference_logs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL,
+      model VARCHAR(255) NOT NULL,
+      endpoint_id UUID,
+      timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
+      input_tokens INT NOT NULL,
+      output_tokens INT NOT NULL,
+      ttft_ms FLOAT,
+      tps FLOAT,
+      total_latency_ms FLOAT,
+      status_code INT NOT NULL,
+      input_text TEXT,
+      output_text TEXT,
+      metadata JSONB
+  );
+  
+  -- 预算表
+  CREATE TABLE budgets (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      limit_amount FLOAT NOT NULL,
+      spent_amount FLOAT DEFAULT 0,
+      period VARCHAR(50) NOT NULL,
+      alert_thresholds INT[] DEFAULT '{50,80,100}',
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+  );
+  
+  -- 模型基准评测表
+  CREATE TABLE model_benchmarks (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      model_name VARCHAR(255) NOT NULL UNIQUE,
+      provider VARCHAR(255),
+      mmlu FLOAT,
+      humaneval FLOAT,
+      gsm8k FLOAT,
+      math FLOAT,
+      ceval FLOAT,
+      avg_ttft_ms FLOAT,
+      avg_tps FLOAT,
+      context_window VARCHAR(50),
+      input_price_per_m FLOAT,
+      output_price_per_m FLOAT,
+      updated_at TIMESTAMP DEFAULT NOW()
+  );
+  ```
+
+- **下一步行动**
+  1. 立即启动 P0 功能开发（推理日志存储 + 指标收集 + 预算 API）
+  2. 前端改造：后端 API 就绪后，将 Mock 数据替换为真实 API 调用
+  3. 更新产品文档至 v2.6（已完成）
+  4. 详细验证报告见：`docs/前端新增功能-后端支持验证报告.md`
+
+- **Phase 3 UI 审查（03-UI-REVIEW.md）**
+  - 审查范围：`/observability`、`/datalab`、`/costs`、`/compare` 四个新增页面
+  - 总体评分：**15/24**（62.5 分）
+  
+  **六大维度评分**：
+  | 维度 | 得分 | 核心问题 |
+  |------|------|---------|
+  | 文案 | 3/4 | 中文标签一致，但部分内联样式缺少 aria-labels |
+  | 视觉 | 3/4 | 卡片/表格层级清晰，但移动端侧边栏独占、内容区空白 |
+  | 颜色 | 3/4 | CSS 变量使用一致，但数据模型有 12 个硬编码颜色 |
+  | 排版 | 2/4 | 使用 `text-[10px]` 和 `text-[11px]` 任意值，超出设计系统规范 |
+  | 间距 | 2/4 | Tailwind 比例一致，但图表 SVG 硬编码 `viewBox="0 0 800"` 限制响应式 |
+  | 体验设计 | 2/4 | **无加载/错误/空状态** — 所有页面都假设有数据 |
+
+  **🔴 三大优先级修复**：
+  1. **缺少加载/错误/空状态**（P0）
+     - 添加加载骨架屏
+     - 添加空状态插图和引导文本
+     - 添加错误边界和重试按钮
+  
+  2. **图表硬编码 800px viewBox，移动端崩溃**（P0）
+     - 动态 viewBox 或百分比宽度 + `preserveAspectRatio`
+     - 修复 `min-w-[500px]` 导致的横向滚动
+  
+  3. **任意字体大小违反排版规范**（P1）
+     - `text-[10px]` 和 `text-[11px]` 映射到设计令牌
+     - 标准化为 `text-xs` 或扩展 Tailwind 配置
+
+  **其他关键问题**：
+  - 删除操作无确认对话框（`datalab/page.tsx`）
+  - 编辑按钮无功能（`costs/page.tsx`）
+  - 图表无 tooltip/hover 交互
+  - 移动端响应式布局问题（侧边栏固定 240px）
+  
+  **详细审查报告**：`03-UI-REVIEW.md`
+
+- **明日开发评估计划（2026-05-01）**
+  1. 评估 UI 审查问题的修复工作量
+  2. 确定 P0 后端功能开发优先级
+  3. 制定前后端联调计划
+  4. 评估 Lance/LanceDB 集成方案
+
+### 2026-04-30（上午）
+- **竞品调研：火山方舟（Volcengine Ark）**
+  - 全面调研火山方舟平台产品，覆盖产品概述、核心功能、架构设计、产品优势等
+  - 核心功能模块：模型推理服务（在线推理/批量推理/模型单元）、模型精调与定制（SFT/DPO/RL）、多模态能力（文本/图片/视频/3D）、智能体与工具调用（Function Calling/MCP/知识库）、高级特性（Context API/流式输出/结构化输出/Prompt 工程）、RAG 解决方案
+  - 产品架构：五层逻辑架构（接入层→调度与优化层→推理与计算层→精调与数据层→安全与治理层）
+  - 产品优势：字节内部实践沉淀（豆包/抖音/飞书亿级用户场景验证）、全生命周期覆盖、自研推理加速引擎（vLLM 深度优化/KV Cache 优化/动态批处理）、无缝集成火山引擎生态
+  - 生成详细调研报告：`docs/火山方舟平台产品调研报告.md`
+- **竞品调研：腾讯云大模型服务平台 TokenHub**
+  - 全面调研腾讯云 TokenHub 平台，覆盖产品概述、核心功能、模型列表、计费模式等
+  - 核心功能模块：模型广场、体验中心、AI 创作、在线推理、模型监控（TTFT/TPOT/RPM）、用量统计、API Key 管理、Token Plan、Coding Plan
+  - 支持的模型：腾讯混元（Hy3/HY 2.0/Hunyuan-role）、DeepSeek（V4/v3.2/v3.1/r1/v3）、智谱 GLM（5.1/5V-Turbo/5）、Kimi（K2.6/K2.5）、MiniMax（M2.7/M2.5）、优图视频生成、混元图像/3D 生成
+  - 核心能力对比：深度思考、联网搜索、结构化输出、Function Calling、Cache 缓存
+  - 计费模式：按量计费（Token/张/秒）+ 订阅套餐（Token Plan/Coding Plan）+ 新人免费体验包
+  - 生成详细调研报告：`docs/腾讯云大模型服务平台TokenHub产品调研报告.md`
+- **MRD 文档更新**
+  - 更新 `docs/MRD-市场需求文档.md` 竞品分析章节（3.2 国产竞品）
+  - 新增火山方舟竞品分析：定位、优势（字节实践/全生命周期/Context API/智能路由/MCP 协议/自研加速引擎）、劣势（绑定火山引擎生态/数据需上传云端）、我们的差异化（厂商中立 + 私有化部署 + Lance 数据版本管理 + 混合架构支持）
+  - 新增腾讯云 TokenHub 竞品分析：定位、优势（模型聚合丰富/OpenAI 协议兼容/TTFT/TPOT 监控/API Key 精细化权限/体验中心）、劣势（无精调能力/无智能体生态/无私有化部署）、我们的差异化（全链路闭环 + 智能体构建 + 私有化部署 + 国产化深度适配）
+
 ### 2026-04-29（下午/晚间）
 - **S3 对象存储集成**
   - 新增 `config.S3` 配置结构体（S3_ENABLED/ENDPOINT/BUCKET/REGION/ACCESS_KEY/SECRET_KEY/S3_PATH_STYLE）

@@ -95,7 +95,7 @@ export function Sidebar() {
         </div>
         <div>
           <h1 className="text-sm font-semibold text-[var(--text)]">Inference Platform</h1>
-          <p className="text-[11px] text-[var(--text-muted)]">Cloud Console</p>
+          <p className="text-[11px] text-[var(--text-muted)]">Token Factory</p>
         </div>
       </div>
 

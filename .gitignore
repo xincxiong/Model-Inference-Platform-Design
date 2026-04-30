@@ -40,3 +40,4 @@ npm-debug.log*
 
 # 独立项目（本仓库不包含）
 modelfactory/
+.gstack/
