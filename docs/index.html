@@ -241,19 +241,20 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 <section class="hero">
   <div class="container hero-inner">
     <img class="hero-logo" src="assets/logo.png" width="112" height="112" alt="Model Inference Platform">
-    <div class="hero-badge"><span class="pulse"></span>Vendor-Neutral · AI-Native Data · Production Ready</div>
+    <div class="hero-badge"><span class="pulse"></span>Vendor-Neutral · AI-Native Data · Phase 3 In Progress</div>
     <h1>
       <span class="gradient">Model Inference</span><br>Cloud Platform
     </h1>
     <p class="subtitle">
-      厂商中立的一站式模型推理云平台 — 全链路闭环 + AI 原生数据底座 + 国产化适配。<br>Lance/LanceDB 驱动的智能数据层，兼容 OpenAI API，从实验到生产的完整能力。
+      厂商中立的一站式模型推理云平台 — 全链路闭环 + AI 原生数据底座 + 国产化适配。<br>兼容 OpenAI API，从实验到生产的完整能力，新增可观测性、数据实验室、成本分析与模型对比。
     </p>
     <div class="value-props">
-      <div class="vp"><span class="check">✓</span> 推理→Data Lab→微调→部署闭环</div>
+      <div class="vp"><span class="check">✓</span> 推理→数据→微调→部署闭环</div>
       <div class="vp"><span class="check">✓</span> Lance/LanceDB AI 原生数据底座</div>
+      <div class="vp"><span class="check">✓</span> 可观测性 · 成本分析 · 模型对比</div>
       <div class="vp"><span class="check">✓</span> 华为昇腾/海光/寒武纪 国产 GPU</div>
       <div class="vp"><span class="check">✓</span> 不绑定模型·不绑定云</div>
-      <div class="vp"><span class="check">✓</span> Responses API 先发优势</div>
+      <div class="vp"><span class="check">✓</span> OpenAI + Anthropic 双 API 兼容</div>
     </div>
     <div class="hero-actions">
       <a href="https://github.com/xincxiong/Model-Inference-Platform-Design" target="_blank" class="btn btn-primary">
@@ -265,7 +266,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
     <div class="hero-stats">
       <div class="hero-stat"><div class="val v-blue">15</div><div class="lab">功能模块</div></div>
       <div class="hero-stat"><div class="val v-purple">7</div><div class="lab">模型类型</div></div>
-      <div class="hero-stat"><div class="val v-cyan">5+</div><div class="lab">GPU 架构</div></div>
+      <div class="hero-stat"><div class="val v-cyan">3</div><div class="lab">推理引擎</div></div>
       <div class="hero-stat"><div class="val v-green">99.9%</div><div class="lab">SLA 目标</div></div>
       <div class="hero-stat"><div class="val v-amber">&lt;200ms</div><div class="lab">TTFT 延迟</div></div>
     </div>
@@ -305,10 +306,10 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       </div>
       <!-- 4 -->
       <div class="adv-card a-cyan">
-        <div class="num">04 · Responses API</div>
-        <h3>下一代 API 先发优势</h3>
-        <p>双格式并行：Responses API（推荐）+ Chat Completions（兼容），引领交互范式演进。</p>
-        <div class="detail">服务端状态管理 + <strong>previous_response_id</strong> 链式引用，多轮对话 Token 消耗降低 40-80%。需完整 Response Store 后端基础设施，技术壁垒显著。</div>
+        <div class="num">04 · Dual API</div>
+        <h3>OpenAI + Anthropic 双 API 兼容</h3>
+        <p>同时兼容 OpenAI API（Responses + Completions）和 Anthropic Messages API，最大化降低迁移成本。</p>
+        <div class="detail">服务端状态管理 + <strong>previous_response_id</strong> 链式引用，多轮对话 Token 消耗降低 40-80%。<strong>Anthropic Adapter 层</strong>自动双向转换，兼容 Anthropic SDK 直接调用。</div>
       </div>
       <!-- 5 -->
       <div class="adv-card a-amber">
@@ -441,16 +442,17 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
     <div class="sec-header">
       <span class="sec-tag" style="background:var(--purple-light);color:var(--purple)">Core Features</span>
       <h2>平台核心能力</h2>
-      <p>15 大功能模块，覆盖推理服务、模型管理、数据闭环、运维监控与开发者工具全链路</p>
+      <p>15+ 功能模块，覆盖推理服务、模型管理、数据闭环、运维监控、成本分析与开发者工具全链路</p>
     </div>
 
     <div class="feat-row">
       <div class="feat-text">
         <span class="tag" style="background:var(--blue-light);color:var(--blue)">Inference Engine</span>
         <h3>推理引擎</h3>
-        <p>基于 vLLM v0.18+ 构建的高性能推理服务，同时支持 Responses API 和 Chat Completions API 双格式，最大化降低迁移成本。</p>
+        <p>基于 vLLM v0.18+ 与 SGLang 多引擎构建的高性能推理服务，同时兼容 OpenAI API 和 Anthropic Messages API，最大化降低迁移成本。</p>
         <ul>
           <li>七大模型类型：Text / Vision / Embedding / Rerank / Image / Video / Speech</li>
+          <li>多引擎支持：vLLM / SGLang / Custom（LMDeploy 等），自动降级 Mock</li>
           <li>FlashAttention-4、KV Cache 压缩、投机解码等前沿优化</li>
           <li>PD 分离 + NVIDIA Dynamo 分布式推理架构</li>
           <li>国产模型重点支持：DeepSeek / Qwen / GLM / Kimi</li>
@@ -501,9 +503,10 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
         <h3>模型微调 & 数据实验室</h3>
         <p>完整的模型微调流水线和统一数据工作空间，形成推理→数据→微调的闭环。</p>
         <ul>
-          <li>LoRA / 全参数微调，Checkpoint 自动管理</li>
-          <li>推理日志自动采集，SQL 查询构建数据集</li>
-          <li>Datasets API (CRUD / 分片上传 / 版本管理)</li>
+          <li>SFT（LoRA/QLoRA/全参数）+ RL 后训练（GRPO/GSPO/DAPO/VAPO/PPO/DPO）</li>
+          <li>Megatron-LM 训练引擎 + SGLang Rollout 引擎</li>
+          <li>Data Lab：推理日志采集、SQL 查询编辑器、数据集版本管理</li>
+          <li>Datasets API（CRUD / 分片上传 / SQL 查询 / 导出）</li>
           <li>Batch API 离线批量推理，50% 价格折扣</li>
         </ul>
       </div>
@@ -528,10 +531,12 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--cyan-light);margin:0 auto 8px">🏗️</div><h3 style="font-size:.82rem">专属端点</h3><p style="font-size:.72rem">独占 GPU + 智能弹性伸缩 + 冷启动优化</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--blue-light);margin:0 auto 8px">🚀</div><h3 style="font-size:.82rem">模型部署</h3><p style="font-size:.72rem">轻量弹性 · 三步向导 · 自动 URL</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--green-light);margin:0 auto 8px">🎯</div><h3 style="font-size:.82rem">模型微调</h3><p style="font-size:.72rem">LoRA + Full Fine-tuning</p></div>
-        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--amber-light);margin:0 auto 8px">🧪</div><h3 style="font-size:.82rem">数据实验室</h3><p style="font-size:.72rem">日志采集 + SQL 查询</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--amber-light);margin:0 auto 8px">🧪</div><h3 style="font-size:.82rem">数据实验室</h3><p style="font-size:.72rem">日志采集 + SQL 查询 + 版本管理</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--rose-light);margin:0 auto 8px">📦</div><h3 style="font-size:.82rem">批量推理</h3><p style="font-size:.72rem">Batch API + 50% 折扣</p></div>
-        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--blue-light);margin:0 auto 8px">📊</div><h3 style="font-size:.82rem">可观测性</h3><p style="font-size:.72rem">多维指标 + Grafana</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--blue-light);margin:0 auto 8px">📊</div><h3 style="font-size:.82rem">可观测性</h3><p style="font-size:.72rem">多维指标 + Grafana + 实时监控</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--purple-light);margin:0 auto 8px">👥</div><h3 style="font-size:.82rem">团队管理</h3><p style="font-size:.72rem">RBAC + SSO + MFA</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--cyan-light);margin:0 auto 8px">💰</div><h3 style="font-size:.82rem">成本分析</h3><p style="font-size:.72rem">费用追踪 + 预算告警 + 趋势预测</p></div>
+        <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--purple-light);margin:0 auto 8px">⚖️</div><h3 style="font-size:.82rem">模型对比</h3><p style="font-size:.72rem">基准评测 + 性能指标 + 性价比</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--green-light);margin:0 auto 8px">👤</div><h3 style="font-size:.82rem">成员管理</h3><p style="font-size:.72rem">邀请制 · 四角色 · 权限精控</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--cyan-light);margin:0 auto 8px">💰</div><h3 style="font-size:.82rem">计费系统</h3><p style="font-size:.72rem">支付宝/微信 + Promo Code</p></div>
         <div class="card" style="padding:20px;text-align:center"><div class="icon" style="background:var(--green-light);margin:0 auto 8px">🔌</div><h3 style="font-size:.82rem">第三方集成</h3><p style="font-size:.72rem">LangChain / Cursor / 飞书</p></div>
@@ -569,10 +574,10 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       </div>
     </div>
 
-    <!-- 计费系统 -->
+    <!-- 计费与成本 -->
     <div style="margin-top:64px">
-      <h3 style="font-size:1.2rem;font-weight:800;text-align:center;margin-bottom:8px">计费与速率限制</h3>
-      <p style="text-align:center;color:var(--text-3);font-size:.85rem;margin-bottom:28px">灵活的双计费模式 + 智能速率弹性</p>
+      <h3 style="font-size:1.2rem;font-weight:800;text-align:center;margin-bottom:8px">计费与成本分析</h3>
+      <p style="text-align:center;color:var(--text-3);font-size:.85rem;margin-bottom:28px">灵活的双计费模式 + 智能速率弹性 + 费用趋势预测</p>
       <div class="grid g2">
         <div class="card">
           <h3 style="margin-bottom:10px">💰 计费模式</h3>
@@ -603,7 +608,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
     <div class="sec-header">
       <span class="sec-tag" style="background:var(--cyan-light);color:var(--cyan)">System Architecture</span>
       <h2>系统架构</h2>
-      <p>云原生微服务架构，8 层分层设计，基于 Kubernetes 的 GPU 集群统一编排</p>
+      <p>云原生微服务架构，8 层分层设计，控制面/数据面分离，基于 Kubernetes 的 GPU 集群统一编排</p>
     </div>
     <div class="arch">
       <div class="arch-layer">
@@ -649,7 +654,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <div class="arch-layer">
         <div class="arch-label" style="color:var(--green)">数据面 Data Plane — GPU Cluster</div>
         <div class="arch-row">
-          <div class="arch-box ag">推理引擎集群 (vLLM)</div>
+          <div class="arch-box ag">多引擎路由 (vLLM/SGLang)</div>
           <div class="arch-box ag">专属端点实例池</div>
           <div class="arch-box ag">批量推理工作节点</div>
           <div class="arch-box ag">微调训练集群</div>
@@ -776,15 +781,16 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
       <p>每一层选择经过生产验证的方案，兼顾性能、可维护性与社区生态</p>
     </div>
     <div class="tech-grid">
-      <div class="tech-item"><div class="cat">推理引擎</div><h4>LLM Inference</h4><div class="tags"><span>vLLM v0.18+</span><span>SGLang</span><span>NVIDIA Dynamo</span></div></div>
+      <div class="tech-item"><div class="cat">推理引擎</div><h4>LLM Inference</h4><div class="tags"><span>vLLM v0.18+</span><span>SGLang</span><span>Mock Fallback</span><span>Custom</span></div></div>
       <div class="tech-item"><div class="cat">推理引擎</div><h4>注意力 & 量化</h4><div class="tags"><span>FlashAttention-4</span><span>NVFP4</span><span>FP8</span><span>EAGLE-3</span></div></div>
       <div class="tech-item"><div class="cat">推理引擎</div><h4>国产 GPU</h4><div class="tags"><span>vLLM-Ascend</span><span>LMDeploy</span><span>HAMi</span></div></div>
       <div class="tech-item"><div class="cat">后端服务</div><h4>API & Gateway</h4><div class="tags"><span>Go (Gin)</span><span>Kong</span><span>Envoy</span><span>Temporal</span><span>Nginx</span></div></div>
+      <div class="tech-item"><div class="cat">后端服务</div><h4>控制面 / 数据面</h4><div class="tags"><span>:8081 Management</span><span>:8080 Inference</span><span>故障隔离</span><span>独立扩缩</span></div></div>
       <div class="tech-item"><div class="cat">后端服务</div><h4>消息 & 流</h4><div class="tags"><span>Apache Kafka</span><span>Redis Stream</span><span>PostgreSQL</span><span>Redis</span></div></div>
       <div class="tech-item"><div class="cat">后端服务</div><h4>智能路由 & 优化</h4><div class="tags"><span>BERT 分类器</span><span>智能路由</span><span>语义缓存</span><span>LanceDB</span></div></div>
       <div class="tech-item"><div class="cat">后端服务</div><h4>A/B 测试 & 评测</h4><div class="tags"><span>A/B 测试框架</span><span>模型评测引擎</span><span>自定义 Benchmark</span></div></div>
       <div class="tech-item"><div class="cat">后端服务</div><h4>Prompt & 质量</h4><div class="tags"><span>Prompt 模板服务</span><span>数据质量检查器</span><span>预算告警</span></div></div>
-      <div class="tech-item"><div class="cat">前端 & CLI</div><h4>Web Console</h4><div class="tags"><span>React 19</span><span>Next.js 15</span><span>TailwindCSS</span></div></div>
+      <div class="tech-item"><div class="cat">前端 & CLI</div><h4>Web Console</h4><div class="tags"><span>React 19</span><span>Next.js 15</span><span>TailwindCSS</span><span>Zustand</span></div></div>
       <div class="tech-item"><div class="cat">前端 & CLI</div><h4>CLI 工具</h4><div class="tags"><span>Go</span><span>Cobra</span><span>Bubble Tea</span><span>GoReleaser</span></div></div>
       <div class="tech-item"><div class="cat">存储</div><h4>数据库 & 缓存</h4><div class="tags"><span>PostgreSQL 16</span><span>Redis 7</span><span>ClickHouse</span><span>S3</span></div></div>
       <div class="tech-item"><div class="cat">AI 数据</div><h4>向量 & 数据集</h4><div class="tags"><span>Lance v4.0</span><span>LanceDB</span><span>向量搜索</span><span>语义缓存</span></div></div>
@@ -804,7 +810,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
     </div>
     <div class="timeline">
       <div class="tl-item">
-        <h4>Phase 1: MVP — 核心推理能力 <span class="badge" style="background:var(--blue-light);color:var(--blue)">Phase 1</span></h4>
+        <h4>Phase 1: MVP — 核心推理能力 <span class="badge" style="background:var(--blue-light);color:var(--blue)">Phase 1</span><span style="font-size:0.68rem;color:var(--green);margin-left:8px;">✅ 已交付</span></h4>
         <ul>
           <li>vLLM v0.18+ 共享推理集群</li>
           <li>双格式 API (Responses + Completions)</li>
@@ -815,7 +821,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
         </ul>
       </div>
       <div class="tl-item">
-        <h4>Phase 2: 增强 — 专属端点与微调 <span class="badge" style="background:var(--purple-light);color:var(--purple)">Phase 2</span><span style="font-size:0.68rem;color:var(--text-muted);margin-left:8px;">（含模型部署 + 成员管理）</span></h4>
+        <h4>Phase 2: 增强 — 专属端点与微调 <span class="badge" style="background:var(--purple-light);color:var(--purple)">Phase 2</span><span style="font-size:0.68rem;color:var(--green);margin-left:8px;">✅ 已交付</span></h4>
         <ul>
           <li>Dedicated Endpoints 全生命周期 + 复合伸缩策略</li>
           <li>GPU 智能伸缩 (KEDA) + 冷启动优化 + Warm Pool</li>
@@ -826,14 +832,20 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
         </ul>
       </div>
       <div class="tl-item">
-        <h4>Phase 3: 生态 — 可观测性与集成 <span class="badge" style="background:var(--green-light);color:var(--green)">Phase 3</span></h4>
+        <h4>Phase 3: 生态 — 可观测性与集成 <span class="badge" style="background:var(--green-light);color:var(--green)">Phase 3</span><span style="font-size:0.68rem;color:var(--text-muted);margin-left:8px;">🚀 进行中</span></h4>
         <ul>
+          <li>✅ HAMi GPU 虚拟化集成（Binpack/Spread/Topology-aware）</li>
+          <li>✅ Kubernetes 部署层（完整 K8s manifests + HAMi + Volcano）</li>
+          <li>✅ 多推理引擎支持（vLLM / SGLang / Custom / Mock Fallback）</li>
+          <li>✅ 控制面/数据面分离（inference-server :8080 / management-server :8081）</li>
+          <li>✅ Volcano 调度与编排层（Gang/Queue/Preemption/TTL）</li>
+          <li>✅ 前端架构增强（错误边界/Zustand/乐观更新/通知容器）</li>
+          <li>✅ KEDA 自动伸缩 + Prometheus 监控</li>
+          <li>✅ 前端新增功能：可观测性 / 数据实验室 / 成本分析 / 模型对比</li>
           <li>Data Lab 推理日志 + SQL 查询</li>
           <li>完整可观测性面板</li>
           <li>第三方集成 (LangChain / Cursor)</li>
-          <li>Embedding + Rerank + Image 模型</li>
           <li>CLI 命令行工具</li>
-          <li>PD 分离 + Dynamo 分布式推理</li>
         </ul>
       </div>
       <div class="tl-item">
@@ -953,7 +965,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 
 <footer>
   <div class="container">
-    Model Inference Cloud Platform &nbsp;·&nbsp; Architecture Design v1.2 &nbsp;·&nbsp; 2026
+    Model Inference Cloud Platform &nbsp;·&nbsp; Architecture Design v2.6 &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; Phase 1 ✅ · Phase 2 ✅ · Phase 3 🚧
   </div>
 </footer>
 
