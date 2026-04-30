@@ -2,6 +2,19 @@
 
 - 记录口径：每日收尾时按日期追加，简述当日可交付变更，方便事后追溯。
 
+### 2026-05-01（凌晨）
+- **代码推送至 GitHub main 分支**
+  - 合并 `feature/phase3-inference-enhancements` 分支到 main
+  - 推送 39 个文件修改（+2,965 行，-41 行）
+  - 提交信息：Phase 3 新增前端功能 + 产品文档更新 + UI 审查
+  - 远程仓库：`git@github.com:xincxiong/Model-Inference-Platform-Design.git`
+
+- **功能边界梳理**
+  - Playground vs 模型对比：确认为互补关系，非功能重复
+    - Playground：主观体验 + 实时调试（单模型交互）
+    - 模型对比：客观评测 + 数据驱动决策（2-6 个模型并排对比）
+  - 建议优化：两者可互相跳转，Playground 侧重体验，/compare 侧重数据
+
 ### 2026-04-30（下午/晚间）
 - **前端新增功能后端支持验证**
   - 验证范围：可观测性、数据实验室、成本分析、模型对比四大模块
