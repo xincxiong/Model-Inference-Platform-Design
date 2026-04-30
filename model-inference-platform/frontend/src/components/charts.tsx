@@ -1,5 +1,7 @@
 'use client'
 
+import { useRef, useState, useEffect } from 'react'
+
 // ── Lightweight SVG Line Chart (no external deps) ─────────────────────────────
 export function LineChart({
   labels,
@@ -12,19 +14,31 @@ export function LineChart({
   yAxisLabel?: string
   height?: number
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerW, setContainerW] = useState(800)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setContainerW(Math.max(entry.contentRect.width, 300))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const allValues = datasets.flatMap(d => d.data)
   const minV = Math.min(...allValues)
   const maxV = Math.max(...allValues)
   const range = maxV - minV || 1
   const pad = 40
-  const w = 800
+  const w = containerW
   const h = height + 30
   const chartH = height - 20
 
   const toY = (v: number) => 10 + chartH - ((v - minV) / range) * chartH
-  const toX = (i: number) => pad + (i / (labels.length - 1)) * (w - pad - 10)
+  const toX = (i: number) => pad + (i / Math.max(labels.length - 1, 1)) * (w - pad - 10)
 
-  // grid lines
   const gridSteps = 4
   const gridLines = Array.from({ length: gridSteps + 1 }, (_, i) => {
     const v = minV + (range * i) / gridSteps
@@ -33,23 +47,20 @@ export function LineChart({
   })
 
   return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full min-w-[500px]" style={{ maxHeight: `${h}px` }}>
-        {/* grid */}
+    <div ref={containerRef} className="w-full overflow-x-auto">
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ maxHeight: `${h}px` }}>
         {gridLines.map((g, i) => (
           <g key={i}>
             <line x1={pad} y1={g.y} x2={w - 10} y2={g.y} stroke="var(--border-light)" strokeWidth="0.5" />
-            <text x={pad - 4} y={g.y + 4} textAnchor="end" fill="var(--text-muted)" fontSize="10" fontFamily="monospace">{g.label}</text>
+            <text x={pad - 4} y={g.y + 4} textAnchor="end" fill="var(--text-muted)" fontSize="10" fontFamily="inherit">{g.label}</text>
           </g>
         ))}
 
-        {/* x labels */}
         {labels.filter((_, i) => i % Math.ceil(labels.length / 6) === 0).map((l, i, a) => {
           const origIdx = labels.indexOf(l)
-          return <text key={i} x={toX(origIdx)} y={h - 2} textAnchor="middle" fill="var(--text-muted)" fontSize="9" fontFamily="monospace">{l}</text>
+          return <text key={i} x={toX(origIdx)} y={h - 2} textAnchor="middle" fill="var(--text-muted)" fontSize="9" fontFamily="inherit">{l}</text>
         })}
 
-        {/* lines */}
         {datasets.map((ds, di) => {
           const pathD = ds.data.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i)} ${toY(v)}`).join(' ')
           const areaD = pathD + ` L ${toX(ds.data.length - 1)} ${toY(minV)} L ${toX(0)} ${toY(minV)} Z`
@@ -67,13 +78,12 @@ export function LineChart({
           )
         })}
 
-        {/* legend */}
         {datasets.map((ds, i) => {
           const lx = pad + i * 120
           return (
             <g key={i}>
               <line x1={lx} y1={2} x2={lx + 16} y2={2} stroke={ds.color} strokeWidth={ds.width || 1.5} />
-              <text x={lx + 20} y={6} fill="var(--text-secondary)" fontSize="10">{ds.label}</text>
+              <text x={lx + 20} y={6} fill="var(--text-secondary)" fontSize="10" fontFamily="inherit">{ds.label}</text>
             </g>
           )
         })}
@@ -94,8 +104,21 @@ export function BarChart({
   color?: string
   height?: number
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerW, setContainerW] = useState(800)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setContainerW(Math.max(entry.contentRect.width, 300))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const pad = 40
-  const w = 800
+  const w = containerW
   const h = height + 30
   const chartH = height - 20
   const maxV = Math.max(...data, 0.001)
@@ -109,12 +132,12 @@ export function BarChart({
   })
 
   return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full min-w-[500px]" style={{ maxHeight: `${h}px` }}>
+    <div ref={containerRef} className="w-full overflow-x-auto">
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ maxHeight: `${h}px` }}>
         {gridLines.map((g, i) => (
           <g key={i}>
             <line x1={pad} y1={g.y} x2={w - 10} y2={g.y} stroke="var(--border-light)" strokeWidth="0.5" />
-            <text x={pad - 4} y={g.y + 4} textAnchor="end" fill="var(--text-muted)" fontSize="10" fontFamily="monospace">{g.label}</text>
+            <text x={pad - 4} y={g.y + 4} textAnchor="end" fill="var(--text-muted)" fontSize="10" fontFamily="inherit">{g.label}</text>
           </g>
         ))}
         {data.map((v, i) => {
@@ -125,7 +148,7 @@ export function BarChart({
             <g key={i}>
               <rect x={x} y={y} width={barW} height={barH} rx="1" fill={color} opacity="0.8" />
               {labels.length <= 30 && i % Math.ceil(labels.length / 8) === 0 && (
-                <text x={x + barW / 2} y={h - 2} textAnchor="middle" fill="var(--text-muted)" fontSize="8" fontFamily="monospace">{labels[i]}</text>
+                <text x={x + barW / 2} y={h - 2} textAnchor="middle" fill="var(--text-muted)" fontSize="8" fontFamily="inherit">{labels[i]}</text>
               )}
             </g>
           )

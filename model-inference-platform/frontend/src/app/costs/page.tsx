@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { LineChart, BarChart } from '@/components/charts'
 
 // ── Mock cost data ───────────────────────────────────────────────────────────
@@ -45,9 +45,40 @@ const BUDGETS: Budget[] = [
 
 const FORECAST_MONTHS = ['5月', '6月', '7月', '8月', '9月', '10月']
 
+// ── Shared UI states ──────────────────────────────────────────────────────────
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map(i => <div key={i} className="card h-20 bg-[var(--bg-secondary)] rounded-lg" />)}
+      </div>
+      <div className="card h-64 bg-[var(--bg-secondary)] rounded-lg" />
+      <div className="card h-48 bg-[var(--bg-secondary)] rounded-lg" />
+    </div>
+  )
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="card text-center py-16">
+      <div className="text-2xl mb-3">⚠️</div>
+      <p className="text-sm text-[var(--danger)] font-medium">{message}</p>
+      <p className="text-xs text-[var(--text-muted)] mt-1 mb-4">请检查网络连接后重试</p>
+      <button onClick={onRetry} className="btn-primary text-xs px-4 py-2">重新加载</button>
+    </div>
+  )
+}
+
 export default function CostAnalyticsPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'forecast' | 'budgets'>('overview')
   const [modelBreakdown, setModelBreakdown] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 600)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Compute model-level costs
   const modelCosts = useMemo(() => {
@@ -73,6 +104,9 @@ export default function CostAnalyticsPage() {
 
   const costSeries = DAILY_COST.map(d => d.cost)
   const costLabels = DAILY_COST.map(d => d.date)
+
+  if (error) return <ErrorState message={error} onRetry={() => { setError(null); setLoading(true); setTimeout(() => setLoading(false), 600) }} />
+  if (loading) return <LoadingSkeleton />
 
   return (
     <div>
@@ -107,7 +141,7 @@ export default function CostAnalyticsPage() {
         <StatCard label="平均单价" value={`$${(totalCost / (DAILY_COST.reduce((s,d)=>s+d.inputTokens+d.outputTokens,0) / 1e6)).toFixed(2)}`} color="var(--text-secondary)" sub="/M tokens" />
       </div>
 
-      {/* ── Cost trend ─────────────────────────────────────────────── */}
+      {/* ── Cost trend ────────────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <>
           <div className="card mb-5">
@@ -128,53 +162,59 @@ export default function CostAnalyticsPage() {
           {/* Model cost table */}
           <div className="card">
             <h3 className="font-medium text-sm text-[var(--text)] mb-3">模型成本分布</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-[var(--text-muted)] border-b border-[var(--border)]">
-                    <th className="text-left pb-2.5 font-medium">模型</th>
-                    <th className="text-right pb-2.5 font-medium">占比</th>
-                    <th className="text-right pb-2.5 font-medium">成本</th>
-                    <th className="text-right pb-2.5 font-medium">Input $/M</th>
-                    <th className="text-right pb-2.5 font-medium">Output $/M</th>
-                    <th className="text-right pb-2.5 font-medium">Input Tokens</th>
-                    <th className="text-right pb-2.5 font-medium">Output Tokens</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border-light)]">
-                  {modelCosts.map((m) => {
-                    const pct = (m.cost / totalCost) * 100
-                    return (
-                      <tr key={m.name} className="hover:bg-[var(--bg-secondary)]">
-                        <td className="py-2.5 pr-3">
-                          <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: m.color }} />
-                            <span className="font-medium text-[var(--text)]">{m.name}</span>
-                          </div>
-                        </td>
-                        <td className="py-2.5 pr-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 bg-[var(--bg-secondary)] rounded h-2 overflow-hidden">
-                              <div className="h-full rounded" style={{ width: `${pct}%`, background: m.color }} />
-                            </div>
-                            <span className="text-[var(--text-muted)]">{pct.toFixed(1)}%</span>
-                          </div>
-                        </td>
-                        <td className="py-2.5 pr-3 text-right font-medium text-[var(--warning)]">${m.cost.toFixed(2)}</td>
-                        <td className="py-2.5 pr-3 text-right font-mono text-[var(--text-muted)]">${m.inputPrice.toFixed(2)}</td>
-                        <td className="py-2.5 pr-3 text-right font-mono text-[var(--text-muted)]">${m.outputPrice.toFixed(2)}</td>
-                        <td className="py-2.5 pr-3 text-right font-mono">{(m.inputTokens / 1000).toFixed(0)}K</td>
-                        <td className="py-2.5 text-right font-mono">{(m.outputTokens / 1000).toFixed(0)}K</td>
+            {modelCosts.length === 0 ? (
+              <div className="text-center py-12 text-sm text-[var(--text-muted)]">暂无成本数据</div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-[var(--text-muted)] border-b border-[var(--border)]">
+                        <th className="text-left pb-2.5 font-medium">模型</th>
+                        <th className="text-right pb-2.5 font-medium">占比</th>
+                        <th className="text-right pb-2.5 font-medium">成本</th>
+                        <th className="text-right pb-2.5 font-medium">Input $/M</th>
+                        <th className="text-right pb-2.5 font-medium">Output $/M</th>
+                        <th className="text-right pb-2.5 font-medium">Input Tokens</th>
+                        <th className="text-right pb-2.5 font-medium">Output Tokens</th>
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-3 pt-3 border-t border-[var(--border-light)] flex justify-between text-xs text-[var(--text-muted)]">
-              <span>总成本</span>
-              <span className="font-medium text-[var(--warning)]">${totalCost.toFixed(2)}</span>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border-light)]">
+                      {modelCosts.map((m) => {
+                        const pct = (m.cost / totalCost) * 100
+                        return (
+                          <tr key={m.name} className="hover:bg-[var(--bg-secondary)]">
+                            <td className="py-2.5 pr-3">
+                              <div className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: m.color }} />
+                                <span className="font-medium text-[var(--text)]">{m.name}</span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 pr-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 bg-[var(--bg-secondary)] rounded h-2 overflow-hidden">
+                                  <div className="h-full rounded" style={{ width: `${pct}%`, background: m.color }} />
+                                </div>
+                                <span className="text-[var(--text-muted)]">{pct.toFixed(1)}%</span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 pr-3 text-right font-medium text-[var(--warning)]">${m.cost.toFixed(2)}</td>
+                            <td className="py-2.5 pr-3 text-right font-mono text-[var(--text-muted)]">${m.inputPrice.toFixed(2)}</td>
+                            <td className="py-2.5 pr-3 text-right font-mono text-[var(--text-muted)]">${m.outputPrice.toFixed(2)}</td>
+                            <td className="py-2.5 pr-3 text-right font-mono">{(m.inputTokens / 1000).toFixed(0)}K</td>
+                            <td className="py-2.5 text-right font-mono">{(m.outputTokens / 1000).toFixed(0)}K</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-3 pt-3 border-t border-[var(--border-light)] flex justify-between text-xs text-[var(--text-muted)]">
+                  <span>总成本</span>
+                  <span className="font-medium text-[var(--warning)]">${totalCost.toFixed(2)}</span>
+                </div>
+              </>
+            )}
           </div>
         </>
       )}
@@ -191,9 +231,9 @@ export default function CostAnalyticsPage() {
 function StatCard({ label, value, color, sub }: { label: string; value: string; color: string; sub: string }) {
   return (
     <div className="card py-4">
-      <div className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-1">{label}</div>
+      <div className="text-label-sm font-medium text-[var(--text-muted)] uppercase tracking-wider mb-1">{label}</div>
       <div className="text-xl font-semibold" style={{ color }}>{value}</div>
-      <div className="text-[11px] text-[var(--text-muted)] mt-0.5">{sub}</div>
+      <div className="text-label-sm text-[var(--text-muted)] mt-0.5">{sub}</div>
     </div>
   )
 }
@@ -217,7 +257,7 @@ function StackedBarChart({ dailyCost, models }: { dailyCost: { date: string; cos
 
   return (
     <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full min-w-[500px]" style={{ maxHeight: `${h}px` }}>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ maxHeight: `${h}px` }}>
         {gridLines.map((g, i) => (
           <g key={i}>
             <line x1={pad} y1={g.y} x2={w - 10} y2={g.y} stroke="var(--border-light)" strokeWidth="0.5" />
@@ -306,6 +346,8 @@ function ForecastTab({ avgDaily, projectedMonthly }: { avgDaily: number; project
 
 // ── Budgets Tab ───────────────────────────────────────────────────────────────
 function BudgetsTab({ budgets }: { budgets: Budget[] }) {
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+
   return (
     <div className="space-y-4">
       {budgets.map(b => {

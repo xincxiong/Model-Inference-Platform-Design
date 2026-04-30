@@ -1,6 +1,40 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+
+// ── Shared UI states ──────────────────────────────────────────────────────────
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="card h-16 bg-[var(--bg-secondary)] rounded-lg" />
+      <div className="card h-64 bg-[var(--bg-secondary)] rounded-lg" />
+      <div className="card h-48 bg-[var(--bg-secondary)] rounded-lg" />
+    </div>
+  )
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="card text-center py-16">
+      <div className="text-2xl mb-3">⚠️</div>
+      <p className="text-sm text-[var(--danger)] font-medium">{message}</p>
+      <p className="text-xs text-[var(--text-muted)] mt-1 mb-4">请检查网络连接后重试</p>
+      <button onClick={onRetry} className="btn-primary text-xs px-4 py-2">重新加载</button>
+    </div>
+  )
+}
+
+function EmptyState({ message, action }: { message: string; action?: { label: string; onClick: () => void } }) {
+  return (
+    <div className="card text-center py-16">
+      <div className="text-2xl mb-3">📋</div>
+      <p className="text-sm text-[var(--text)] font-medium">{message}</p>
+      {action && (
+        <button onClick={action.onClick} className="btn-primary text-xs px-4 py-2 mt-4">{action.label}</button>
+      )}
+    </div>
+  )
+}
 
 // ── Mock inference logs ──────────────────────────────────────────────────────
 const MOCK_MODELS = ['deepseek-ai/DeepSeek-V3', 'Qwen/Qwen3.5-72B', 'GLM/GLM-5', 'meta/Llama-4-70B']
@@ -61,10 +95,20 @@ export default function DataLabPage() {
   const [activeView, setActiveView] = useState<'logs' | 'sql' | 'datasets'>('logs')
   const [sqlQuery, setSqlQuery] = useState('SELECT model, COUNT(*) as cnt, AVG(latency) as avg_latency\nFROM inference_logs\nWHERE status = 200\nGROUP BY model\nORDER BY cnt DESC\nLIMIT 20;')
   const [selectedDataset, setSelectedDataset] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 600)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (error) return <ErrorState message={error} onRetry={() => { setError(null); setLoading(true); setTimeout(() => setLoading(false), 600) }} />
+  if (loading) return <LoadingSkeleton />
 
   return (
     <div>
-      {/* ── Header ─────────────────────────────────────────────────── */}
+      {/* ── Header ────────────────────────────────────────────────── */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-[var(--text)]">数据实验室</h2>
         <p className="text-sm text-[var(--text-muted)] mt-1">推理日志浏览 · SQL 查询 · 数据集管理</p>
@@ -90,7 +134,7 @@ export default function DataLabPage() {
       {/* ── Inference Logs ─────────────────────────────────────────── */}
       {activeView === 'logs' && <LogsView />}
 
-      {/* ── SQL Query ──────────────────────────────────────────────── */}
+      {/* ─ SQL Query ──────────────────────────────────────────────── */}
       {activeView === 'sql' && (
         <SqlView query={sqlQuery} setQuery={setSqlQuery} />
       )}
@@ -100,6 +144,7 @@ export default function DataLabPage() {
         <DatasetsView
           selectedDataset={selectedDataset}
           setSelectedDataset={setSelectedDataset}
+          datasets={MOCK_DATASETS}
         />
       )}
     </div>
@@ -111,6 +156,10 @@ function LogsView() {
   const [page, setPage] = useState(1)
   const pageSize = 15
   const paged = MOCK_LOGS.slice((page - 1) * pageSize, page * pageSize)
+
+  if (MOCK_LOGS.length === 0) {
+    return <EmptyState message="暂无推理日志" />
+  }
 
   return (
     <div className="card">
@@ -148,7 +197,7 @@ function LogsView() {
                 <td className="py-2 pr-3 text-center">
                   <span className={`tag ${log.status === '200' ? 'tag-green' : 'tag-amber'}`}>{log.status}</span>
                 </td>
-                <td className="py-2 text-[var(--text-secondary)] truncate max-w-[200px]" title={log.input}>{log.input}</td>
+                <td className="py-2 text-[var(--text-secondary)] truncate" style={{ maxWidth: '200px' }} title={log.input}>{log.input}</td>
               </tr>
             ))}
           </tbody>
@@ -170,6 +219,7 @@ function LogsView() {
 // ── SQL View ──────────────────────────────────────────────────────────────────
 function SqlView({ query, setQuery }: { query: string; setQuery: (q: string) => void }) {
   const [hasRun, setHasRun] = useState(false)
+  const [running, setRunning] = useState(false)
 
   const mockResults = [
     { model: 'DeepSeek-V3', cnt: 48723, avg_latency: '142ms' },
@@ -178,6 +228,14 @@ function SqlView({ query, setQuery }: { query: string; setQuery: (q: string) => 
     { model: 'Llama-4-70B', cnt: 18432, avg_latency: '195ms' },
   ]
 
+  function handleRun() {
+    setRunning(true)
+    setTimeout(() => {
+      setRunning(false)
+      setHasRun(true)
+    }, 800)
+  }
+
   return (
     <div className="space-y-4">
       {/* Editor */}
@@ -185,9 +243,10 @@ function SqlView({ query, setQuery }: { query: string; setQuery: (q: string) => 
         <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-light)] bg-[var(--bg-secondary)]">
           <span className="text-xs font-medium text-[var(--text-muted)]">SQL 查询编辑器</span>
           <button
-            onClick={() => setHasRun(true)}
-            className="text-xs px-4 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)] transition-colors"
-          >▶ 运行</button>
+            onClick={handleRun}
+            disabled={running}
+            className="text-xs px-4 py-1.5 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >{running ? '查询中...' : '▶ 运行'}</button>
         </div>
         <textarea
           value={query}
@@ -225,7 +284,7 @@ function SqlView({ query, setQuery }: { query: string; setQuery: (q: string) => 
         </div>
       )}
 
-      {!hasRun && (
+      {!hasRun && !running && (
         <div className="card text-center py-12">
           <p className="text-sm text-[var(--text-muted)]">编写查询并点击"运行"查看结果</p>
         </div>
@@ -235,8 +294,13 @@ function SqlView({ query, setQuery }: { query: string; setQuery: (q: string) => 
 }
 
 // ── Datasets View ─────────────────────────────────────────────────────────────
-function DatasetsView({ selectedDataset, setSelectedDataset }: { selectedDataset: string | null; setSelectedDataset: (id: string | null) => void }) {
+function DatasetsView({ selectedDataset, setSelectedDataset, datasets }: { selectedDataset: string | null; setSelectedDataset: (id: string | null) => void; datasets: typeof MOCK_DATASETS }) {
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+
   if (!selectedDataset) {
+    if (datasets.length === 0) {
+      return <EmptyState message="暂无数据集" action={{ label: '+ 上传数据集', onClick: () => {} }} />
+    }
     return (
       <div className="card">
         <div className="flex items-center justify-between mb-4">
@@ -256,7 +320,7 @@ function DatasetsView({ selectedDataset, setSelectedDataset }: { selectedDataset
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-light)]">
-              {MOCK_DATASETS.map((ds) => (
+              {datasets.map((ds) => (
                 <tr key={ds.id} className="hover:bg-[var(--bg-secondary)] transition-colors">
                   <td className="py-2.5 pr-3">
                     <button onClick={() => setSelectedDataset(ds.id)} className="text-[var(--accent)] hover:underline font-medium text-left">{ds.name}</button>
@@ -269,7 +333,14 @@ function DatasetsView({ selectedDataset, setSelectedDataset }: { selectedDataset
                   <td className="py-2.5 text-[var(--text-muted)]">{ds.created}</td>
                   <td className="py-2.5 text-center">
                     <button className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors mr-2">导出</button>
-                    <button className="text-[var(--danger)] hover:opacity-70 transition-colors">删除</button>
+                    {confirmDelete === ds.id ? (
+                      <span className="flex items-center gap-1">
+                        <button onClick={() => { /* delete */ setConfirmDelete(null) }} className="text-[var(--danger)] font-medium">确认</button>
+                        <button onClick={() => setConfirmDelete(null)} className="text-[var(--text-muted)]">取消</button>
+                      </span>
+                    ) : (
+                      <button onClick={() => setConfirmDelete(ds.id)} className="text-[var(--danger)] hover:opacity-70 transition-colors">删除</button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -280,7 +351,7 @@ function DatasetsView({ selectedDataset, setSelectedDataset }: { selectedDataset
     )
   }
 
-  const ds = MOCK_DATASETS.find(d => d.id === selectedDataset)!
+  const ds = datasets.find(d => d.id === selectedDataset)!
   return (
     <div className="space-y-4">
       <div className="card">
@@ -313,7 +384,7 @@ function DatasetsView({ selectedDataset, setSelectedDataset }: { selectedDataset
                 <tr key={r.id} className="hover:bg-[var(--bg-secondary)]">
                   <td className="py-2 pr-3 font-mono text-[var(--text-muted)]">{r.id}</td>
                   <td className="py-2 pr-3"><span className={`tag ${r.role === 'system' ? 'tag-purple' : r.role === 'user' ? 'tag-blue' : 'tag-green'}`}>{r.role}</span></td>
-                  <td className="py-2 pr-3 max-w-[300px] truncate text-[var(--text-secondary)]">{r.content}</td>
+                  <td className="py-2 pr-3 truncate text-[var(--text-secondary)]" style={{ maxWidth: '300px' }}>{r.content}</td>
                   <td className="py-2 pr-3 text-right font-mono">{r.tokens}</td>
                   <td className="py-2 pr-3 text-right"><span className={`tag ${r.label === 'positive' ? 'tag-green' : 'tag-amber'}`}>{r.label}</span></td>
                   <td className="py-2 text-right font-mono text-[var(--text-muted)]">{r.timestamp}</td>

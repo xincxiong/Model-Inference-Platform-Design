@@ -3,7 +3,34 @@
 import { useState, useEffect, useMemo } from 'react'
 import { LineChart, BarChart } from '@/components/charts'
 
-// ── Simulated observability data ─────────────────────────────────────────────
+// ── Shared UI states ─────────────────────────────────────────────────────────
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[1,2,3,4,5,6].map(i => <div key={i} className="card h-20 bg-[var(--bg-secondary)] rounded-lg" />)}
+      </div>
+      <div className="card h-64 bg-[var(--bg-secondary)] rounded-lg" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="card h-48 bg-[var(--bg-secondary)] rounded-lg" />
+        <div className="card h-48 bg-[var(--bg-secondary)] rounded-lg" />
+      </div>
+    </div>
+  )
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="card text-center py-16">
+      <div className="text-2xl mb-3">⚠️</div>
+      <p className="text-sm text-[var(--danger)] font-medium">{message}</p>
+      <p className="text-xs text-[var(--text-muted)] mt-1 mb-4">无法加载可观测性数据</p>
+      <button onClick={onRetry} className="btn-primary text-xs px-4 py-2">重新加载</button>
+    </div>
+  )
+}
+
+// ─ Simulated observability data ─────────────────────────────────────────────
 function generateTimeSeries(points: number, min: number, max: number, spikeAt?: number) {
   const data: number[] = []
   for (let i = 0; i < points; i++) {
@@ -55,6 +82,13 @@ export default function ObservabilityPage() {
   const [timeRange, setTimeRange] = useState<'15m' | '1h' | '6h' | '24h'>('1h')
   const [activeTab, setActiveTab] = useState<'latency' | 'throughput' | 'errors'>('latency')
   const [modelFilter, setModelFilter] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 600)
+    return () => clearTimeout(timer)
+  }, [])
 
   const pointCount = timeRange === '15m' ? 15 : timeRange === '1h' ? 60 : timeRange === '6h' ? 72 : 48
   const labelUnit: 'min' | 'hour' = timeRange === '24h' ? 'hour' : 'min'
@@ -68,6 +102,9 @@ export default function ObservabilityPage() {
   const tpmSeries = useMemo(() => generateTimeSeries(pointCount, 8, 20), [pointCount])
 
   const errorRate = useMemo(() => generateTimeSeries(pointCount, 0.05, 0.3, 45), [pointCount])
+
+  if (error) return <ErrorState message={error} onRetry={() => { setError(null); setLoading(true); setTimeout(() => setLoading(false), 600) }} />
+  if (loading) return <LoadingSkeleton />
 
   return (
     <div>
@@ -116,9 +153,9 @@ export default function ObservabilityPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
         {MOCK_METRICS.map((m) => (
           <div key={m.label} className="card py-4">
-            <div className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-1">{m.label}</div>
+            <div className="text-label-sm font-medium text-[var(--text-muted)] uppercase tracking-wider mb-1">{m.label}</div>
             <div className="text-xl font-semibold" style={{ color: m.color }}>{m.value}</div>
-            <div className="text-[11px] text-[var(--text-muted)] mt-0.5">{m.sub}</div>
+            <div className="text-label-sm text-[var(--text-muted)] mt-0.5">{m.sub}</div>
           </div>
         ))}
       </div>
@@ -231,7 +268,7 @@ export default function ObservabilityPage() {
             ].map((node) => (
               <div key={node.name} className="flex items-center gap-3">
                 <div className="w-36 text-xs font-mono text-[var(--text-secondary)] truncate">{node.name}</div>
-                <span className="tag text-[10px]" style={{
+                <span className="tag text-label-xs" style={{
                   background: node.util > 85 ? 'var(--warning-bg)' : node.util > 60 ? 'var(--success-bg)' : 'var(--bg-secondary)',
                   color: node.util > 85 ? 'var(--warning)' : node.util > 60 ? 'var(--success)' : 'var(--text-muted)',
                 }}>{node.type}</span>
@@ -269,7 +306,7 @@ export default function ObservabilityPage() {
         </div>
       </div>
 
-      {/* ── Footer ─────────────────────────────────────────────────── */}
+      {/* ── Footer ────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
         <span>Prometheus · Grafana · OpenTelemetry</span>
         <span>数据刷新: 15s · 上次更新: {new Date().toLocaleTimeString('zh')}</span>

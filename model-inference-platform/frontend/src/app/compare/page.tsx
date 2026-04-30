@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 // ── Mock benchmark data ──────────────────────────────────────────────────────
 interface ModelBenchmark {
@@ -42,9 +42,51 @@ const PERF_METRICS = [
   { key: 'tps', label: 'TPS', unit: 'tok/s', lower: false },
 ]
 
+// ── Empty state ──────────────────────────────────────────────────────────────
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="card text-center py-16">
+      <div className="text-2xl mb-3">📊</div>
+      <p className="text-sm text-[var(--text)] font-medium">{message}</p>
+      <p className="text-xs text-[var(--text-muted)] mt-1">请至少选择 2 个模型进行对比</p>
+    </div>
+  )
+}
+
+// ── Loading skeleton ─────────────────────────────────────────────────────────
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="card h-8 bg-[var(--bg-secondary)] rounded-lg" />
+      <div className="card h-64 bg-[var(--bg-secondary)] rounded-lg" />
+      <div className="card h-48 bg-[var(--bg-secondary)] rounded-lg" />
+    </div>
+  )
+}
+
+// ── Error state ──────────────────────────────────────────────────────────────
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="card text-center py-16">
+      <div className="text-2xl mb-3">️</div>
+      <p className="text-sm text-[var(--danger)] font-medium">数据加载失败</p>
+      <p className="text-xs text-[var(--text-muted)] mt-1 mb-4">无法获取模型对比数据，请检查网络连接</p>
+      <button onClick={onRetry} className="btn-primary text-xs px-4 py-2">重新加载</button>
+    </div>
+  )
+}
+
 export default function ComparePage() {
   const [selected, setSelected] = useState<string[]>(['ds', 'qw', 'll'])
   const [activeTab, setActiveTab] = useState<'benchmarks' | 'performance' | 'cost'>('benchmarks')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Simulate data fetch
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800)
+    return () => clearTimeout(timer)
+  }, [])
 
   const selectedModels = useMemo(() => MODELS.filter(m => selected.includes(m.id)), [selected])
 
@@ -54,6 +96,10 @@ export default function ComparePage() {
     return vals.filter(v => v.v === best).map(v => v.id)
   }
 
+  if (error) return <ErrorState onRetry={() => { setError(null); setLoading(true); setTimeout(() => setLoading(false), 800) }} />
+  if (loading) return <LoadingSkeleton />
+  if (selectedModels.length < 2) return <EmptyState message="请选择至少 2 个模型" />
+
   return (
     <div>
       {/* ── Header ─────────────────────────────────────────────────── */}
@@ -62,7 +108,7 @@ export default function ComparePage() {
         <p className="text-sm text-[var(--text-muted)] mt-1">基准评测、性能指标、成本效益对比</p>
       </div>
 
-      {/* ── Model selector ─────────────────────────────────────────── */}
+      {/* ── Model selector ────────────────────────────────────────── */}
       <div className="card mb-5">
         <h3 className="font-medium text-sm text-[var(--text)] mb-3">选择对比模型（2-6 个）</h3>
         <div className="flex flex-wrap gap-2">
@@ -134,7 +180,7 @@ export default function ComparePage() {
                       <td className="py-3 pr-3">
                         <div>
                           <div className="font-medium text-[var(--text)]">{b.label}</div>
-                          <div className="text-[10px] text-[var(--text-muted)]">{b.desc}</div>
+                          <div className="text-label-xs text-[var(--text-muted)]">{b.desc}</div>
                         </div>
                       </td>
                       {selectedModels.map(m => {
@@ -148,7 +194,7 @@ export default function ComparePage() {
                               <span className={`font-mono font-medium w-12 ${isWinner ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>
                                 {(m as any)[b.key]}
                               </span>
-                              {isWinner && <span className="tag tag-green text-[10px]">最佳</span>}
+                              {isWinner && <span className="tag tag-green text-label-xs">最佳</span>}
                             </div>
                           </td>
                         )
@@ -179,7 +225,7 @@ export default function ComparePage() {
                     </div>
                     <div>
                       <div className="text-xs font-medium text-[var(--text)]">{m.name}</div>
-                      <div className="text-[10px] text-[var(--text-muted)]">五项平均</div>
+                      <div className="text-label-xs text-[var(--text-muted)]">五项平均</div>
                     </div>
                   </div>
                 )
@@ -216,7 +262,7 @@ export default function ComparePage() {
                       <tr key={metric.key} className="hover:bg-[var(--bg-secondary)]">
                         <td className="py-3 pr-3">
                           <div className="font-medium text-[var(--text)]">{metric.label}</div>
-                          <div className="text-[10px] text-[var(--text-muted)]">{metric.unit} · {metric.lower ? '越低越好' : '越高越好'}</div>
+                          <div className="text-label-xs text-[var(--text-muted)]">{metric.unit} · {metric.lower ? '越低越好' : '越高越好'}</div>
                         </td>
                         {selectedModels.map(m => {
                           const isWinner = winners.includes(m.id)
