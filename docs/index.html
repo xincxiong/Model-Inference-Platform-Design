@@ -839,39 +839,61 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
           <li>✅ 多推理引擎支持（vLLM / SGLang / Custom / Mock Fallback）</li>
           <li>✅ 控制面/数据面分离（inference-server :8080 / management-server :8081）</li>
           <li>✅ Volcano 调度与编排层（Gang/Queue/Preemption/TTL）</li>
+          <li>✅ 多集群 Volcano 调度与跨域算力管理</li>
+          <li>✅ S3 对象存储集成（MinIO/S3 兼容，失败自动回退 DB）</li>
+          <li>✅ 语义缓存（纯 Go 内存 LRU，集成到 ChatCompletions）</li>
+          <li>✅ Video/Speech Handler（视频生成/语音转文本/文本转语音）</li>
+          <li>✅ 前端新增功能：可观测性 / 数据实验室 / 成本分析 / 模型对比</li>
           <li>✅ 前端架构增强（错误边界/Zustand/乐观更新/通知容器）</li>
           <li>✅ KEDA 自动伸缩 + Prometheus 监控</li>
-          <li>✅ 前端新增功能：可观测性 / 数据实验室 / 成本分析 / 模型对比</li>
-          <li>Data Lab 推理日志 + SQL 查询</li>
-          <li>完整可观测性面板</li>
-          <li>第三方集成 (LangChain / Cursor)</li>
+          <li>✅ 产品文档更新至 v2.6</li>
+          <li>智能路由（Query 复杂度评分器）</li>
+          <li>LLM-as-Judge 自动评估</li>
+          <li>数据飞轮（生产日志 → 微调 → 评测闭环）</li>
+          <li>模型市场 + 私有模型托管 (BYOM)</li>
+          <li>Webhook 集成 + 自定义域名</li>
           <li>CLI 命令行工具</li>
+          <li>PD 分离 + MoE 专家并行</li>
         </ul>
       </div>
       <div class="tl-item">
-        <h4>Phase 4: 企业 — 安全合规 <span class="badge" style="background:var(--amber-light);color:var(--amber)">Phase 4</span></h4>
+        <h4>Phase 4: 企业 — 安全合规与企业级 <span class="badge" style="background:var(--amber-light);color:var(--amber)">Phase 4</span></h4>
+        <p style="font-size:.78rem;color:var(--text-3);margin:4px 0 10px">预计周期：3-4 个月</p>
         <ul>
-          <li>SSO (SAML/OIDC) + RBAC 权限</li>
+          <li>全球分布式架构（全球负载均衡 + 边缘推理节点 + 多云灾备）</li>
+          <li>多集群 Volcano 调度（跨地域 GPU 集群统一管理）</li>
+          <li>Agentic RL 平台增强（大规模训练队列 + 优先级抢占）</li>
+          <li>跨域算力利用率优化（碎片整理 + 紧凑调度）</li>
+          <li>SSO (SAML/OIDC) + 完整 RBAC 权限体系</li>
           <li>零数据留存 (ZDR) 模式</li>
-          <li>SOC 2 / GDPR / HIPAA 合规</li>
-          <li>VPC Peering / PrivateLink</li>
-          <li>Custom Models API</li>
-          <li>企业费用中心 + 发票管理</li>
+          <li>SOC 2 Type II / GDPR / HIPAA 合规认证</li>
+          <li>VPC Peering / PrivateLink / 专线接入</li>
+          <li>企业 SLA 99.95% 保障</li>
+          <li>Custom Models API（用户上传模型权重）</li>
+          <li>LoRA 合并工具</li>
+          <li>企业计费（银行转账 + 费用中心 + 发票管理）</li>
         </ul>
       </div>
       <div class="tl-item" style="border-left:3px solid var(--rose)">
-        <h4>Phase 5: 深度优化 — 推理引擎 · 成本调度 · AI Agent <span class="badge" style="background:var(--rose-light);color:var(--rose)">Phase 5</span></h4>
-        <p style="font-size:.78rem;color:var(--text-3);margin:4px 0 10px">周期：4 个月 &nbsp;·&nbsp; 里程碑：M1-M2 推理+成本 / M3-M4 Agent 平台</p>
+        <h4>Phase 5: 智能跃迁 — 推理极致优化 · 成本调度智能化 · Agent 原生平台 <span class="badge" style="background:var(--rose-light);color:var(--rose)">Phase 5</span></h4>
+        <p style="font-size:.78rem;color:var(--text-3);margin:4px 0 10px">预计周期：4 个月 &nbsp;·&nbsp; 里程碑：M1-M2 推理+成本 / M3-M4 Agent 平台</p>
         <ul>
-          <li>异构 PD 分离（Prefill/Decode 独立扩缩）</li>
-          <li>多级 KV Cache 共享（跨请求复用）</li>
-          <li>投机解码 2.0（EAGLE-3 + 动态 Draft Tree）</li>
-          <li>语义缓存（LanceDB 向量匹配，&lt;1ms）</li>
-          <li>Model Cascade 智能路由（按难度分发）</li>
-          <li>Spot 混合调度（成本降低 40%+）</li>
-          <li>Threads/Runs API（有状态 Agent 会话）</li>
-          <li>并行 Function Calling 优化</li>
-          <li>结构化输出 2.0（XGrammar 约束解码）</li>
+          <li><strong>推理引擎深度优化：</strong></li>
+          <li style="margin-left:16px">异构 PD 分离（H100 Prefill + A100 Decode，成本下降 30-50%）</li>
+          <li style="margin-left:16px">多级 KV Cache 共享（全局命中率 &gt;70%，TTFT 降低 40%）</li>
+          <li style="margin-left:16px">投机解码 2.0（EAGLE-3 + N-gram + SpecInfer，加速比 2.5-3×）</li>
+          <li><strong>成本优化与调度智能化：</strong></li>
+          <li style="margin-left:16px">Spot 实例混合调度（节省 50-80%，中断自动续跑）</li>
+          <li style="margin-left:16px">算力利用率优化（GPU 利用率 &gt;85%）</li>
+          <li style="margin-left:16px">智能成本路由（成本下降 20-40%）</li>
+          <li><strong>AI Agent 与工作流原生平台：</strong></li>
+          <li style="margin-left:16px">Threads/Runs API（Agent 原生会话管理）</li>
+          <li style="margin-left:16px">并行 Function Calling 优化（格式失败率 &lt;0.1%）</li>
+          <li style="margin-left:16px">结构化输出 2.0（XGrammar/Outlines 约束解码）</li>
+          <li><strong>多集群调度与全球分布式推理：</strong></li>
+          <li style="margin-left:16px">Volcano 多集群联邦 + 百万级并发架构</li>
+          <li style="margin-left:16px">边缘推理节点（&lt;50ms 超低延迟）</li>
+          <li style="margin-left:16px">多云灾备（RPO &lt;1min，RTO &lt;5min）</li>
         </ul>
       </div>
     </div>
@@ -965,7 +987,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;co
 
 <footer>
   <div class="container">
-    Model Inference Cloud Platform &nbsp;·&nbsp; Architecture Design v2.6 &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; Phase 1 ✅ · Phase 2 ✅ · Phase 3 🚧
+    Model Inference Cloud Platform &nbsp;·&nbsp; Architecture Design v2.6 &nbsp;·&nbsp; 2026-04-30 &nbsp;·&nbsp; Phase 1 ✅ · Phase 2 ✅ · Phase 3 🚧（14/26 已完成）
   </div>
 </footer>
 
