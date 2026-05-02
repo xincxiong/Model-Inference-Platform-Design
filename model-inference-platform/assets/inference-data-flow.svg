@@ -34,13 +34,13 @@
   <text x="585" y="198" text-anchor="middle" class="node-sub">Redis sliding window</text>
   <rect x="710" y="160" width="170" height="46" rx="8" ry="8" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5" filter="url(#sh)"/>
   <text x="795" y="180" text-anchor="middle" class="node-title">Responses Adapter</text>
-  <text x="795" y="198" text-anchor="middle" class="node-sub">Items to Messages</text>
+  <text x="795" y="198" text-anchor="middle" class="node-sub">Format conversion (internal)</text>
   <rect x="80" y="260" width="210" height="50" rx="8" ry="8" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.5" filter="url(#sh)"/>
   <text x="185" y="280" text-anchor="middle" class="node-title">Smart Router</text>
   <text x="185" y="298" text-anchor="middle" class="node-sub">Query complexity scorer</text>
   <rect x="330" y="260" width="210" height="50" rx="8" ry="8" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.5" filter="url(#sh)"/>
   <text x="435" y="280" text-anchor="middle" class="node-title">Semantic Cache</text>
-  <text x="435" y="298" text-anchor="middle" class="node-sub">LanceDB cosine > 0.97</text>
+  <text x="435" y="298" text-anchor="middle" class="node-sub">In-memory cosine sim ≥ 0.85</text>
   <rect x="580" y="260" width="210" height="50" rx="8" ry="8" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1.5" filter="url(#sh)"/>
   <text x="685" y="280" text-anchor="middle" class="node-title">A/B Test Splitter</text>
   <text x="685" y="298" text-anchor="middle" class="node-sub">Traffic ratio分流</text>
@@ -55,10 +55,10 @@
   <text x="690" y="408" text-anchor="middle" class="node-sub">vLLM / SGLang / Mock</text>
   <rect x="100" y="480" width="180" height="56" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" filter="url(#sh)"/>
   <text x="190" y="500" text-anchor="middle" class="node-title">vLLM Worker</text>
-  <text x="190" y="518" text-anchor="middle" class="node-sub">PagedAttention + FA4</text>
+  <text x="190" y="518" text-anchor="middle" class="node-sub">HTTP client → vLLM REST API</text>
   <rect x="340" y="480" width="180" height="56" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" filter="url(#sh)"/>
   <text x="430" y="500" text-anchor="middle" class="node-title">SGLang Worker</text>
-  <text x="430" y="518" text-anchor="middle" class="node-sub">RadixAttention</text>
+  <text x="430" y="518" text-anchor="middle" class="node-sub">HTTP client → SGLang REST API</text>
   <rect x="580" y="480" width="180" height="56" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5" filter="url(#sh)"/>
   <text x="670" y="500" text-anchor="middle" class="node-title">Prompt Template</text>
   <text x="670" y="518" text-anchor="middle" class="node-sub">Jinja2 variable interp</text>
