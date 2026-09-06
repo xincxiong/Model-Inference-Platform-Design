@@ -41,3 +41,10 @@ npm-debug.log*
 # 独立项目（本仓库不包含）
 modelfactory/
 .gstack/
+
+# Backend Go build artifacts
+model-inference-platform/backend/server
+model-inference-platform/backend/inference-server
+model-inference-platform/backend/management-server
+*.test
+*.out
