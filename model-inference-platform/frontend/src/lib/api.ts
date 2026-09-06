@@ -238,6 +238,24 @@ export async function removeMember(id: string) {
   return apiFetch(`/api/members/${id}`, { method: 'DELETE' });
 }
 
+export function streamChat(
+  model: string,
+  messages: { role: string; content: string }[],
+  params: { temperature?: number; max_tokens?: number; top_p?: number },
+  onChunk: (text: string) => void,
+  onDone: () => void,
+  onError: (err: Error) => void,
+) {
+  return streamChatWithRetry(
+    model,
+    messages,
+    params,
+    onChunk,
+    onDone,
+    (msg, isRetrying) => onError(new Error(isRetrying ? `Retrying: ${msg}` : msg)),
+  )
+}
+
 export function streamChatWithRetry(
   model: string,
   messages: { role: string; content: string }[],

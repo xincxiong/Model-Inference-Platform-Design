@@ -120,8 +120,8 @@ export function ComputePoolSelector({
                   </p>
                   <p>
                     当前占用：<span className="text-[var(--text)]">{selected.used_gpu}/{selected.gpu_count}</span>
-                    {p.sharing_mode === 'shared-fifo' && ` · 可用 ${free} 张`}
-                    {p.sharing_mode === 'exclusive' && selected.used_gpu > 0 && ' · 独占池繁忙中'}
+                    {selected.sharing_mode === 'shared-fifo' && ` · 可用 ${free} 张`}
+                    {selected.sharing_mode === 'exclusive' && selected.used_gpu > 0 && ' · 独占池繁忙中'}
                   </p>
                 </div>
               )}
@@ -139,7 +139,7 @@ export function ComputePoolSelector({
               />
               <p className="text-[11px] text-[var(--text-muted)] mt-1.5">
                 {selected
-                  ? `池容量 ${selected.gpu_count} 张${p.sharing_mode === 'exclusive' ? '（独占模式，一次性占用）' : '（共享模式，可与其他任务并发）'}`
+                  ? `池容量 ${selected.gpu_count} 张${selected.sharing_mode === 'exclusive' ? '（独占模式，一次性占用）' : '（共享模式，可与其他任务并发）'}`
                   : `建议不超过池容量 ${cap}`}
               </p>
               {topoInvalid && (

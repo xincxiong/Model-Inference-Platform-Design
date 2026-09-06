@@ -82,7 +82,7 @@ export default function PlaygroundPage() {
   const [topP, setTopP] = useState(1.0)
   const [systemPrompt, setSystemPrompt] = useState('')
   const chatEndRef = useRef<HTMLDivElement>(null)
-  const controllerRef = useRef<AbortController | null>(null)
+  const controllerRef = useRef<{ abort: () => void } | null>(null)
 
   // ── Compare mode ──
   const [compareModelA, setCompareModelA] = useState('')
@@ -93,8 +93,8 @@ export default function PlaygroundPage() {
   const [compareOutputB, setCompareOutputB] = useState('')
   const [comparingA, setComparingA] = useState(false)
   const [comparingB, setComparingB] = useState(false)
-  const controllerARef = useRef<AbortController | null>(null)
-  const controllerBRef = useRef<AbortController | null>(null)
+  const controllerARef = useRef<{ abort: () => void } | null>(null)
+  const controllerBRef = useRef<{ abort: () => void } | null>(null)
 
   // ── Function Calling ──
   const [toolsJSON, setToolsJSON] = useState(DEFAULT_TOOLS)
@@ -104,7 +104,7 @@ export default function PlaygroundPage() {
   const [functionInput, setFunctionInput] = useState('明天北京的天气怎么样？')
   const [functionResult, setFunctionResult] = useState('')
   const [functionStreaming, setFunctionStreaming] = useState(false)
-  const functionControllerRef = useRef<AbortController | null>(null)
+  const functionControllerRef = useRef<{ abort: () => void } | null>(null)
 
   // ── Structured Output ──
   const [responseFormatMode, setResponseFormatMode] = useState<'json_object' | 'json_schema'>('json_schema')
@@ -113,7 +113,7 @@ export default function PlaygroundPage() {
   const [structuredInput, setStructuredInput] = useState('张伟，30岁，是一名软件工程师')
   const [structuredResult, setStructuredResult] = useState('')
   const [structuredStreaming, setStructuredStreaming] = useState(false)
-  const structuredControllerRef = useRef<AbortController | null>(null)
+  const structuredControllerRef = useRef<{ abort: () => void } | null>(null)
 
   useEffect(() => {
     fetchModels()

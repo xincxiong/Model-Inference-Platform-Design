@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useEffect, useState } from 'react'
 import { listDeployments, createDeployment, patchDeployment, deleteDeployment, fetchModels } from '@/lib/api'
 
@@ -51,7 +52,7 @@ interface BillingModeConfig {
   id: 'token' | 'tpu' | 'unit'
   label: string
   badge: string
-  icon: JSX.Element
+  icon: React.JSX.Element
   tagline: string
   desc: string
   suitable: string
@@ -198,7 +199,7 @@ const steps = [
 ]
 
 // ── 模型类型图标 ──────────────────────────────────────────────────────────
-const typeIcon: Record<string, JSX.Element> = {
+const typeIcon: Record<string, React.JSX.Element> = {
   'text-to-text': <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   'vision':       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
 }

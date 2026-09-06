@@ -388,6 +388,11 @@ func RunMigrations(ctx context.Context, db *pgxpool.Pool) error {
 	ALTER TABLE fine_tuning_jobs ADD COLUMN IF NOT EXISTS gpu_request INT NOT NULL DEFAULT 0;
 	ALTER TABLE fine_tuning_jobs ADD COLUMN IF NOT EXISTS rollout_pool_id VARCHAR(64);
 	CREATE INDEX IF NOT EXISTS idx_fine_tuning_jobs_pool ON fine_tuning_jobs(pool_id) WHERE pool_id IS NOT NULL;
+
+	-- ─── Cleanup: drop stale used_gpu column (P1 E1) ────────────────────────
+	-- Previously used as a stored counter but never updated. Capacity is now
+	-- computed live via SUM(gpu_request) FILTER (WHERE status IN active set).
+	ALTER TABLE compute_pools DROP COLUMN IF EXISTS used_gpu;
 	`
 
 	_, err := db.Exec(ctx, migration)

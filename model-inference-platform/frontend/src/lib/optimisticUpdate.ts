@@ -47,7 +47,7 @@ export function useOptimisticUpdate<T>(
 
   const batchOptimisticUpdate = useCallback(async (
     updates: Array<{ id: string; patch: Partial<T> }>,
-    options: OptimisticUpdateOptions<T[]> = {}
+    options: { onSuccess?: (results: T[]) => void; onError?: (error: Error, previousState: T) => void; errorMessage?: string } = {}
   ) => {
     const previousState = state
     const { onSuccess, onError, errorMessage = '批量更新失败' } = options
