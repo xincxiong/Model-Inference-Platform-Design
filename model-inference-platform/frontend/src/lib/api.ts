@@ -344,3 +344,104 @@ export function streamChatWithRetry(
     getAccumulatedText: () => accumulatedText,
   };
 }
+
+// ─── Compute Pool Subscriptions (P0) ───────────────────────────────────────
+
+export interface PoolSKU {
+  id: string
+  name: string
+  description: string
+  gpu_type: string
+  gpu_count: number
+  region: string
+  sharing_mode: string
+  term: string
+  term_months: number
+  hourly_list_price: number
+  term_price: number
+  discount_pct: number
+  sla_class: string
+  active: boolean
+  sort_order: number
+  created_at: string
+}
+
+export interface PoolSubscription {
+  id: string
+  user_id: string
+  sku_id: string
+  sku_name?: string
+  gpu_type?: string
+  gpu_count?: number
+  pool_id?: string
+  total_amount: number
+  currency: string
+  start_at: string
+  end_at: string
+  auto_renew: boolean
+  status: string
+  payment_status: string
+  renewed_from_id?: string
+  trial: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PoolInvoice {
+  id: string
+  subscription_id: string
+  period_start: string
+  period_end: string
+  amount: number
+  status: string
+  due_at: string
+  paid_at?: string
+  created_at: string
+}
+
+export interface SubscriptionOverview {
+  active_count: number
+  monthly_spend: number
+  upcoming_renewals: number
+  total_savings: number
+  currency: string
+}
+
+export async function listPoolSKUs(filters?: { gpu_type?: string; term?: string; sharing_mode?: string }) {
+  const params = new URLSearchParams()
+  if (filters?.gpu_type) params.set('gpu_type', filters.gpu_type)
+  if (filters?.term) params.set('term', filters.term)
+  if (filters?.sharing_mode) params.set('sharing_mode', filters.sharing_mode)
+  const qs = params.toString()
+  return apiFetch(`/v0/pools/skus${qs ? `?${qs}` : ''}`)
+}
+
+export async function listPoolSubscriptions() {
+  return apiFetch('/v0/pools/subscriptions')
+}
+
+export async function getPoolOverview() {
+  return apiFetch('/v0/pools/subscriptions/overview')
+}
+
+export async function purchasePoolSubscription(sku_id: string, auto_renew = false, trial = false) {
+  return apiFetch('/v0/pools/subscriptions', {
+    method: 'POST',
+    body: JSON.stringify({ sku_id, auto_renew, trial }),
+  })
+}
+
+export async function cancelPoolSubscription(id: string, immediate = false, reason = '') {
+  return apiFetch(`/v0/pools/subscriptions/${id}/cancel`, {
+    method: 'POST',
+    body: JSON.stringify({ immediate, reason }),
+  })
+}
+
+export async function renewPoolSubscription(id: string) {
+  return apiFetch(`/v0/pools/subscriptions/${id}/renew`, { method: 'POST' })
+}
+
+export async function listPoolInvoices(id: string) {
+  return apiFetch(`/v0/pools/subscriptions/${id}/invoices`)
+}

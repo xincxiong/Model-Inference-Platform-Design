@@ -73,6 +73,7 @@ func main() {
 	s := &store.Store{DB: db, Redis: rdb, SemanticCache: semCache, S3: s3Client}
 
 	store.SeedModels(context.Background(), db)
+	store.SeedPoolSKUs(context.Background(), db)
 
 	// ── Health checker ────────────────────────────────────────────────────
 	hc := health.New(db, rdb)

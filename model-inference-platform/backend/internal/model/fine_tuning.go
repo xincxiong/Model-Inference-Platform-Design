@@ -23,6 +23,16 @@ type FineTuningJobCreateRequest struct {
 
 	// slime: Data Buffer config
 	DataBufferConfig *DataBufferConfig      `json:"data_buffer_config,omitempty"`
+
+	// ── Compute resources (P1) ────────────────────────────────────────────────
+	// PoolID is the compute pool this job will run on. Empty = legacy mode (no pool binding).
+	PoolID         string `json:"pool_id" binding:"required"`
+	// GPURequest is the number of GPUs to allocate from the pool for training.
+	GPURequest     int    `json:"gpu_request" binding:"required,min=1"`
+	// RolloutPoolID is the pool for the SGLang rollout engine. RL only. Empty = same as PoolID.
+	RolloutPoolID  string `json:"rollout_pool_id,omitempty"`
+	// RolloutGPURequest is the number of GPUs for rollout. 0 = use all of RolloutPoolID.
+	RolloutGPURequest int `json:"rollout_gpu_request,omitempty"`
 }
 
 // RolloutScenario constants (aligned with slime examples)
@@ -91,6 +101,9 @@ type FineTuningJobRow struct {
 	RolloutScenario string
 	RolloutConfig   map[string]interface{}
 	RewardConfig    map[string]interface{}
+	PoolID          *string
+	GPURequest      int
+	RolloutPoolID   *string
 	Status          string
 	FineTunedModel  *string
 	ErrorMessage    *string
@@ -110,6 +123,9 @@ type FineTuningJob struct {
 	RolloutScenario string                 `json:"rollout_scenario,omitempty"`
 	RolloutConfig   map[string]interface{} `json:"rollout_config,omitempty"`
 	RewardConfig    map[string]interface{} `json:"reward_config,omitempty"`
+	PoolID          *string                `json:"pool_id,omitempty"`
+	GPURequest      int                    `json:"gpu_request,omitempty"`
+	RolloutPoolID   *string                `json:"rollout_pool_id,omitempty"`
 	Status          string                 `json:"status"`
 	FineTunedModel  *string                `json:"fine_tuned_model,omitempty"`
 	Error           *FineTuningJobError    `json:"error,omitempty"`

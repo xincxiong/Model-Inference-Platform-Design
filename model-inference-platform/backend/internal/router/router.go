@@ -124,6 +124,8 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 	deployH := handler.NewDeploymentsHandler(s)
 	membersH := handler.NewMembersHandler(s)
 	mvH := handler.NewModelVersionsHandler(s)
+	poolSubH := handler.NewPoolSubscriptionsHandler(s)
+	computePoolH := handler.NewComputePoolsHandler(s)
 
 	v0 := r.Group("/v0")
 	v0.Use(middleware.AuthMiddleware(s.DB, s.Redis))
@@ -133,6 +135,21 @@ func SetupManagementRouter(cfg *config.Config, s *store.Store, mr *modelrouter.M
 		v0.POST("/dedicated_endpoints", dedH.Create)
 		v0.PATCH("/dedicated_endpoints/:id", dedH.Patch)
 		v0.DELETE("/dedicated_endpoints/:id", dedH.Delete)
+
+		v0.GET("/pools/skus", poolSubH.ListSKUs)
+		v0.GET("/pools/subscriptions", poolSubH.ListSubscriptions)
+		v0.GET("/pools/subscriptions/overview", poolSubH.Overview)
+		v0.POST("/pools/subscriptions", poolSubH.Purchase)
+		v0.POST("/pools/subscriptions/:id/cancel", poolSubH.Cancel)
+		v0.POST("/pools/subscriptions/:id/renew", poolSubH.Renew)
+		v0.GET("/pools/subscriptions/:id/invoices", poolSubH.ListInvoices)
+
+		v0.GET("/pools/compute", computePoolH.List)
+		v0.POST("/pools/compute", computePoolH.Create)
+		v0.GET("/pools/compute/:id", computePoolH.Get)
+		v0.PATCH("/pools/compute/:id", computePoolH.Patch)
+		v0.POST("/pools/compute/:id/archive", computePoolH.Archive)
+		v0.GET("/pools/compute/:id/usage", computePoolH.Usage)
 	}
 
 	v1 := r.Group("/v1")

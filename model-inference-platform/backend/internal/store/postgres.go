@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -296,6 +297,97 @@ func RunMigrations(ctx context.Context, db *pgxpool.Pool) error {
 	);
 	CREATE INDEX IF NOT EXISTS idx_org_members_owner ON org_members(org_owner_id);
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_org_members_unique ON org_members(org_owner_id, invite_email);
+
+	-- ─── pool_skus: 算力池商品目录（包年包月 SKU） ──────────────────────────
+	CREATE TABLE IF NOT EXISTS pool_skus (
+		id VARCHAR(64) PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		description TEXT NOT NULL DEFAULT '',
+		gpu_type VARCHAR(64) NOT NULL,
+		gpu_count INT NOT NULL,
+		region VARCHAR(32) NOT NULL DEFAULT 'cn-east-1',
+		sharing_mode VARCHAR(32) NOT NULL DEFAULT 'shared-fifo',
+		term VARCHAR(16) NOT NULL,
+		term_months INT NOT NULL,
+		hourly_list_price NUMERIC(12,4) NOT NULL,
+		term_price NUMERIC(12,4) NOT NULL,
+		discount_pct NUMERIC(5,2) NOT NULL DEFAULT 0,
+		sla_class VARCHAR(32) NOT NULL DEFAULT 'standard',
+		active BOOLEAN NOT NULL DEFAULT TRUE,
+		sort_order INT NOT NULL DEFAULT 0,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+	CREATE INDEX IF NOT EXISTS idx_pool_skus_active ON pool_skus(active, sort_order);
+
+	-- ─── pool_subscriptions: 用户订阅记录 ──────────────────────────────────
+	CREATE TABLE IF NOT EXISTS pool_subscriptions (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		sku_id VARCHAR(64) NOT NULL REFERENCES pool_skus(id),
+		pool_id VARCHAR(64),
+		total_amount NUMERIC(12,4) NOT NULL,
+		currency VARCHAR(8) NOT NULL DEFAULT 'CNY',
+		start_at TIMESTAMPTZ NOT NULL,
+		end_at TIMESTAMPTZ NOT NULL,
+		auto_renew BOOLEAN NOT NULL DEFAULT FALSE,
+		status VARCHAR(16) NOT NULL DEFAULT 'pending',
+		payment_status VARCHAR(16) NOT NULL DEFAULT 'pending',
+		renewed_from_id UUID REFERENCES pool_subscriptions(id),
+		trial BOOLEAN NOT NULL DEFAULT FALSE,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+	CREATE INDEX IF NOT EXISTS idx_pool_subs_user ON pool_subscriptions(user_id);
+	CREATE INDEX IF NOT EXISTS idx_pool_subs_status ON pool_subscriptions(status);
+	CREATE INDEX IF NOT EXISTS idx_pool_subs_end ON pool_subscriptions(end_at);
+
+	-- ─── pool_invoices: 订阅账单 ───────────────────────────────────────────
+	CREATE TABLE IF NOT EXISTS pool_invoices (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		subscription_id UUID NOT NULL REFERENCES pool_subscriptions(id) ON DELETE CASCADE,
+		period_start TIMESTAMPTZ NOT NULL,
+		period_end TIMESTAMPTZ NOT NULL,
+		amount NUMERIC(12,4) NOT NULL,
+		status VARCHAR(16) NOT NULL DEFAULT 'pending',
+		due_at TIMESTAMPTZ NOT NULL,
+		paid_at TIMESTAMPTZ,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+	CREATE INDEX IF NOT EXISTS idx_pool_invoices_sub ON pool_invoices(subscription_id);
+	CREATE INDEX IF NOT EXISTS idx_pool_invoices_status ON pool_invoices(status);
+
+	-- ─── compute_pools: 算力池实例 (从订阅创建的运营资源) ──────────────────────
+	CREATE TABLE IF NOT EXISTS compute_pools (
+		id VARCHAR(64) PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		description TEXT NOT NULL DEFAULT '',
+		gpu_type VARCHAR(64) NOT NULL,
+		gpu_count INT NOT NULL,
+		region VARCHAR(32) NOT NULL DEFAULT 'cn-east-1',
+		sharing_mode VARCHAR(32) NOT NULL DEFAULT 'shared-fifo',
+		subscription_id UUID NOT NULL REFERENCES pool_subscriptions(id) ON DELETE CASCADE,
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		volcano_queue VARCHAR(128) NOT NULL DEFAULT '',
+		scheduler_policy VARCHAR(32) NOT NULL DEFAULT 'binpack',
+		hard_isolation BOOLEAN NOT NULL DEFAULT FALSE,
+		status VARCHAR(16) NOT NULL DEFAULT 'active',
+		used_gpu INT NOT NULL DEFAULT 0,
+		service_start_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		service_end_at TIMESTAMPTZ,
+		sla_class VARCHAR(32) NOT NULL DEFAULT 'standard',
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+	CREATE INDEX IF NOT EXISTS idx_compute_pools_user ON compute_pools(user_id);
+	CREATE INDEX IF NOT EXISTS idx_compute_pools_sub ON compute_pools(subscription_id);
+	-- 一个订阅最多一个 active 池 (re-purchase 会先 archive 旧的)
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_compute_pools_sub_active ON compute_pools(subscription_id) WHERE status = 'active';
+
+	-- ─── fine_tuning_jobs: 增加算力资源字段 ──────────────────────────────────
+	ALTER TABLE fine_tuning_jobs ADD COLUMN IF NOT EXISTS pool_id VARCHAR(64);
+	ALTER TABLE fine_tuning_jobs ADD COLUMN IF NOT EXISTS gpu_request INT NOT NULL DEFAULT 0;
+	ALTER TABLE fine_tuning_jobs ADD COLUMN IF NOT EXISTS rollout_pool_id VARCHAR(64);
+	CREATE INDEX IF NOT EXISTS idx_fine_tuning_jobs_pool ON fine_tuning_jobs(pool_id) WHERE pool_id IS NOT NULL;
 	`
 
 	_, err := db.Exec(ctx, migration)
@@ -494,5 +586,59 @@ func SeedModels(ctx context.Context, db *pgxpool.Pool) {
 			   max_context=EXCLUDED.max_context, speed=EXCLUDED.speed,
 			   quality_score=EXCLUDED.quality_score, features=EXCLUDED.features`,
 			m.ID, m.Name, m.Type, m.Provider, m.Description, m.InPrice, m.OutPrice, m.MaxCtx, m.Speed, m.Quality, m.Features)
+	}
+}
+
+// SeedPoolSKUs populates the pool_skus table with sample monthly/quarterly/yearly plans
+// across the platform's GPU catalog. Idempotent: re-running is a no-op.
+func SeedPoolSKUs(ctx context.Context, db *pgxpool.Pool) {
+	// Hourly list prices mirror endpoints page's GPU_OPTIONS for consistency.
+	type skuSeed struct {
+		ID, Name, Desc, GPUType, Region, SharingMode, Term string
+		GPUCount, TermMonths                                 int
+		HourlyPrice                                          float64
+		DiscountPct                                          float64
+		SLAClass                                             string
+		SortOrder                                            int
+	}
+	seeds := []skuSeed{
+		// A100 80GB × 4 - shared
+		{"sku-a100-80-4-monthly", "A100 80GB × 4 共享池 月付", "4 张 A100 80GB，共享 FIFO 模式，适合中小团队 SFT/RL 实验。", "A100-80GB", "cn-east-1", "shared-fifo", "monthly", 4, 1, 14.0, 10, "standard", 10},
+		{"sku-a100-80-4-quarterly", "A100 80GB × 4 共享池 季付", "4 张 A100 80GB，3 个月订阅，额外 15% 折扣。", "A100-80GB", "cn-east-1", "shared-fifo", "quarterly", 4, 3, 14.0, 25, "standard", 11},
+		{"sku-a100-80-4-yearly", "A100 80GB × 4 共享池 年付", "4 张 A100 80GB，12 个月订阅，30% 折扣。", "A100-80GB", "cn-east-1", "shared-fifo", "yearly", 4, 12, 14.0, 30, "standard", 12},
+
+		// H100 80GB × 8 - shared
+		{"sku-h100-80-8-monthly", "H100 80GB × 8 共享池 月付", "8 张 H100 80GB，Hopper 架构，70B+ 模型微调首选。", "H100-80GB", "cn-east-1", "shared-fifo", "monthly", 8, 1, 46.4, 10, "standard", 20},
+		{"sku-h100-80-8-quarterly", "H100 80GB × 8 共享池 季付", "8 张 H100 80GB，3 个月订阅，25% 折扣。", "H100-80GB", "cn-east-1", "shared-fifo", "quarterly", 8, 3, 46.4, 25, "enhanced", 21},
+		{"sku-h100-80-8-yearly", "H100 80GB × 8 共享池 年付", "8 张 H100 80GB，12 个月订阅，40% 折扣。", "H100-80GB", "cn-east-1", "shared-fifo", "yearly", 8, 12, 46.4, 40, "enhanced", 22},
+
+		// H100 80GB × 8 - exclusive (大模型团队)
+		{"sku-h100-80-8-excl-monthly", "H100 80GB × 8 独占池 月付", "8 张 H100 80GB 独占一任务，GRPO/VAPO 全参微调专用。", "H100-80GB", "cn-east-1", "exclusive", "monthly", 8, 1, 46.4, 5, "enhanced", 30},
+		{"sku-h100-80-8-excl-yearly", "H100 80GB × 8 独占池 年付", "8 张 H100 80GB 独占，12 个月订阅，35% 折扣。", "H100-80GB", "cn-east-1", "exclusive", "yearly", 8, 12, 46.4, 35, "enhanced", 31},
+
+		// L40S 48GB × 4 - 性价比
+		{"sku-l40s-48-4-monthly", "L40S 48GB × 4 共享池 月付", "4 张 L40S 48GB，推理优化型，性价比极高。", "L40S-48GB", "cn-east-1", "shared-fifo", "monthly", 4, 1, 6.4, 10, "standard", 40},
+		{"sku-l40s-48-4-yearly", "L40S 48GB × 4 共享池 年付", "4 张 L40S 48GB，年付 30% 折扣。", "L40S-48GB", "cn-east-1", "shared-fifo", "yearly", 4, 12, 6.4, 30, "standard", 41},
+	}
+
+	for _, s := range seeds {
+		hoursInTerm := float64(s.TermMonths) * 30 * 24
+		listTotal := s.HourlyPrice * float64(s.GPUCount) * hoursInTerm
+		termPrice := listTotal * (1 - s.DiscountPct/100)
+		_, err := db.Exec(ctx, `
+			INSERT INTO pool_skus (id, name, description, gpu_type, gpu_count, region, sharing_mode, term, term_months,
+				hourly_list_price, term_price, discount_pct, sla_class, active, sort_order)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,TRUE,$14)
+			ON CONFLICT (id) DO UPDATE SET
+				name=EXCLUDED.name, description=EXCLUDED.description,
+				hourly_list_price=EXCLUDED.hourly_list_price, term_price=EXCLUDED.term_price,
+				discount_pct=EXCLUDED.discount_pct, sla_class=EXCLUDED.sla_class,
+				active=EXCLUDED.active, sort_order=EXCLUDED.sort_order`,
+			s.ID, s.Name, s.Desc, s.GPUType, s.GPUCount, s.Region, s.SharingMode, s.Term, s.TermMonths,
+			s.HourlyPrice, termPrice, s.DiscountPct, s.SLAClass, s.SortOrder)
+		if err != nil {
+			// Log to stderr but don't block startup; seed is best-effort.
+			fmt.Fprintf(os.Stderr, "seed pool_sku %s: %v\n", s.ID, err)
+		}
 	}
 }

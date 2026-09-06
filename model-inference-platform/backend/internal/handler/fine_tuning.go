@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -123,12 +124,21 @@ func (h *FineTuningHandler) Create(c *gin.Context) {
 	jobID := "ftjob-" + strings.ReplaceAll(uuid.New().String(), "-", "")
 
 	ctx := c.Request.Context()
+
+	// ── Validate pool resources (P1) ──────────────────────────────────────
+	if err := h.validatePoolResources(ctx, auth.UserID, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": err.Error(), "type": "invalid_request_error"}})
+		return
+	}
+
 	_, err := h.store.DB.Exec(ctx,
 		`INSERT INTO fine_tuning_jobs
-		 (id, user_id, base_model, training_file, method, hyperparameters, rollout_scenario, rollout_config, reward_config, status)
-		 VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8::jsonb,$9::jsonb,'queued')`,
+		 (id, user_id, base_model, training_file, method, hyperparameters, rollout_scenario, rollout_config, reward_config,
+		  pool_id, gpu_request, rollout_pool_id, status)
+		 VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8::jsonb,$9::jsonb,$10,$11,$12,'queued')`,
 		jobID, auth.UserID, req.Model, req.TrainingFile, method,
 		hpBytes, rolloutScenario, rolloutBytes, rewardBytes,
+		req.PoolID, req.GPURequest, nilIfEmpty(req.RolloutPoolID),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error(), "type": "api_error"}})
@@ -368,6 +378,7 @@ func (h *FineTuningHandler) Cancel(c *gin.Context) {
 const selectJobSQL = `
 SELECT id, user_id, base_model, training_file, method, hyperparameters,
        rollout_scenario, rollout_config, reward_config,
+       pool_id, gpu_request, rollout_pool_id,
        status, fine_tuned_model, error_message, created_at, updated_at
 FROM fine_tuning_jobs`
 
@@ -379,6 +390,7 @@ func (h *FineTuningHandler) scanJobRow(rows interface {
 	err := rows.Scan(
 		&j.ID, &j.UserID, &j.BaseModel, &j.TrainingFile, &j.Method,
 		&hpJSON, &j.RolloutScenario, &rolloutCfgJSON, &rewardCfgJSON,
+		&j.PoolID, &j.GPURequest, &j.RolloutPoolID,
 		&j.Status, &j.FineTunedModel, &j.ErrorMessage, &j.CreatedAt, &j.UpdatedAt,
 	)
 	if err != nil {
@@ -410,6 +422,9 @@ func jobToAPI(j model.FineTuningJobRow) model.FineTuningJob {
 		RolloutScenario: j.RolloutScenario,
 		RolloutConfig:   j.RolloutConfig,
 		RewardConfig:    j.RewardConfig,
+		PoolID:          j.PoolID,
+		GPURequest:      j.GPURequest,
+		RolloutPoolID:   j.RolloutPoolID,
 		Status:          j.Status,
 		FineTunedModel:  j.FineTunedModel,
 		CreatedAt:       j.CreatedAt.Unix(),
@@ -419,4 +434,117 @@ func jobToAPI(j model.FineTuningJobRow) model.FineTuningJob {
 		out.Error = &model.FineTuningJobError{Message: *j.ErrorMessage}
 	}
 	return out
+}
+
+// ─── P1: pool resource validation ───────────────────────────────────────────
+
+// validatePoolResources checks that the request's pool binding is feasible:
+//   1. Pool exists, owned by user, status=active
+//   2. Pool has enough free GPU capacity (sum of running+queued gpu_request + new ≤ pool.gpu_count)
+//   3. Exclusive pool: can't have any other in-flight jobs
+//   4. TP × PP × DP ≤ gpu_request
+//   5. RolloutPoolID (if set) is valid, active, and (if exclusive) empty
+func (h *FineTuningHandler) validatePoolResources(ctx context.Context, userID string, req *model.FineTuningJobCreateRequest) error {
+	if req.PoolID == "" {
+		return errors.New("pool_id is required")
+	}
+	if req.GPURequest < 1 {
+		return errors.New("gpu_request must be ≥ 1")
+	}
+
+	if err := h.checkPoolCapacity(ctx, userID, req.PoolID, req.GPURequest, "training"); err != nil {
+		return err
+	}
+
+	// Rollout pool: if empty, fall back to training pool
+	rolloutID := req.RolloutPoolID
+	if rolloutID == "" {
+		rolloutID = req.PoolID
+	}
+	rolloutGPU := req.RolloutGPURequest
+	if rolloutGPU == 0 {
+		rolloutGPU = req.GPURequest
+	}
+	// Only check separate capacity if rollout pool differs from training pool
+	if rolloutID != req.PoolID {
+		if err := h.checkPoolCapacity(ctx, userID, rolloutID, rolloutGPU, "rollout"); err != nil {
+			return err
+		}
+	}
+
+	// Parallelism topology constraint
+	if req.EngineConfig != nil {
+		tp := req.EngineConfig.TensorModelParallelSize
+		pp := req.EngineConfig.PipelineModelParallelSize
+		dp := req.EngineConfig.DataParallelSize
+		if tp == 0 { tp = 1 }
+		if pp == 0 { pp = 1 }
+		if dp == 0 { dp = 1 }
+		required := tp * pp * dp
+		if required > req.GPURequest {
+			return fmt.Errorf("TP(%d) × PP(%d) × DP(%d) = %d must be ≤ gpu_request(%d)", tp, pp, dp, required, req.GPURequest)
+		}
+	}
+	return nil
+}
+
+// checkPoolCapacity loads the pool and validates that it has room for the requested GPUs.
+func (h *FineTuningHandler) checkPoolCapacity(ctx context.Context, userID, poolID string, gpuRequest int, role string) error {
+	var (
+		ownerID  string
+		status   string
+		gpuTotal int
+		sharing  string
+		endAt    *time.Time
+	)
+	err := h.store.DB.QueryRow(ctx, `
+		SELECT user_id, status, gpu_count, sharing_mode, service_end_at
+		FROM compute_pools WHERE id = $1`, poolID).
+		Scan(&ownerID, &status, &gpuTotal, &sharing, &endAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("%s pool not found: %s", role, poolID)
+	}
+	if err != nil {
+		return err
+	}
+	if ownerID != userID {
+		return fmt.Errorf("%s pool not owned by user", role)
+	}
+	if status != model.PoolStatusActive {
+		return fmt.Errorf("%s pool is %s, not active", role, status)
+	}
+	if endAt != nil && endAt.Before(time.Now()) {
+		return fmt.Errorf("%s pool's subscription has ended", role)
+	}
+
+	// Sum current allocation from in-flight jobs on this pool
+	var allocated int
+	err = h.store.DB.QueryRow(ctx, `
+		SELECT COALESCE(SUM(gpu_request), 0)
+		FROM fine_tuning_jobs
+		WHERE pool_id = $1 AND status IN ('queued','running','validating')`, poolID).Scan(&allocated)
+	if err != nil {
+		return err
+	}
+
+	// Exclusive pool: any in-flight job blocks new submissions
+	if sharing == model.PoolSharingExclusive && allocated > 0 {
+		return fmt.Errorf("%s pool is exclusive and currently busy (%d GPUs in use); try a shared pool or wait", role, allocated)
+	}
+	if allocated+gpuRequest > gpuTotal {
+		free := gpuTotal - allocated
+		if free < 0 {
+			free = 0
+		}
+		return fmt.Errorf("%s pool insufficient capacity: requested %d, free %d (of %d); job will be queued when Volcano scheduler is connected", role, gpuRequest, free, gpuTotal)
+	}
+	return nil
+}
+
+// nilIfEmpty returns nil for an empty string so the SQL column stays NULL.
+func nilIfEmpty(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	return s
 }

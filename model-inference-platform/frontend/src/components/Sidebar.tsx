@@ -45,6 +45,17 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    title: '算力池',
+    items: [
+      { href: '/pools', label: '算力池', icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h12"/></svg>
+      )},
+      { href: '/pools/subscribe', label: '购买算力', icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M5 9l7-7 7 7M5 15l7 7 7-7"/></svg>
+      )},
+    ],
+  },
+  {
     title: '模型微调',
     items: [
       { href: '/finetuning', label: '微调任务', icon: (
