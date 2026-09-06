@@ -407,6 +407,48 @@ export interface SubscriptionOverview {
   currency: string
 }
 
+export interface ComputePool {
+  id: string
+  name: string
+  description: string
+  gpu_type: string
+  gpu_count: number
+  region: string
+  sharing_mode: string
+  subscription_id: string
+  user_id: string
+  volcano_queue: string
+  scheduler_policy: string
+  hard_isolation: boolean
+  status: string
+  used_gpu: number
+  free_gpu: number
+  utilization_pct: number
+  active_jobs: number
+  queue_depth: number
+  sla_class: string
+  service_start_at: string
+  service_end_at?: string
+  sku_id?: string
+  sku_term?: string
+  subscription_end_at?: string
+  subscription_status?: string
+  created_at: string
+  updated_at: string
+}
+
+export async function listComputePools() {
+  return apiFetch('/v0/pools/compute')
+}
+
+export async function getComputePool(id: string) {
+  return apiFetch(`/v0/pools/compute/${id}`)
+}
+
+export async function getComputePoolUsage(id: string) {
+  return apiFetch(`/v0/pools/compute/${id}/usage`)
+}
+
 export async function listPoolSKUs(filters?: { gpu_type?: string; term?: string; sharing_mode?: string }) {
   const params = new URLSearchParams()
   if (filters?.gpu_type) params.set('gpu_type', filters.gpu_type)
